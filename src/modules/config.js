@@ -58,16 +58,24 @@ import { ui } from './i18n.js';
             whitelist:      ['$owner'],
             triggerWords:   [],    // 自訂觸發詞（除了 [Voice]）
             seeOthersPant:  false, // 收到他人催眠廣播時，是否在其角色上顯示喘氣（預設關閉）
+            showProfileButton: true, // 是否在別人 profile 顯示 IVH 文本編輯按鈕
 
-            // ── 興奮值：每次觸發催眠增加的興奮值（0~20，0=停用）──
-            arousalStep:    5,
+            // ── 三大系統開關（總開關為 enabled）──
+            voiceEnabled:   true,  // 語音催眠（[Voice]/觸發詞 → 效果）
 
-            // ── 催眠值（0~100，每 12 秒 -1，比照 BC 興奮值衰減）──
-            hypnoEnabled:   false, // 側邊開/關
-            hypnoVoiceStep: 0,     // 語音催眠每次 +（0~20）
-            hypnoDepthStep: 0,     // 深度催眠每次 +（0~10）
+            // ── 興奮值：每次觸發增加（0~20，0=停用）；語音 / 日常干擾分開 ──
+            arousalStepVoice: 5,
+            arousalStepDepth: 5,
 
-            // ── 催眠深度（定時觸發；開/關 + 扁平效果自由勾選；喘氣單一，用原「深度中」參數）──
+            // ── 催眠值（0~100，每 12 秒 -1）：語音 / 日常干擾分開；催眠狀態關則不成長 ──
+            hypnoEnabled:    false, // 催眠狀態 啟/停用
+            hypnoVoiceStep:  5,     // 語音催眠每次 +（0~20）
+            hypnoDepthStep:  5,     // 日常干擾每次 +（0~20）
+            autoWake:        true,  // 自動清醒（催眠值 <15% 時解除強控）
+            forcedGrowthDiv: 1,     // 強控中催眠值成長 = 原值 × N/10（預設 1 → 1/10）
+            hypnoAnimEnabled: false, // 催眠動畫（符咒動畫等；預留）
+
+            // ── 日常干擾（原「催眠深度」；定時觸發；開/關 + 間隔 + 扁平效果；喘氣單一）──
             depthEnabled:   false,
             depthIntervalMin: 5,   // 循環間隔（分鐘 1~99）
             depthEffects: { smoke: true, chatDanmaku: true, ghost: true, figureBlur: true, sfx: true, fade: true, chatlogBlur: true, pant: true },
@@ -76,7 +84,7 @@ import { ui } from './i18n.js';
             textSource:     "ES",      // ES | DB
             customTexts:    ui('defaultTexts').split('\n').map(s => s.trim()).filter(Boolean),
             emoteList:      ui('defaultEmotes').split('\n').map(s => s.trim()).filter(Boolean),
-            wakeWord:       'wake',    // 清醒詞：任何人說出→立即清醒，催眠值 >80% 則設為 80%
+            wakeWords:      ['wake'],  // 清醒詞（可多個）：房內「他人」說出→你清醒；自己說無效
             // 催眠回應：強控中說話有機會被攔截，改說其中一句（$me=名字）
             responseList:   ui('defaultResponses').split('\n').map(s => s.trim()).filter(Boolean),
             // 允許說的話：強控中整句剛好是這些之一 → 不攔截，照常說出

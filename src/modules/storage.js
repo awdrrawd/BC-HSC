@@ -50,15 +50,17 @@ import { resolveWhitelistNumbers } from './panel.js';
             steamParticles: c.steamParticles, expression: c.expression,
             chatFade: c.chatFade,
             climax: c.climax, climaxMode: c.climaxMode, sound: c.sound,
-            intensity: c.intensity, arousalStep: c.arousalStep,
+            intensity: c.intensity, voiceEnabled: c.voiceEnabled,
+            arousalStepVoice: c.arousalStepVoice, arousalStepDepth: c.arousalStepDepth,
             hypnoEnabled: c.hypnoEnabled, hypnoVoiceStep: c.hypnoVoiceStep, hypnoDepthStep: c.hypnoDepthStep,
+            autoWake: c.autoWake, forcedGrowthDiv: c.forcedGrowthDiv, hypnoAnimEnabled: c.hypnoAnimEnabled,
             centerHeadshot: c.centerHeadshot, emoteEnabled: c.emoteEnabled, dualSound: c.dualSound,
-            whitelist: c.whitelist, triggerWords: c.triggerWords, seeOthersPant: c.seeOthersPant,
+            whitelist: c.whitelist, triggerWords: c.triggerWords, seeOthersPant: c.seeOthersPant, showProfileButton: c.showProfileButton,
             depthEnabled: c.depthEnabled, depthIntervalMin: c.depthIntervalMin, depthEffects: c.depthEffects,
             editModes: c.editModes, textSource: c.textSource,
             lang: c.lang,
             customTexts: c.textSource === 'ES' ? c.customTexts : [],
-            emoteList: c.emoteList, wakeWord: c.wakeWord, responseList: c.responseList, allowedPhrases: c.allowedPhrases,
+            emoteList: c.emoteList, wakeWords: c.wakeWords, responseList: c.responseList, allowedPhrases: c.allowedPhrases,
             expressionSets: c.expressionSets,
             soundSource: c.soundSource,
             // 注意：sounds 不存進 ExtensionSettings（帳號隔離），改存 localStorage 跨帳號共用
@@ -120,9 +122,17 @@ import { resolveWhitelistNumbers } from './panel.js';
                             chatlogBlur: !!H.chatlogBlur, pant: !!(L.pant || M.pant || H.pant),
                         };
                     }
-                    // 舊版 arousal(布林) → arousalStep(數值)
-                    if (saved.arousal !== undefined && saved.arousalStep === undefined) {
-                        CONFIG.arousalStep = saved.arousal ? 5 : 0;
+                    // 舊版 wakeWord(單字串) → wakeWords(清單)
+                    if (typeof saved.wakeWord === 'string' && saved.wakeWords === undefined) {
+                        CONFIG.wakeWords = saved.wakeWord.trim() ? [saved.wakeWord.trim()] : [];
+                    }
+                    // 舊版 arousal(布林)/arousalStep(單值) → 語音/日常 兩個興奮值
+                    if (saved.arousalStep !== undefined && saved.arousalStepVoice === undefined) {
+                        CONFIG.arousalStepVoice = saved.arousalStep;
+                        CONFIG.arousalStepDepth = saved.arousalStep;
+                    } else if (saved.arousal !== undefined && saved.arousalStepVoice === undefined) {
+                        const v = saved.arousal ? 5 : 0;
+                        CONFIG.arousalStepVoice = v; CONFIG.arousalStepDepth = v;
                     }
                 }
             }
@@ -175,7 +185,7 @@ import { resolveWhitelistNumbers } from './panel.js';
                 texts:    on(em.catalyst) ? (CONFIG.customTexts || [])  : [],
                 emotes:   on(em.status)   ? (CONFIG.emoteList || [])    : [],
                 triggers: on(em.trigger)  ? (CONFIG.triggerWords || []) : [],
-                wake:     on(em.wake)     ? [CONFIG.wakeWord || '']     : [],
+                wake:     on(em.wake)     ? (CONFIG.wakeWords || [])    : [],
                 response: on(em.response) ? (CONFIG.responseList || []) : [],
                 allowed:  on(em.allowed)  ? (CONFIG.allowedPhrases || []) : [],
             };

@@ -92,7 +92,7 @@ import { IVH_Z } from './zlayers.js';
                 if (_otherModSubscreenOpen()) return r;   // 別的插件全螢幕子頁 → 不畫我們的按鈕
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
-                if (info) {
+                if (info && CONFIG.showProfileButton) {
                     // 換看不同人、或離開後重開 profile → 立刻強制重查（解決剛被加白名單卻仍顯示無權限的延遲）
                     const now = Date.now();
                     const reopened = (now - _permSheetLastFrame) > 500;   // 上一幀沒在畫 → 重新開啟
@@ -119,7 +119,7 @@ import { IVH_Z } from './zlayers.js';
                 if (_otherModSubscreenOpen()) return next(args);   // 讓路給別的插件
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
-                if (info && MouseIn(1700, 75, 90, 90)) {
+                if (info && CONFIG.showProfileButton && MouseIn(1700, 75, 90, 90)) {
                     const can = _permFor(C, info);
                     if (can.catalyst || can.status || can.trigger || can.wake || can.response || can.allowed) {
                         try { if (typeof InformationSheetUnload === 'function') InformationSheetUnload(); } catch (e) {}  // 清掉 profile 的 DOM 元素
@@ -160,7 +160,7 @@ import { IVH_Z } from './zlayers.js';
                                     texts:    cc ? (CONFIG.customTexts || [])  : [],
                                     emotes:   cs ? (CONFIG.emoteList || [])    : [],
                                     triggers: ct ? (CONFIG.triggerWords || []) : [],
-                                    wake:     cw ? [CONFIG.wakeWord || '']     : [],
+                                    wake:     cw ? (CONFIG.wakeWords || [])    : [],
                                     response: cr ? (CONFIG.responseList || []) : [],
                                     allowed:  ca ? (CONFIG.allowedPhrases || []) : [],
                                 }] });
@@ -226,7 +226,7 @@ import { IVH_Z } from './zlayers.js';
                             if (Array.isArray(dict.Texts)    && okFor(em.catalyst)) { CONFIG.customTexts    = clean(dict.Texts);    changed = true; }
                             if (Array.isArray(dict.Emotes)   && okFor(em.status))   { CONFIG.emoteList      = clean(dict.Emotes);   changed = true; }
                             if (Array.isArray(dict.Triggers) && okFor(em.trigger))  { CONFIG.triggerWords   = clean(dict.Triggers); changed = true; }
-                            if (Array.isArray(dict.Wake)     && okFor(em.wake))     { CONFIG.wakeWord       = clean(dict.Wake)[0] || ''; changed = true; }
+                            if (Array.isArray(dict.Wake)     && okFor(em.wake))     { CONFIG.wakeWords      = clean(dict.Wake);      changed = true; }
                             if (Array.isArray(dict.Response) && okFor(em.response)) { CONFIG.responseList   = clean(dict.Response); changed = true; }
                             if (Array.isArray(dict.Allowed)  && okFor(em.allowed))  { CONFIG.allowedPhrases = clean(dict.Allowed);  changed = true; }
                             if (changed) {

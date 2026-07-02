@@ -62,10 +62,7 @@ export function maybeInterceptHypnoSpeech() {
     try { if (typeof ChatRoomTargetMemberNumber === 'number' && ChatRoomTargetMemberNumber >= 0) return false; } catch (e) {}
 
     const low = t.toLowerCase();
-    // 清醒詞：自己說出 → 立即清醒，且照常送出（不攔，否則會被困住醒不來）
-    const ww = (CONFIG.wakeWord || '').trim().toLowerCase();
-    if (ww && low.includes(ww)) { wake(); return false; }
-    // 允許說的話：整句剛好符合 → 不陷入思考，照常說出
+    // 允許說的話：整句剛好符合 → 不陷入思考，照常說出（清醒詞自己說無效，故不特別處理）
     const allowed = (CONFIG.allowedPhrases || []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
     if (allowed.includes(low)) return false;
 

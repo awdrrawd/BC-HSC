@@ -337,11 +337,15 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
             if (m) { triggerVoiceEffect(parseVoiceText(m[1])); return; }
         }
 
-        // 清醒詞：房內「任何人」在一般聊天說出清醒詞 → 立即清醒（催眠值 >80% 設為 80%）
-        const ww = (CONFIG.wakeWord || '').trim();
-        if (ww && msgEl.classList?.contains('ChatMessageChat')) {
-            const spokenW = extractChatText(msgEl);
-            if (spokenW && spokenW.toLowerCase().includes(ww.toLowerCase())) wake();
+        // 清醒詞：房內「他人」在一般聊天說出清醒詞 → 你立即清醒（自己說無效）
+        const wws = (CONFIG.wakeWords || []).map(w => String(w).trim().toLowerCase()).filter(Boolean);
+        if (wws.length && msgEl.classList?.contains('ChatMessageChat')) {
+            const sender = getNodeSender(msgEl);
+            const isSelf = sender != null && Player && sender === Player.MemberNumber;
+            if (!isSelf) {
+                const spokenW = (extractChatText(msgEl) || '').toLowerCase();
+                if (spokenW && wws.some(w => spokenW.includes(w))) wake();
+            }
         }
 
         // ② 自訂觸發詞：一般聊天訊息含觸發詞，且發送者通過白名單

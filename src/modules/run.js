@@ -17,7 +17,7 @@ import { effectScale, getArousalLevel, wait } from './util.js';
     //  主效果流程
     // ════════════════════════════════════════
     async function runEffect(voiceText, isTest = false) {
-        if (!CONFIG.enabled) return;
+        if (!CONFIG.enabled || !CONFIG.voiceEnabled) return;
         // 只在 ChatRoom 畫面內作用（避免在其他畫面觸發）
         if (typeof CurrentScreen !== 'undefined' && CurrentScreen !== 'ChatRoom') {
             return;
@@ -34,7 +34,7 @@ import { effectScale, getArousalLevel, wait } from './util.js';
             await wait(280);
         }
 
-        const arousalAdd   = addArousal();
+        const arousalAdd   = addArousal('voice');
         const scale        = effectScale();
         // 彈幕數量與「興奮增量」脫鉤（arousalStep 可到 20，會洗版）→ 上限 5
         const danmakuCount = Math.max(1, Math.round(Math.min(arousalAdd, 5) * Math.min(scale, 1.5)));

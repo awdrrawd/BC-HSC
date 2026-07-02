@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
 import { activateHypnoAtmosphere } from './atmosphere.js';
-import { popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
+import { addArousal, popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS, modApi } from './config.js';
 import { triggerPinkFlash, wrapDanmakuText } from './effects.js';
 import { triggerSteamParticles } from './effects2.js';
@@ -52,7 +52,8 @@ import { IVH_Z } from './zlayers.js';
             if (E.fade)        startChatFade(10000);
             if (E.chatlogBlur) depthChatlogBlur();
             if (E.pant)        triggerSteamParticles(true, true);   // 單一喘氣（人物身上）
-            addHypno('depth');   // 深度催眠值
+            addArousal('depth');   // 日常干擾興奮值
+            addHypno('depth');     // 日常干擾催眠值
         } catch (e) {
             console.warn('🐈‍⬛ [IVH] 深度效果錯誤:', e.message);
         }

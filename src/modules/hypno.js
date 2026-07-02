@@ -9,11 +9,25 @@
 
 import { CONFIG, EXPRESSION_SETS } from './config.js';
 import { pushExprEffect, popExprEffect } from './character-fx.js';
+import { ui } from './i18n.js';
+import { resolveMe } from './util.js';
 
 let _hypno = 0;              // 0~100
 let _forced = false;         // 強控中
 let _forcedExprPushed = false;
 let _decayTimer = null;
+let _idleTimer = null;       // 強控中每 10 分鐘一次的狀態 Action
+
+// 送一條系統 Action（房內可見，$me→名字）
+function _sendAction(text) {
+    try {
+        if (typeof ServerSend !== 'function' || !text) return;
+        ServerSend('ChatRoomChat', {
+            Type: 'Action', Content: 'CUSTOM_SYSTEM_ACTION',
+            Dictionary: [{ Tag: 'MISSING TEXT IN "Interface.csv": CUSTOM_SYSTEM_ACTION', Text: resolveMe(text) }],
+        });
+    } catch (e) {}
+}
 
 export function getHypnoValue() { return _hypno; }
 export function isForced() { return _forced; }
@@ -21,6 +35,7 @@ export function isForced() { return _forced; }
 function _enterForced() {
     if (_forced) return;
     _forced = true;
+    _sendAction(ui('hs_enterForced'));   // 被催眠時
     // 強控視覺：套一組催眠表情並保持到解除
     try {
         if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprPushed) {
@@ -28,10 +43,16 @@ function _enterForced() {
             _forcedExprPushed = true;
         }
     } catch (e) {}
+    // 強控中每 10 分鐘一次狀態 Action
+    if (_idleTimer) clearInterval(_idleTimer);
+    _idleTimer = setInterval(() => { if (_forced) _sendAction(ui('hs_forcedIdle')); }, 600000);
 }
 function _exitForced() {
+    const was = _forced;
     _forced = false;
+    if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
     if (_forcedExprPushed) { try { popExprEffect(); } catch (e) {} _forcedExprPushed = false; }
+    if (was) _sendAction(ui('hs_exitForced'));   // 醒來時
 }
 
 // kind: 'voice' | 'depth'
@@ -39,7 +60,7 @@ export function addHypno(kind) {
     if (!CONFIG.enabled || !CONFIG.hypnoEnabled) return;
     let step = kind === 'voice' ? (CONFIG.hypnoVoiceStep || 0) : (CONFIG.hypnoDepthStep || 0);
     if (step <= 0) return;
-    if (_forced) step = step / 10;   // 強控中增量 1/10，防永不醒來
+    if (_forced) step = step * ((CONFIG.forcedGrowthDiv || 1) / 10);   // 強控中增量 = 原值 × N/10，防永不醒來
     _hypno = Math.min(100, _hypno + step);
     if (_hypno >= 100) _enterForced();
 }
@@ -54,6 +75,6 @@ export function startHypnoDecay() {
     if (_decayTimer) return;
     _decayTimer = setInterval(() => {
         if (_hypno > 0) _hypno = Math.max(0, _hypno - 1);   // 每 12 秒 -1
-        if (_forced && _hypno < 15) _exitForced();           // <15% 解除強控
+        if (_forced && CONFIG.autoWake && _hypno < 15) _exitForced();   // 自動清醒：<15% 解除強控
     }, 12000);
 }

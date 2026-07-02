@@ -130,8 +130,8 @@ import { IVH_Z } from './zlayers.js';
     // ════════════════════════════════════════
     //  9. 興奮度
     // ════════════════════════════════════════
-function addArousal() {
-    const step = CONFIG.arousalStep || 0;
+function addArousal(kind) {
+    const step = (kind === 'depth' ? CONFIG.arousalStepDepth : CONFIG.arousalStepVoice) || 0;
     if (step <= 0) return 1;   // 0 = 停用（仍回傳 1，讓彈幕數量等不歸零）
     try {
         if (!Player.ArousalSettings || Player.ArousalSettings.Active === "Inactive") return 1;
