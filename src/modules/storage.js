@@ -53,10 +53,13 @@ import { resolveWhitelistNumbers } from './panel.js';
             intensity: c.intensity, voiceEnabled: c.voiceEnabled,
             arousalStepVoice: c.arousalStepVoice, arousalStepDepth: c.arousalStepDepth,
             hypnoEnabled: c.hypnoEnabled, hypnoVoiceStep: c.hypnoVoiceStep, hypnoDepthStep: c.hypnoDepthStep,
-            autoWake: c.autoWake, forcedGrowthDiv: c.forcedGrowthDiv, hypnoAnimEnabled: c.hypnoAnimEnabled, hypnoAnimStyle: c.hypnoAnimStyle, hypnoAnimColor: c.hypnoAnimColor, headTalisman: c.headTalisman,
+            autoWake: c.autoWake, hypnoClimax: c.hypnoClimax, forcedGrowthDiv: c.forcedGrowthDiv, hypnoAnimEnabled: c.hypnoAnimEnabled, hypnoAnimStyle: c.hypnoAnimStyle, hypnoAnimColor: c.hypnoAnimColor, headTalisman: c.headTalisman,
             faceCensor: c.faceCensor, nameCensor: c.nameCensor, faceCensorStyle: c.faceCensorStyle, crowd: c.crowd,
+            stateDanmakuChat: c.stateDanmakuChat, stateDanmakuWhisper: c.stateDanmakuWhisper,
+            stateMsgSmoke: c.stateMsgSmoke, stateMsgInterfere: c.stateMsgInterfere,
             centerHeadshot: c.centerHeadshot, emoteEnabled: c.emoteEnabled, dualSound: c.dualSound,
-            whitelist: c.whitelist, triggerWords: c.triggerWords, seeOthersPant: c.seeOthersPant, showProfileButton: c.showProfileButton,
+            whitelist: c.whitelist, triggerWords: c.triggerWords, seeOthersPant: c.seeOthersPant,
+            seeOthersHypno: c.seeOthersHypno, seeOthersTalisman: c.seeOthersTalisman, showProfileButton: c.showProfileButton,
             depthEnabled: c.depthEnabled, depthIntervalMin: c.depthIntervalMin, depthEffects: c.depthEffects,
             editModes: c.editModes, textSource: c.textSource,
             lang: c.lang,
@@ -100,21 +103,40 @@ import { resolveWhitelistNumbers } from './panel.js';
     //   玩家不需手動備份。搬完後舊帳號同步鍵設空字串再同步（BC 的 sync 不接受 undefined），
     //   本地物件則直接刪除。localStorage 音效設定同樣搬移。
     function migrateFromIVH() {
+        // ExtensionSettings：只要舊鍵還在就處理 —— HSC 尚未存在才搬資料，但無論如何都清掉 IVH。
+        //  （BC 無法真正刪除 ExtensionSettings 鍵，設空字串 + sync 即為官方認可的「清除」。）
         try {
             const es = Player && Player.ExtensionSettings;
-            if (es && es.IVH && !es[ES_KEY]) {
-                es[ES_KEY] = es.IVH;                       // 搬到新鍵
-                try { if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync(ES_KEY); } catch (e) {}
-                es.IVH = '';                               // 清空舊鍵資料（不能用 undefined，否則 sync 會丟例外）
+            if (es && ('IVH' in es)) {                     // 只要舊鍵還在（含殘留的空字串）就處理
+                const hasData = es.IVH != null && es.IVH !== '';
+                const migrated = hasData && !es[ES_KEY];
+                if (migrated) {                            // HSC 尚無資料且舊鍵有資料 → 搬過去
+                    es[ES_KEY] = es.IVH;
+                    try { if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync(ES_KEY); } catch (e) {}
+                }
+                es.IVH = '';                               // 先清空舊鍵資料（不能用 undefined，否則 sync 會丟例外）
                 try { if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync('IVH'); } catch (e) {}
-                delete es.IVH;                             // 本地物件清掉
-                console.log('🐈‍⬛ [HSC] 已將舊 IVH 設定遷移到 HSC 並移除舊鍵');
+                delete es.IVH;                             // 本地物件移除該鍵
+                // 送出整包 ExtensionSettings（已不含 IVH）→ 若伺服器端為整包覆寫則可真正刪除該鍵
+                try { if (typeof ServerAccountUpdate?.QueueData === 'function') ServerAccountUpdate.QueueData({ ExtensionSettings: es }, true); } catch (e) {}
+                console.log(`🐈‍⬛ [HSC] 已移除舊 IVH ExtensionSettings 鍵${migrated ? '（並將資料遷移到 HSC）' : ''}`);
             }
         } catch (e) {}
+        // OnlineSharedSettings：清掉舊的對外公告鍵，避免他人仍看到你「裝著 IVH」。
+        try {
+            const oss = Player && Player.OnlineSharedSettings;
+            if (oss && oss.IVH !== undefined) {
+                delete oss.IVH;
+                if (typeof ServerAccountUpdate?.QueueData === 'function') {
+                    ServerAccountUpdate.QueueData({ OnlineSharedSettings: oss }, true);
+                }
+            }
+        } catch (e) {}
+        // localStorage：舊音效設定 —— HSC 還沒有才搬，之後一律移除舊鍵。
         try {
             const oldSnd = localStorage.getItem('IVH_sounds');
-            if (oldSnd && !localStorage.getItem(SND_LS_KEY)) {
-                localStorage.setItem(SND_LS_KEY, oldSnd);
+            if (oldSnd) {
+                if (!localStorage.getItem(SND_LS_KEY)) localStorage.setItem(SND_LS_KEY, oldSnd);
                 localStorage.removeItem('IVH_sounds');
             }
         } catch (e) {}
@@ -202,8 +224,11 @@ import { resolveWhitelistNumbers } from './panel.js';
             const anyEditable = cats.some(k => on(em[k]));
             // 有任何「白名單」類別時，公告展開後的白名單成員編號，讓對方能自行判斷是否可編輯（→ 不可編輯時禁用）
             const needWl = cats.some(k => em[k] === 'whitelist');
+            // 保留目前的催眠進度公告（本函式會整包覆寫 HSC，別把 hypno 洗掉；由 publishHypnoState 維護）
+            const prevHypno = Player.OnlineSharedSettings[ES_KEY]?.hypno;
             Player.OnlineSharedSettings[ES_KEY] = {
                 v: MOD_VER,
+                hypno: prevHypno || { v: 0, f: false, c: '#f500b4', s: 1 },
                 edit: anyEditable,                       // profile 按鈕是否亮起
                 editModes: { catalyst: em.catalyst || 'off', status: em.status || 'off', trigger: em.trigger || 'off', wake: em.wake || 'off', response: em.response || 'off', allowed: em.allowed || 'off' },
                 wl: needWl ? Array.from(resolveWhitelistNumbers()) : [],
@@ -216,11 +241,53 @@ import { resolveWhitelistNumbers } from './panel.js';
                 allowed:  on(em.allowed)  ? (CONFIG.allowedPhrases || []) : [],
             };
             if (typeof ServerAccountUpdate?.QueueData === 'function') {
-                ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings });
+                ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings }, true);
             }
         } catch (e) {
             console.warn('🐈‍⬛ [HSC] OnlineSharedSettings 公告失敗:', e.message);
         }
+    }
+
+    // ════════════════════════════════════════
+    //  催眠進度公告（OnlineSharedSettings.HSC.hypno）
+    //  讓房內其他裝了 HSC 的人能在你頭上看到催眠進度球／符咒（參考 LSCG 的狀態同步）。
+    //  節流：強控開/關 立即公告；一般數值變化每 6 秒最多一次（催眠值變化緩慢，不洗版伺服器）。
+    //   payload：{ v: 量化後的催眠值(0~100), f: 是否強控, c: 符咒顏色, s: 符咒樣式 }
+    // ════════════════════════════════════════
+    let _hypnoPubKey = '';
+    let _hypnoPubForced = false;
+    let _hypnoPubAt = 0;
+    let _hypnoPubTimer = null;
+    function _pushHypno(payload, key) {
+        try {
+            if (!Player || !Player.OnlineSharedSettings) return;
+            if (!Player.OnlineSharedSettings[ES_KEY]) Player.OnlineSharedSettings[ES_KEY] = {};
+            Player.OnlineSharedSettings[ES_KEY].hypno = payload;
+            if (typeof ServerAccountUpdate?.QueueData === 'function') {
+                ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings }, true);
+            }
+            _hypnoPubKey = key;
+            _hypnoPubForced = payload.f;
+            _hypnoPubAt = Date.now();
+        } catch (e) {}
+    }
+    function publishHypnoState(v, forced, color, style, immediate = false) {
+        try {
+            const val = Math.max(0, Math.min(100, Math.round(v || 0)));
+            const bucket = Math.round(val / 5) * 5;          // 量化到 5%，減少公告次數
+            const payload = { v: bucket, f: !!forced, c: color || '#f500b4', s: style || 1 };
+            const key = `${payload.v}|${payload.f}|${payload.c}|${payload.s}`;
+            const forcedChanged = _hypnoPubForced !== payload.f;
+            if (key === _hypnoPubKey && !immediate) return;   // 沒有實質變化
+            if (_hypnoPubTimer) { clearTimeout(_hypnoPubTimer); _hypnoPubTimer = null; }
+            const gap = Date.now() - _hypnoPubAt;
+            if (immediate || forcedChanged || gap >= 6000) {
+                _pushHypno(payload, key);
+            } else {
+                // 節流中：排一次尾端公告，確保最終狀態一定送出
+                _hypnoPubTimer = setTimeout(() => { _hypnoPubTimer = null; _pushHypno(payload, key); }, 6000 - gap);
+            }
+        } catch (e) {}
     }
 
     // ── IndexedDB（本機上傳音效 / 大量文本）──
@@ -326,6 +393,7 @@ export {
     loadSettings,
     saveSettings,
     publishSharedSettings,
+    publishHypnoState,
     HSCDB,
     exportSettings,
     importSettings,

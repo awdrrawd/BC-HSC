@@ -1,10 +1,10 @@
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
-import { MOD_VER, modApi, setModApi } from './config.js';
+import { ES_KEY, MOD_VER, modApi, setModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from './depth.js';
 import { hookAtmosphere, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
 import { hookHypnoSpeech } from './hypno-speech.js';
-import { startHypnoDecay } from './hypno.js';
+import { startHypnoDecay, restoreHypnoState } from './hypno.js';
 import { ensureI18n, ui } from './i18n.js';
 import { hookCensor } from './censor.js';
 import { hookL10n } from './l10n.js';
@@ -125,6 +125,9 @@ import { clearBCXCache } from './util.js';
         // 先載入 i18n（讓預設文本等依語言產生），再等 ExtensionSettings
         await ensureI18n();
         await waitForExtensionSettings();
+        // ★ 先把伺服器公告的上次催眠狀態存起來（要在 publishSharedSettings 覆寫前先讀）
+        let _savedHypno = null;
+        try { _savedHypno = Player?.OnlineSharedSettings?.[ES_KEY]?.hypno || null; } catch (e) {}
         // 還原設定 + 開啟本地 DB + 對外公告
         loadSettings();
         await HSCDB.open();
@@ -132,6 +135,22 @@ import { clearBCXCache } from './util.js';
         registerPreferenceScreen();
         applyDepthLoop();
         startHypnoDecay();     // 催眠值每 12 秒 -1
+        // 登入還原：依上次公告的催眠進度，還原自己的狀態（與他人一致；不重播儀式、不再發旁白）
+        try {
+            const hs = _savedHypno;
+            console.log('🐈‍⬛ [HSC] 登入還原催眠狀態:', hs);
+            if (hs && ((hs.v || 0) > 0 || hs.f)) restoreHypnoState(hs.v, hs.f);
+        } catch (e) {}
+        // 資料保險：頁面關閉/重整前，強制送出 BC 帳號更新佇列。
+        //  BC 的 ServerAccountUpdate 對 OnlineSharedSettings 等是 debounce ~2 秒且「沒有 unload flush」，
+        //  關頁/重連若落在這 2 秒內，剛改的資料就永遠不會送出 → 看起來像被清空。這裡補上 flush。
+        try {
+            if (typeof window !== 'undefined' && !window._hscUnloadFlush) {
+                window._hscUnloadFlush = () => { try { if (typeof ServerAccountUpdate?.SyncToServer === 'function') ServerAccountUpdate.SyncToServer(); } catch (e) {} };
+                window.addEventListener('pagehide', window._hscUnloadFlush);
+                window.addEventListener('beforeunload', window._hscUnloadFlush);
+            }
+        } catch (e) {}
 
         if (sdkReady) {
             try {

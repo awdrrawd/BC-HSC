@@ -114,6 +114,22 @@ import { HSC_Z } from './zlayers.js';
         });
     }
 
+    // 共用：把文字逐字建成「波浪」span（主台詞與日常耳邊句子共用同一套處理）。
+    //  換行（wrapDanmakuText 產生的 \n）以 <br> 呈現；每字有波浪動畫與淡入延遲。
+    //  呼叫端把 span 的 opacity 設為 1 即淡入。
+    function fillWaveText(container, text, wrapN = 10, charDelayMs = 80) {
+        const wrapped = wrapDanmakuText(text, wrapN);
+        let i = 0;
+        for (const ch of [...wrapped]) {
+            if (ch === '\n') { container.appendChild(document.createElement('br')); continue; }
+            const span = document.createElement('span');
+            span.textContent = ch;
+            span.style.cssText = `display:inline-block; animation: hscWaveChar 1.8s ease-in-out ${i * charDelayMs}ms infinite; opacity:0; transition: opacity 0.3s ease ${i * 40}ms;`;
+            container.appendChild(span);
+            i++;
+        }
+    }
+
     // 主台詞波浪效果（在角色頭部正上方）
     function _showMainDanmaku(overlay, text, headPos, scale) {
         const fontSize = Math.round(24 * Math.min(scale, 1.5));  // 主台詞比旁白大 +4pt
@@ -134,21 +150,8 @@ import { HSC_Z } from './zlayers.js';
             transform:     'translateX(-50%)',  // 水平置中對齊頭部
         });
 
-        // 主觸發詞超過 10 字元自動換行（10 全形 / 20 半形）
-        const wrappedText = wrapDanmakuText(text, 10);
-        // 逐字建立，每個字有波浪 delay
-        const chars = [...wrappedText];
-        chars.forEach((ch, i) => {
-            const span = document.createElement('span');
-            span.textContent = ch;
-            span.style.cssText = `
-                display:inline-block;
-                animation: hscWaveChar 1.8s ease-in-out ${i * 80}ms infinite;
-                opacity:0;
-                transition: opacity 0.3s ease ${i * 40}ms;
-            `;
-            wrap.appendChild(span);
-        });
+        // 主觸發詞超過 10 字元自動換行（10 全形 / 20 半形）；逐字波浪
+        fillWaveText(wrap, text, 10, 80);
 
         overlay.appendChild(wrap);
 
@@ -193,6 +196,8 @@ import { HSC_Z } from './zlayers.js';
 
     // 噴一口氣：倒三角扇形（由嘴部往上展開），每團一次性 由小變大、由濃變淡，約 0.5 秒
     function _emitBreathPuff(overlay, mouth) {
+        // 只在聊天室內顯示喘氣；離開聊天室（profile／更衣室等）一律不再冒白霧
+        if (typeof CurrentScreen === 'undefined' || CurrentScreen !== 'ChatRoom') return;
         const ss = mouth.ss || 1;
         const n  = 3 + Math.floor(Math.random() * 2);   // 3~4 團組成倒三角扇形
         for (let i = 0; i < n; i++) {
@@ -407,6 +412,7 @@ import { HSC_Z } from './zlayers.js';
 export {
     triggerDanmakuMulti,
     _showMainDanmaku,
+    fillWaveText,
     _breathSizeScale,
     breathIntervalMs,
     getBreathMouths,
