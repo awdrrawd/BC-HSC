@@ -1,7 +1,8 @@
 // ── auto-wired cross-module imports ──
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from './character-fx.js';
-import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, setExpressionSets } from './config.js';
+import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from './depth.js';
+import { assetUrl } from './icons.js';
 import { IVH_LANGS, IVH_LANG_NAMES, ui } from './i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { ivhConfirm } from './profile.js';
@@ -29,19 +30,26 @@ import { IVH_Z } from './zlayers.js';
         });
     }
 
-    // 分頁定義（key 對應繪製函式）
+    // 分頁定義（key 對應繪製函式 _run_<key>）
+    //  self   = 在「個人設定」（偏好頁）出現
+    //  remote = 在「訪問別人」（profile 就地設定頁）出現
+    //  remotePerm(remote) = 訪問模式下，依權限決定此分頁是否顯示（回傳 false 則隱藏）
+    //  之後要擴充別人可遠端設定的項目，只要在此新增分頁並標 remote:true 即可。
     const IVH_TABS = [
-        { key: 'basic',   label: () => ui('tab_basic')   },
-        { key: 'effects', label: () => ui('tab_effects') },
-        { key: 'texts',   label: () => ui('tab_texts')   },
-        { key: 'expr',    label: () => ui('tab_expr')    },
-        { key: 'sounds',  label: () => ui('tab_sounds')  },
-        { key: 'about',   label: () => ui('tab_about')   },
+        { key: 'basic',   label: () => ui('tab_basic'),   self: true,  remote: false },
+        { key: 'voice',   label: () => ui('tab_voice'),   self: true,  remote: false },
+        { key: 'daily',   label: () => ui('tab_daily'),   self: true,  remote: false },
+        { key: 'state',   label: () => ui('tab_state'),   self: true,  remote: false },
+        { key: 'texts',   label: () => ui('tab_texts'),   self: true,  remote: true,
+          remotePerm: r => r && r.cats && r.cats.length > 0 },
+        { key: 'expr',    label: () => ui('tab_expr'),    self: true,  remote: false },
+        { key: 'sounds',  label: () => ui('tab_sounds'),  self: true,  remote: false },
+        { key: 'about',   label: () => ui('tab_about'),   self: true,  remote: false },
     ];
 
-    // 內容框（中間區）與卷軸視窗
-    const FRAME_X = 475, FRAME_Y = 178, FRAME_W = 850, FRAME_H = 732;
-    const CONTENT_X = 500;                 // 內容左緣
+    // 內容框（中間區）與卷軸視窗（往左移 50、加寬 50，把側邊按鈕讓出的空間用上）
+    const FRAME_X = 425, FRAME_Y = 178, FRAME_W = 900, FRAME_H = 732;
+    const CONTENT_X = 450;                 // 內容左緣
     const CONTENT_TOP = 200;               // 內容第一列基準 y
     const FRAME_BOT = FRAME_Y + FRAME_H;   // 視窗底
 
@@ -55,6 +63,32 @@ import { IVH_Z } from './zlayers.js';
         _drag: null,       // 滑桿拖曳中 {x,w,min,max,step,key,save}
         _inputs: {},       // DOM 輸入框 id -> element
         _inputsUsed: null, // 本幀用到的 input id
+
+        // ── 情境：'self'（個人偏好頁）/ 'remote'（就地訪問別人）──
+        ctx: 'self',
+        remote: null,      // remote 模式資料：{ C, name, cats:[{key,dictKey,editable,data:[]}], onSave, dirty }
+
+        // 目前情境下可見的分頁（remote 再過 remotePerm 權限）
+        _tabsFor() {
+            return IVH_TABS.filter(t => t[this.ctx] && (this.ctx !== 'remote' || !t.remotePerm || t.remotePerm(this.remote)));
+        },
+
+        // ── 就地開啟訪問別人的設定頁（由 profile 按鈕呼叫）──
+        openRemote(remoteData) {
+            this.ctx = 'remote';
+            this.remote = remoteData;
+            const tabs = this._tabsFor();
+            this.activeTab = tabs.length ? tabs[0].key : 'texts';
+            this.scroll = 0;
+            this.load();
+        },
+        closeRemote() {
+            this._cleanup();
+            this.ctx = 'self';
+            this.remote = null;
+            this.activeTab = 'basic';
+            this.scroll = 0;
+        },
 
         // ── 生命週期 ──
         load() {
@@ -173,20 +207,27 @@ import { IVH_Z } from './zlayers.js';
             this._mid = [];
             this._inputsUsed = new Set();
 
+            const remote = this.ctx === 'remote';
+            const tabs = this._tabsFor();
             // 標題 + 離開鈕
-            DrawText('Immersive Voice Hypnosis  v' + MOD_VER, 950, 110, 'Black', '');
+            DrawText(remote ? ui('remoteEditTitle', { name: this.remote?.name || '' })
+                            : 'Immersive Voice Hypnosis  v' + MOD_VER,
+                     950, 110, 'Black', '');
             DrawButton(1815, 75, 90, 90, '', 'White', 'Icons/Exit.png', ui('exit'));
 
-            // 左上「IVH 啟用」主開關
-            DrawButton(150, 230, 300, 50,
-                       CONFIG.enabled ? ui('enabledOn') : ui('enabledOff'),
-                       CONFIG.enabled ? '#8E44A1' : 'White', '', '', false);
-            if (MouseIn(150, 230, 300, 50)) this.hoverDesc = ui('enabledDesc');
+            // 左上「IVH 啟用」主開關（僅個人設定）
+            if (!remote) {
+                DrawButton(100, 205, 300, 50,
+                           CONFIG.enabled ? ui('enabledOn') : ui('enabledOff'),
+                           CONFIG.enabled ? '#8E44A1' : 'White', '', '', false);
+                if (MouseIn(100, 205, 300, 50)) this.hoverDesc = ui('enabledDesc');
+            }
 
-            // 左側分頁鈕
-            IVH_TABS.forEach((tab, i) => {
-                const y = 330 + i * 95;
-                DrawButton(150, y, 300, 50, tab.label(),
+            // 左側分頁鈕（依情境過濾；分頁多時自動縮小間距以容納）
+            const TABP = Math.min(80, Math.floor(660 / Math.max(1, tabs.length)));
+            tabs.forEach((tab, i) => {
+                const y = 285 + i * TABP;
+                DrawButton(100, y, 300, 50, tab.label(),
                            this.activeTab === tab.key ? '#8E44A1' : 'White', '', '', false);
             });
 
@@ -245,7 +286,8 @@ import { IVH_Z } from './zlayers.js';
                 Object.assign(el.style, {
                     position: 'fixed', zIndex: IVH_Z.prefInput, pointerEvents: 'none',
                     overflow: 'hidden', borderRadius: '8px',
-                    background: 'rgba(10,0,18,0.6)',
+                    // 用臥室背景當演示底圖（灰暗斜角等暗色效果才看得出來）
+                    background: 'center/cover no-repeat url("Backgrounds/Bedroom.jpg"), #2a1830',
                     display: 'none',
                 });
                 document.body.appendChild(el);
@@ -267,10 +309,58 @@ import { IVH_Z } from './zlayers.js';
             el.style.top    = (r.top  + 560  * sy) + 'px';
             el.style.width  = (510 * sx) + 'px';
             el.style.height = (320 * sy) + 'px';
+            // 效果演示畫玩家頭像：非同步截一次臉（載入後重繪）
+            if (!this._demoFace) {
+                try { captureFaceImage(img => { this._demoFace = img.src; this._demoCur = ''; }, Player && Player.Canvas); } catch (e) {}
+            }
             if (this._demoCur !== kind) { this._demoCur = kind; el.innerHTML = this._demoHTML(kind); }
+        },
+        // 表情演示頭像：套「預設表情三」到克隆體再截臉（不動真實 Player）
+        _ensureExprDemoFace() {
+            if (this._exprDemoFace || this._exprDemoBusy) return;
+            try {
+                const sets = DEFAULT_EXPRESSIONS;
+                if (!Array.isArray(sets) || !sets.length || typeof Player === 'undefined' || !Player.Appearance) return;
+                this._exprDemoBusy = true;
+                const set = sets[Math.min(2, sets.length - 1)];   // 第三個（不足則取最後一個）
+                const map = _expandExpr(set);
+                const clone = Object.assign(Object.create(Object.getPrototypeOf(Player)), Player);
+                clone.MemberNumber = -77778;
+                clone.Appearance = Player.Appearance.map(a => {
+                    const gn = a.Asset.Group.Name;
+                    if (map[gn] === undefined) return a;
+                    const na = Object.assign({}, a); na.Property = Object.assign({}, a.Property); na.Property.Expression = map[gn];
+                    return na;
+                });
+                clone.Canvas = null; clone.CanvasBlink = null; clone.MustDraw = true;
+                CharacterLoadCanvas(clone);
+                const cap = () => captureFaceImage(img => { this._exprDemoFace = img.src; this._demoCur = ''; }, clone.Canvas);
+                cap(); setTimeout(cap, 180); setTimeout(cap, 450);
+            } catch (e) {}
         },
         _demoHTML(kind) {
             const W = (inner) => `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative">${inner}</div>`;
+            // 玩家頭像底圖（載入前退回漸層圓）；overlay 疊在頭像上。頭像放大到 190，塗鴉相對縮小。
+            const SZ = 190;
+            const face = this._demoFace;
+            const HS = (overlay = '', img = face) => W(`<div style="position:relative;width:${SZ}px;height:${SZ}px">
+                ${img
+                    ? `<img src="${img}" style="width:${SZ}px;height:${SZ}px;border-radius:50%;object-fit:cover;box-shadow:0 0 24px #ff66bb88;animation:ivhPinkPulse 2.6s ease-in-out infinite"/>`
+                    : `<div style="width:${SZ}px;height:${SZ}px;border-radius:50%;background:radial-gradient(circle,#3a1040,#1a0028);box-shadow:0 0 24px #ff66bb88"></div>`}
+                ${overlay}</div>`);
+            // 塗鴉 SVG 置中疊在頭像上（比頭像小一圈）
+            const scrib = (inner, spin) => `<svg viewBox="-75 -75 150 150" width="140" height="140" style="position:absolute;left:${(SZ-140)/2}px;top:${(SZ-140)/2}px;animation:ivhSpiralSpin ${spin}s linear infinite">${inner}</svg>`;
+            // 符咒樣式預覽：kind = 'hypnoStyle<N>|<color>'；切第 N 格並用當前顏色 mask 染色（所見即所得）
+            if (typeof kind === 'string' && kind.indexOf('hypnoStyle') === 0) {
+                const st = Math.min(12, Math.max(1, parseInt(kind.slice(10), 10) || 1));
+                const i = st - 1, col = i % 6, row = Math.floor(i / 6);
+                const spr = assetUrl('IVH-Status-Code1.png');
+                const color = CONFIG.hypnoAnimColor || '#f500b4';
+                const pos = `${(col / 5 * 100).toFixed(2)}% ${row * 100}%`;
+                return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">
+                    <div style="width:130px;height:216px;background-color:${color};-webkit-mask-image:url('${spr}');mask-image:url('${spr}');-webkit-mask-size:600% 200%;mask-size:600% 200%;-webkit-mask-position:${pos};mask-position:${pos};-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;filter:drop-shadow(0 0 10px ${color})"></div>
+                </div>`;
+            }
             switch (kind) {
                 case 'hypnoSpiral': {
                     // 真正的阿基米德螺旋線（與實際效果一致）
@@ -282,7 +372,7 @@ import { IVH_Z } from './zlayers.js';
                         const y = (r * Math.sin(a)).toFixed(1);
                         d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
                     }
-                    return W(`<svg viewBox="-100 -100 200 200" width="150" height="150" style="animation:ivhSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
+                    return HS(`<svg viewBox="-100 -100 200 200" width="${SZ}" height="${SZ}" style="position:absolute;left:0;top:0;animation:ivhSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
                         <path d="${d}" fill="none" stroke="#ff88cc" stroke-width="3.5" stroke-linecap="round"/>
                         <circle cx="0" cy="0" r="5" fill="#ffe6f5"/>
                     </svg>`);
@@ -290,19 +380,46 @@ import { IVH_Z } from './zlayers.js';
                 case 'hypnoWaves':
                     return W(['0s','0.6s','1.2s'].map(d=>`<div style="position:absolute;width:24px;height:24px;border:3px solid #ff88cc;border-radius:50%;animation:ivhDemoRing 1.8s ease-out ${d} infinite"></div>`).join(''));
                 case 'pinkFlash':
-                    return W(`<div style="width:200px;height:130px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 30%,rgba(255,60,150,0.1) 100%);animation:ivhPinkPulse 2s ease-in-out infinite"></div>`);
+                    // 覆蓋整個底圖（Bedroom）的粉紅暈染／煙霧
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 25%,rgba(255,60,150,0.15) 100%);animation:ivhPinkPulse 2s ease-in-out infinite"></div>`;
                 case 'vignette':
-                    return W(`<div style="width:230px;height:150px;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:ivhVignette 2.6s ease-in-out infinite"></div>`);
+                    // 覆蓋整個底圖的邊緣暗角
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:ivhVignette 2.6s ease-in-out infinite"></div>`;
                 case 'screenDistort':
-                    return W(`<div style="font-size:54px;animation:ivhDemoDistort 1.8s ease-in-out infinite">🔮</div>`);
+                    // 畫面扭曲：讓 Bedroom 底圖本身被扭曲（疊一張會扭動的同底圖）
+                    return `<div style="position:absolute;inset:0;background:center/cover no-repeat url('Backgrounds/Bedroom.jpg');animation:ivhDemoDistort 1.8s ease-in-out infinite"></div>`;
                 case 'danmaku':
                     return W('催眠中…'.split('').map((c,i)=>`<span style="display:inline-block;font-size:30px;color:#ffd6eb;text-shadow:0 0 10px #ff50a0;animation:ivhWaveChar 1.6s ease-in-out ${i*90}ms infinite">${c}</span>`).join(''));
                 case 'steamParticles':
-                    return W(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;top:58%;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.55),transparent 70%);filter:blur(4px);animation:ivhBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
+                    // 喘氣氣團：X 置中（left50% + margin-left -18，不用 transform 以免被 keyframe 蓋掉）、Y 再往下
+                    return HS(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;margin-left:-18px;top:calc(34% + 60px);width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.6),transparent 70%);filter:blur(4px);animation:ivhBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
+                case 'expression':
+                    // 用「預設表情三」的頭像演示（無 emoji）
+                    this._ensureExprDemoFace();
+                    return HS('', this._exprDemoFace || face);
                 case 'climax':
-                    return W(`<div style="width:210px;height:140px;border-radius:8px;background:white;animation:ivhClimaxFlash 1.3s ease-out infinite"></div>`);
+                    // 覆蓋整個底圖的紅白閃光 + 幾片碎裂示意
+                    return `<div style="position:absolute;inset:0;background:white;animation:ivhClimaxFlash 1.3s ease-out infinite"></div>
+                        <div style="position:absolute;inset:0;pointer-events:none">
+                        ${[[15,20,-25],[60,15,20],[30,55,-15],[70,60,25]].map(([l,t,r])=>`<div style="position:absolute;left:${l}%;top:${t}%;width:26%;height:26%;background:center/cover url('Backgrounds/Bedroom.jpg');clip-path:polygon(0 0,100% 15%,85% 100%,10% 80%);transform:rotate(${r}deg);animation:ivhPinkPulse 1.3s ease-out infinite"></div>`).join('')}
+                        </div>`;
                 case 'centerHeadshot':
-                    return W(`<div style="width:120px;height:120px;border-radius:50%;border:3px solid #ff80cc;background:radial-gradient(circle,#3a1040,#1a0028);box-shadow:0 0 30px #ff66bb88;display:flex;align-items:center;justify-content:center;font-size:48px">🙂</div>`);
+                    return HS('');   // 玩家頭像（呼吸縮放示意）
+                case 'faceCensorCircle':
+                    return HS(scrib(`<g fill="none" stroke="#000" stroke-width="7" stroke-linecap="round">
+                            <ellipse cx="0" cy="0" rx="40" ry="35"/><ellipse cx="7" cy="-4" rx="29" ry="34"/><ellipse cx="-6" cy="5" rx="34" ry="26"/>
+                        </g>`, 3.2));
+                case 'faceCensorLine':
+                    return HS(scrib(`<g fill="none" stroke="#000" stroke-width="8" stroke-linecap="round">
+                            <path d="M-45 -18 L46 14 M-32 40 L26 -45 M-48 22 L44 -30 M-3 -48 L9 48 M-46 -3 L48 6"/>
+                        </g>`, 4));
+                case 'nameCensor':
+                    return HS(`<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:20px;font-weight:700;color:#fff;text-shadow:0 0 4px #000;white-space:nowrap">Nymphaea
+                        <span style="position:absolute;left:-5px;top:-3px;right:-5px;bottom:-3px;background:#000;border-radius:3px;animation:ivhPinkPulse 1.8s ease-in-out infinite"></span></div>`);
+                case 'crowd':
+                    return `<div style="width:100%;height:100%;position:relative;overflow:hidden">
+                        <img src="${assetUrl('IVH-crowd1.png')}" style="position:absolute;left:0;bottom:0;width:100%;max-height:72%;object-fit:cover;object-position:bottom;filter:brightness(0.75) saturate(0.9);animation:ivhPinkPulse 3s ease-in-out infinite"/>
+                    </div>`;
                 case 'ghost':
                     return W(`<div style="position:relative;width:180px;height:180px">
                         <div style="position:absolute;left:18px;top:30px;width:90px;height:140px;border-radius:40px 40px 0 0;background:rgba(8,2,14,0.85);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
@@ -312,9 +429,8 @@ import { IVH_Z } from './zlayers.js';
                     return W(`<div style="position:relative;width:200px;height:150px;border-radius:8px;background:repeating-linear-gradient(45deg,#5a3a6a,#5a3a6a 10px,#42284f 10px,#42284f 20px);filter:blur(5px);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
                         <div style="position:absolute;width:70px;height:110px;border-radius:30px 30px 0 0;background:#caa6e6"></div>`);
                 case 'chatlogBlur':
-                    return W(`<div style="width:200px;animation:ivhPinkPulse 2.4s ease-in-out infinite">
-                        ${[0,1,2,3].map(()=>`<div style="height:12px;margin:8px 0;border-radius:6px;background:#caa6e6;filter:blur(2.5px)"></div>`).join('')}
-                    </div>`);
+                    // 覆蓋整個底圖：把底圖（Bedroom）模糊化
+                    return `<div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(40,25,55,0.15);animation:ivhPinkPulse 2.6s ease-in-out infinite"></div>`;
                 case 'chatFade':
                     return W(`<div style="width:200px">
                         ${[0,1,2].map(i=>`<div style="height:13px;margin:9px 0;border-radius:6px;background:#caa6e6;animation:ivhChatEmerge 2.2s ease-out ${(i*0.55).toFixed(2)}s infinite"></div>`).join('')}
@@ -327,13 +443,20 @@ import { IVH_Z } from './zlayers.js';
         },
 
         click() {
-            if (MouseIn(1815, 75, 90, 90)) { if (typeof PreferenceExit === 'function') PreferenceExit(); return; }
-            if (MouseIn(150, 230, 300, 50)) { CONFIG.enabled = !CONFIG.enabled; saveSettings(); return; }
-            for (let i = 0; i < IVH_TABS.length; i++) {
-                if (MouseIn(150, 330 + i * 95, 300, 50)) {
-                    if (this.activeTab !== IVH_TABS[i].key) {
+            const remote = this.ctx === 'remote';
+            const tabs = this._tabsFor();
+            if (MouseIn(1815, 75, 90, 90)) {
+                if (remote) this.closeRemote();
+                else if (typeof PreferenceExit === 'function') PreferenceExit();
+                return;
+            }
+            if (!remote && MouseIn(100, 205, 300, 50)) { CONFIG.enabled = !CONFIG.enabled; saveSettings(); return; }
+            const TABP = Math.min(80, Math.floor(660 / Math.max(1, tabs.length)));
+            for (let i = 0; i < tabs.length; i++) {
+                if (MouseIn(100, 285 + i * TABP, 300, 50)) {
+                    if (this.activeTab !== tabs[i].key) {
                         if (this.activeTab === 'expr') this._restoreExpr();  // 離開表情分頁還原
-                        this.activeTab = IVH_TABS[i].key; this.scroll = 0; this._rscroll = 0;
+                        this.activeTab = tabs[i].key; this.scroll = 0; this._rscroll = 0;
                     }
                     return;
                 }
@@ -419,6 +542,33 @@ import { IVH_Z } from './zlayers.js';
         toggle(cx, cy, w, h, label, on, desc, onClick, demoKind) {
             this.btn(cx, cy, w, h, label, on ? '#8E44A1' : 'White', desc, onClick, demoKind);
         },
+        // 顏色按鈕：按鈕底色＝目前顏色，點擊開原生色票（DOM input type=color）
+        colorBtn(cx, cy, w, h, color, onPick, desc, demoKind) {
+            const y = this._y(cy);
+            DrawButton(cx, y, w, h, '', color || '#f500b4', '', '', false);
+            this._track(cy + h);
+            if (MouseIn(cx, y, w, h) && MouseY >= FRAME_Y && MouseY <= FRAME_BOT) {
+                if (desc) this.hoverDesc = desc;
+                if (demoKind) this._demoKind = demoKind;
+            }
+            this._mid.push({ x: cx, y, w, h, onClick: () => {
+                // 把原生色票 input 定位到「按鈕的螢幕位置」→ 系統色票會開在按鈕旁，而非左上角
+                const cv = this._cv || document.getElementById('MainCanvas') || document.querySelector('canvas');
+                const r = cv ? cv.getBoundingClientRect() : { left: 0, top: 0, width: 2000, height: 1000 };
+                const sx = r.width / 2000, sy = r.height / 1000;
+                const inp = document.createElement('input');
+                inp.type = 'color'; inp.value = color || '#f500b4';
+                Object.assign(inp.style, {
+                    position: 'fixed', left: `${r.left + cx * sx}px`, top: `${r.top + (cy + h) * sy}px`,
+                    width: `${w * sx}px`, height: '10px', opacity: '0', border: 'none', padding: '0', zIndex: String(IVH_Z.dialog),
+                });
+                document.body.appendChild(inp);
+                inp.oninput = inp.onchange = () => { try { onPick(inp.value); } catch (e) {} };
+                const done = () => setTimeout(() => { try { inp.remove(); } catch (e) {} }, 200);
+                inp.addEventListener('blur', done);
+                inp.click();
+            } });
+        },
         // 滑桿（可拖曳；key 用於儲存）
         slider(cx, cy, w, val, min, max, step, desc, setFn, saveFn) {
             const y = this._y(cy);
@@ -447,7 +597,17 @@ import { IVH_Z } from './zlayers.js';
                     resize: 'none',
                 });
                 if (opts.placeholder) el.placeholder = opts.placeholder;
+                if (opts.readOnly) { el.readOnly = true; el.style.opacity = '0.55'; el.style.cursor = 'not-allowed'; }
                 el.addEventListener('keydown', ev => ev.stopPropagation());
+                // 滑鼠停在輸入框上時，若框本身不需捲動或已到邊界，把滾輪交給設定頁卷軸
+                el.addEventListener('wheel', (ev) => {
+                    const canScroll = el.scrollHeight > el.clientHeight + 1;
+                    const atTop = el.scrollTop <= 0, atBot = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+                    if ((!canScroll || (ev.deltaY < 0 && atTop) || (ev.deltaY > 0 && atBot)) && this._maxScroll > 0) {
+                        ev.preventDefault();
+                        this.scroll = Math.max(0, Math.min(this._maxScroll, this.scroll + (ev.deltaY > 0 ? 60 : -60)));
+                    }
+                }, { passive: false });
                 el.addEventListener('input',  () => { if (opts.onChange) opts.onChange(el.value); });
                 el.addEventListener('change', () => { if (opts.onChange) opts.onChange(el.value); });
                 el.addEventListener('blur',   () => { if (opts.onChange) opts.onChange(el.value); });
@@ -513,142 +673,78 @@ import { IVH_Z } from './zlayers.js';
         },
 
         // 深度效果層定義
-        _depthRows() {
-            return [
-                { tag: '輕', cfg: 'depthLight', items: [['smoke','煙霧'],['pant','喘氣'],['chatDanmaku','彈幕'],['ghost','人影']] },
-                { tag: '中', cfg: 'depthMed',   items: [['figureBlur','人物模糊'],['pant','喘氣'],['sfx','音效'],['fade','訊息浮現']] },
-                { tag: '重', cfg: 'depthHeavy', items: [['chatlogBlur','聊天模糊'],['pant','喘氣']] },
-            ];
-        },
-
         // ════════ 基本設定 ════════
         _run_basic() {
             const prev = MainCanvas.textAlign;
-            // 依標註間距排版：RED=20（群組間）、GREEN=10（次群組）、BLUE=5（同群組相鄰列）
-            //  每列依「上一列控制底部 + 間距 + 本列控制頂端相對基準的位移」推算標題基準 ty
-            const RED = 20, GREEN = 10, BLUE = 5;
-            const TH = 18;       // 標題文字半高（估）
-            const CTRL_X = 700;  // 所有控制欄統一左緣（避免深度區與標籤太擠）
-            let ty, bottom;
+            const CTRL_X = 700;   // 控制欄左緣（比照上一版往右移 50）
+            const ROW = 45;    // 列間距（紅 5px：控制高 40 + 5）
+            const GAP = 10;    // 群組間（藍 10px）
+            const HDR = 33;    // 群組標題 → 首列（紅 5px：標題約 28 + 5）
+            let cy = 214;
+            const toggleRow = (labelKey, descKey, val, onClick) => {
+                this.title(cy, ui(labelKey), ui(descKey));
+                this.toggle(CTRL_X, cy - 20, 116, 40, val ? ui('on') : ui('off'), val, ui(descKey), onClick);
+                cy += ROW;
+            };
 
-            // ── 群組 1：催眠強度（slider 在 ty-17、value/title 約 ±18）──
-            ty = 226;
-            this.title(ty, ui('intensity'), ui('intensityD'));
-            this.slider(700, ty - 17, 380, CONFIG.intensity, 0.1, 3.0, 0.1, ui('intensityD'),
-                v => { CONFIG.intensity = v; }, () => saveSettings());
-            DrawText(CONFIG.intensity.toFixed(1), 1130, this._y(ty), 'Black', '');
-            bottom = ty + TH;
+            // 頁名（第一行，與其他頁一致）
+            this.title(cy, ui('tab_basic'), ''); cy += HDR + 5;
 
-            // ── 群組 2：催眠深度 / 循環時間 / 深度輕中重 ──
-            // 催眠深度（toggle 在 ty-22、h45）：與上方 RED
-            ty = bottom + RED + 22;
-            this.title(ty, ui('depthMax'), ui('depthMaxD'));
-            [[0, ui('depthNone')], [1, ui('depthLight')], [2, ui('depthMed')], [3, ui('depthHeavy')]].forEach(([v, lb], i) => {
-                this.toggle(CTRL_X + i * 95, ty - 22, 90, 45, lb, CONFIG.depthMax === i, null,
-                    () => { CONFIG.depthMax = i; saveSettings(); applyDepthLoop(); });
-            });
-            bottom = ty + 23;
+            // ── 三大系統開關 ──
+            toggleRow('voiceEnabledLabel', 'voiceEnabledD', CONFIG.voiceEnabled, () => { CONFIG.voiceEnabled = !CONFIG.voiceEnabled; saveSettings(); });
+            toggleRow('dailyEnabledLabel', 'dailyEnabledD', CONFIG.depthEnabled, () => { CONFIG.depthEnabled = !CONFIG.depthEnabled; saveSettings(); applyDepthLoop(); });
+            toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); });
+            cy += GAP;
 
-            // 循環時間（input 在 ty-17、h42）：與上方 BLUE
-            ty = bottom + BLUE + 17;
-            this.title(ty, ui('interval'), ui('intervalD'));
-            this.input('ivh-interval', CTRL_X, ty - 17, 110, 42, String(CONFIG.depthIntervalMin),
-                { type: 'number', onChange: val => {
-                    let n = parseInt(val, 10); if (isNaN(n)) n = CONFIG.depthIntervalMin;
-                    CONFIG.depthIntervalMin = Math.max(1, Math.min(99, n));
-                    saveSettings(); applyDepthLoop();
+            // ── 看見他人效果（喘氣 + 編輯他人文本）──
+            this.title(cy, ui('seeOthersEffect'), ''); cy += HDR;
+            toggleRow('fx_pant', 'seeOthersPantD', CONFIG.seeOthersPant, () => { CONFIG.seeOthersPant = !CONFIG.seeOthersPant; saveSettings(); });
+            toggleRow('showProfileBtnLabel', 'showProfileBtnD', CONFIG.showProfileButton, () => { CONFIG.showProfileButton = !CONFIG.showProfileButton; saveSettings(); });
+            cy += GAP;
+
+            // ── 允許編輯對象（白名單 + 6 類權限）──
+            this.title(cy, ui('editPermTitle'), ui('editPermTitleD')); cy += HDR;
+            this.title(cy, ui('whitelist'), ui('whitelistD'));
+            this.input('ivh-whitelist', CTRL_X, cy - 17, 480, 42, (CONFIG.whitelist || []).join(', '),
+                { placeholder: ui('whitelistPh'), onChange: val => {
+                    CONFIG.whitelist = val.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
+                        .map(s => /^\d+$/.test(s) ? Number(s) : s)
+                        .filter(s => typeof s === 'number' || WL_TOKENS.includes(s));
+                    saveSettings(); publishSharedSettings();
                 }});
-            {
-                const _p = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-                DrawTextFit(ui('minutes'), 830, this._y(ty), 150, 'Black', '');
-                MainCanvas.textAlign = _p;
-            }
-            bottom = ty + 25;
-
-            // 深度效果列（toggle 在 cy、h40；列間 BLUE → pitch 45）：與上方 GREEN
-            const fxName = { smoke:'fx_smoke', pant:'fx_pant', chatDanmaku:'fx_danmaku', ghost:'fx_ghost',
-                             figureBlur:'fx_figblur', sfx:'fx_sfx', chatlogBlur:'fx_chatblur', fade:'fx_fade' };
-            const demoMap = { smoke:'pinkFlash', pant:'steamParticles', chatDanmaku:'danmaku',
-                              ghost:'ghost', figureBlur:'figureBlur', chatlogBlur:'chatlogBlur', sfx:'sound', fade:'chatFade' };
-            const rowTags = ['depthRowLight', 'depthRowMed', 'depthRowHeavy'];
-            const FXP = 40 + BLUE;          // 深度效果列 pitch = 45
-            const dy = bottom + GREEN;      // 深度效果列起點
-            this._depthRows().forEach((row, ri) => {
-                const cy = dy + ri * FXP;
-                const prev2 = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-                DrawTextFit(ui(rowTags[ri]), CONTENT_X, this._y(cy + 20), 100, 'Black', '');
-                MainCanvas.textAlign = prev2;
-                this._track(cy + 40);
-                row.items.forEach(([k], ci) => {
-                    this.toggle(CTRL_X + ci * 122, cy, 116, 40, ui(fxName[k]), !!CONFIG[row.cfg][k], ui(fxName[k] + 'D'),
-                        () => { CONFIG[row.cfg][k] = !CONFIG[row.cfg][k]; saveSettings(); }, demoMap[k]);
-                });
-            });
-            bottom = dy + 2 * FXP + 40;     // 深度重底
-
-            // ── 看到他人喘氣（放在深度與允許編輯之間；toggle 在 ty-22、h44；與上方 RED）──
-            ty = bottom + RED + 22;
-            this.title(ty, ui('seeOthersPant'), ui('seeOthersPantD'));
-            // 比照深度重的「喘氣」鈕：X = CTRL_X + 122、大小 116×40
-            this.toggle(CTRL_X + 122, ty - 20, 116, 40, CONFIG.seeOthersPant ? ui('on') : ui('off'),
-                CONFIG.seeOthersPant, ui('seeOthersPantD'),
-                () => { CONFIG.seeOthersPant = !CONFIG.seeOthersPant; saveSettings(); });
-            bottom = ty + 20;
-
-            // ── 群組 3：允許編輯對象（標題列；與上方 RED）──
-            ty = bottom + RED + TH;
-            this.title(ty, ui('editPermTitle'), ui('editPermTitleD'));
-            bottom = ty + TH;
-
-            // 三類權限列（toggle 在 cy、h44；列間 BLUE → pitch 49）：與上方 GREEN
-            const em = CONFIG.editModes || (CONFIG.editModes = { catalyst: 'off', status: 'off', trigger: 'off' });
+            cy += ROW;
+            const em = CONFIG.editModes || (CONFIG.editModes = {});
             const setEdit = (cat, m) => { em[cat] = m; saveSettings(); publishSharedSettings(); };
             const COLS = [['off', ui('editOff')], ['whitelist', ui('whitelist')], ['any', ui('editAny')]];
-            const CP = 44 + BLUE;           // 權限列 pitch = 49
-            const cdy = bottom + GREEN;     // 三類列起點
-            [['catalyst', 'sec_hypnoText'], ['status', 'sec_statusMsg'], ['trigger', 'sec_triggerWords']].forEach(([cat, lbKey], ri) => {
-                const cy = cdy + ri * CP;
+            [['catalyst', 'sec_hypnoText'], ['status', 'sec_statusMsg'], ['trigger', 'sec_triggerWords'], ['wake', 'sec_wakeWord'], ['response', 'sec_hypnoResponse'], ['allowed', 'allowedPhrasesLabel']].forEach(([cat, lbKey]) => {
                 const p2 = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
                 DrawTextFit(ui(lbKey), CONTENT_X, this._y(cy + 30), 150, 'Black', '');
                 MainCanvas.textAlign = p2;
                 this._track(cy + 44);
-                COLS.forEach(([m, lb], ci) => {
-                    this.toggle(CTRL_X + ci * 124, cy, 118, 44, lb, (em[cat] || 'off') === m, null,
-                        () => setEdit(cat, m));
-                });
+                COLS.forEach(([m, lb], ci) => this.toggle(CTRL_X + ci * 124, cy, 118, 44, lb, (em[cat] || 'off') === m, null, () => setEdit(cat, m)));
+                cy += 49;
             });
-            bottom = cdy + 2 * CP + 44;     // 觸發詞列底
+            cy += GAP;
 
-            // 白名單（input 在 ty-17、h42；與上方 RED）
-            ty = bottom + RED + 17;
-            this.title(ty, ui('whitelist'), ui('whitelistD'));
-            this.input('ivh-whitelist', CTRL_X, ty - 17, 480, 42, (CONFIG.whitelist || []).join(', '),
-                { placeholder: ui('whitelistPh'), onChange: val => {
-                    // 保留 $owner / $lover / $friend / $white 代號，其餘取數字
-                    CONFIG.whitelist = val.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
-                        .map(s => /^\d+$/.test(s) ? Number(s) : s)
-                        .filter(s => typeof s === 'number' || WL_TOKENS.includes(s));
-                    saveSettings();
-                    publishSharedSettings();   // 名單改動要即時重新公告，否則對方拿到的是舊白名單
-                }});
-            bottom = ty + 25;
-
-            // ── 群組 4：語言（select 在 ty-17、h44；與上方 RED）──
-            ty = bottom + RED + 17;
-            this.title(ty, ui('language'), ui('languageD'));
-            this.select('ivh-lang', CTRL_X, ty - 17, 240, 44, CONFIG.lang || 'auto',
+            // ── 語言 ──
+            this.title(cy, ui('language'), ui('languageD'));
+            this.select('ivh-lang', CTRL_X, cy - 17, 240, 44, CONFIG.lang || 'auto',
                 IVH_LANGS.map(l => [l, IVH_LANG_NAMES[l] || l]),
                 v => { CONFIG.lang = v; saveSettings(); });
-            bottom = ty + 27;
+            cy += ROW + GAP;
 
-            // ── 群組 5：匯出 / 匯入（button 在 ty、h45；置中；與上方 GREEN）──
-            ty = bottom + GREEN;
-            const BW = 230, BGAP = 20;
-            const expX = Math.round(900 - (BW * 2 + BGAP) / 2);  // 內容框中心 900 → 置中
-            const impX = expX + BW + BGAP;
-            this.btn(expX, ty, BW, 45, ui('export'), 'White', ui('exportD'), () => exportSettings());
-            this.btn(impX, ty, BW, 45, ui('import'), 'White', ui('importD'), () => importSettings());
-            this._track(ty + 45 + 10);
+            // ── 導出 / 導入 / 恢復預設 ──
+            const BW = 200, BGAP = 16;
+            const cX = (FRAME_X + FRAME_W / 2);
+            const expX = Math.round(cX - (BW * 3 + BGAP * 2) / 2);
+            this.btn(expX, cy, BW, 45, ui('export'), 'White', ui('exportD'), () => exportSettings());
+            this.btn(expX + (BW + BGAP), cy, BW, 45, ui('import'), 'White', ui('importD'), () => importSettings());
+            this.btn(expX + (BW + BGAP) * 2, cy, BW, 45, ui('resetAll'), 'White', ui('resetAllD'),
+                () => ivhConfirm(ui('confirmResetAll'), () => {
+                    setConfig(makeDefaultConfig()); setExpressionSets(CONFIG.expressionSets);
+                    saveSettings(true); publishSharedSettings(); applyDepthLoop();
+                }));
+            this._track(cy + 55);
 
             MainCanvas.textAlign = prev;
         },
@@ -673,63 +769,215 @@ import { IVH_Z } from './zlayers.js';
                 ['emoteEnabled',   '📢', 'ev_emote'],
             ];
         },
-        _run_effects() {
-            this._defaultDesc = ui('effectsHint');   // 常駐說明
-            this.title(232, ui('tab_effects'), ui('effectsHint'));
+        // 標題 + 整數滑桿 + 右側數值
+        _sliderVal(cy, labelKey, descKey, get, set, min, max, step) {
+            this.title(cy, ui(labelKey), ui(descKey));
+            this.slider(650, cy - 17, 380, get(), min, max, step, ui(descKey), v => set(v), () => saveSettings());
+            const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
+            DrawText(String(get()), 1080, this._y(cy), 'Black', '');
+            MainCanvas.textAlign = p;
+        },
+        // ════════ 語言催眠設定（頁名 + 催眠強度 + 效果 + 興奮/催眠值）════════
+        _run_voice() {
+            this._defaultDesc = ui('effectsHint');
+            let cy = 226;
+            this.title(cy, ui('tab_voice'), ''); cy += 44;
+            // 催眠強度
+            this.title(cy, ui('intensity'), ui('intensityD'));
+            this.slider(650, cy - 17, 380, CONFIG.intensity, 0.1, 3.0, 0.1, ui('intensityD'), v => { CONFIG.intensity = v; }, () => saveSettings());
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText(CONFIG.intensity.toFixed(1), 1080, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
+            cy += 52;
+            // 興奮值 / 催眠值（在效果設定上方；標籤不加後綴，已分類到本子頁）
+            this._sliderVal(cy, 'arousalStepLabel', 'arousalVoiceD', () => CONFIG.arousalStepVoice, v => { CONFIG.arousalStepVoice = Math.round(v); }, 0, 20, 1); cy += 48;
+            this._sliderVal(cy, 'hypnoLabel', 'hypnoVoiceD2', () => CONFIG.hypnoVoiceStep, v => { CONFIG.hypnoVoiceStep = Math.round(v); }, 0, 20, 1); cy += 54;
+            // 效果設定
+            this.title(cy, ui('sec_effects'), ui('effectsHint')); cy += 40;
             const list = this._effectToggles();
             list.forEach(([key, emoji, nameKey], i) => {
                 const col = i % 2, row = (i - col) / 2;
-                const cx  = 500 + col * 410;
-                const cy  = 285 + row * 54;
-                this.toggle(cx, cy, 390, 44, emoji + ' ' + ui(nameKey), !!CONFIG[key], ui(nameKey + 'D'),
+                const cx = 450 + col * 410, yy = cy + row * 54;
+                this.toggle(cx, yy, 390, 44, emoji + ' ' + ui(nameKey), !!CONFIG[key], ui(nameKey + 'D'),
                     () => { CONFIG[key] = !CONFIG[key]; saveSettings(); }, key);
             });
-            // 高潮觸發模式（特殊：orgasm / always）
-            const cyM = 285 + Math.ceil(list.length / 2) * 54 + 12;
-            this.title(cyM + 22, ui('climaxMode'), ui('climaxModeD'));
-            this.toggle(700, cyM, 200, 44,
-                CONFIG.climaxMode === 'always' ? ui('climaxEvery') : ui('climaxOrgasm'),
-                CONFIG.climaxMode === 'always', null,
-                () => { CONFIG.climaxMode = CONFIG.climaxMode === 'always' ? 'orgasm' : 'always'; saveSettings(); });
+            cy += Math.ceil(list.length / 2) * 54 + 12;
+            this.title(cy + 22, ui('climaxMode'), ui('climaxModeD'));
+            this.toggle(650, cy, 200, 44, CONFIG.climaxMode === 'always' ? ui('climaxEvery') : ui('climaxOrgasm'),
+                CONFIG.climaxMode === 'always', null, () => { CONFIG.climaxMode = CONFIG.climaxMode === 'always' ? 'orgasm' : 'always'; saveSettings(); });
+            this._track(cy + 64);
+        },
+        // ════════ 日常干擾設定（頁名 + 循環時間 + 效果 + 興奮/催眠值）════════
+        _run_daily() {
+            this._defaultDesc = ui('depthEffectsHint');
+            let cy = 226;
+            this.title(cy, ui('tab_daily'), ''); cy += 44;
+            this.title(cy, ui('interval'), ui('intervalD'));
+            this.input('ivh-interval', 650, cy - 17, 110, 42, String(CONFIG.depthIntervalMin),
+                { type: 'number', onChange: val => { let n = parseInt(val, 10); if (isNaN(n)) n = CONFIG.depthIntervalMin; CONFIG.depthIntervalMin = Math.max(1, Math.min(99, n)); saveSettings(); applyDepthLoop(); } });
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawTextFit(ui('minutes'), 780, this._y(cy), 150, 'Black', ''); MainCanvas.textAlign = p; }
+            cy += 52;
+            // 興奮值 / 催眠值（在效果設定上方；標籤不加後綴）
+            this._sliderVal(cy, 'arousalStepLabel', 'arousalDailyD', () => CONFIG.arousalStepDepth, v => { CONFIG.arousalStepDepth = Math.round(v); }, 0, 20, 1); cy += 48;
+            this._sliderVal(cy, 'hypnoLabel', 'hypnoDailyD', () => CONFIG.hypnoDepthStep, v => { CONFIG.hypnoDepthStep = Math.round(v); }, 0, 20, 1); cy += 54;
+            // 效果設定
+            this.title(cy, ui('sec_effects'), ui('depthEffectsHint')); cy += 40;
+            const fxName = { smoke:'fx_smoke', pant:'fx_pant', chatDanmaku:'fx_danmaku', ghost:'fx_ghost', figureBlur:'fx_figblur', sfx:'fx_sfx', chatlogBlur:'fx_chatblur', fade:'fx_fade' };
+            const demoMap = { smoke:'pinkFlash', pant:'steamParticles', chatDanmaku:'danmaku', ghost:'ghost', figureBlur:'figureBlur', chatlogBlur:'chatlogBlur', sfx:'sound', fade:'chatFade' };
+            const dKeys = ['smoke','chatDanmaku','ghost','figureBlur','sfx','fade','chatlogBlur','pant'];
+            const DE = CONFIG.depthEffects || (CONFIG.depthEffects = {});
+            const baseY = cy;
+            dKeys.forEach((k, i) => {
+                const cx = 470 + (i % 3) * 250, yy = baseY + Math.floor(i / 3) * 52;
+                this.toggle(cx, yy, 230, 44, ui(fxName[k]), !!DE[k], ui(fxName[k] + 'D'),
+                    () => { DE[k] = !DE[k]; saveSettings(); }, demoMap[k]);
+            });
+            this._track(baseY + Math.ceil(dKeys.length / 3) * 52 + 12);
+        },
+        // ════════ 催眠狀態設定（頁名 + 自動清醒/成長 + 效果設定）════════
+        _run_state() {
+            let cy = 226;
+            const CX = 750;            // 控制欄 X
+            const BW = 116;            // 按鈕寬度（與其他分頁一致）
+            this.title(cy, ui('tab_state'), ''); cy += 44;
+            this.title(cy, ui('autoWakeLabel'), ui('autoWakeD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.autoWake ? ui('on') : ui('off'), CONFIG.autoWake, ui('autoWakeD'),
+                () => { CONFIG.autoWake = !CONFIG.autoWake; saveSettings(); });
+            cy += 58;
+            this.title(cy, ui('forcedGrowthLabel'), ui('forcedGrowthD'));
+            this.slider(CX, cy - 17, 300, CONFIG.forcedGrowthDiv, 1, 10, 1, ui('forcedGrowthD'),
+                v => { CONFIG.forcedGrowthDiv = Math.round(v); }, () => saveSettings());
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText((CONFIG.forcedGrowthDiv || 1) + '/10', CX + 312, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
+            cy += 58 + 12;
+            // 效果設定
+            this.title(cy, ui('sec_effects'), ''); cy += 40;
+            // 催眠動畫：開/關 ＋（開啟時）樣式按鈕 ＋ 顏色按鈕，同一行
+            this.title(cy, ui('hypnoAnimLabel'), ui('hypnoAnimD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
+                () => { CONFIG.hypnoAnimEnabled = !CONFIG.hypnoAnimEnabled; saveSettings(); });
+            if (CONFIG.hypnoAnimEnabled) {
+                const st = Math.min(12, Math.max(1, CONFIG.hypnoAnimStyle || 1));
+                const dk = 'hypnoStyle' + st + '|' + (CONFIG.hypnoAnimColor || '');   // 顏色也納入 → 改色即時重繪預覽
+                // 往右鋪開，別擠在一起（右側空間充足）：◀ 樣式N ▶ ...... 顏色
+                const bx = CX + BW + 40;
+                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st <= 1 ? 12 : st - 1; saveSettings(); }, dk);
+                this.btn(bx + 52, cy - 20, 110, 40, ui('hypnoStyleName', { n: st }), '#8E44A1', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                // 顏色：色塊按鈕，點擊開色票（色票定位到按鈕旁）
+                this.colorBtn(bx + 240, cy - 20, 64, 40, CONFIG.hypnoAnimColor,
+                    (col) => { CONFIG.hypnoAnimColor = col; saveSettings(); }, ui('hypnoStyleD'), dk);
+            }
+            cy += 52;
+            // 頭上貼符咒（需開催眠動畫）
+            if (CONFIG.hypnoAnimEnabled) {
+                this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
+                this.toggle(CX, cy - 20, BW, 40, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
+                    () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); });
+                cy += 52;
+            }
+            // 面部識別障礙：開/關 ＋（開啟時）◀ 圓圈/線條 ▶（同催眠動畫樣式選擇器）
+            this.title(cy, ui('fx_faceCensor'), ui('fx_faceCensorD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.faceCensor ? ui('on') : ui('off'), CONFIG.faceCensor, ui('fx_faceCensorD'),
+                () => { CONFIG.faceCensor = !CONFIG.faceCensor; saveSettings(); });
+            if (CONFIG.faceCensor) {
+                const isLine = CONFIG.faceCensorStyle === 'line';
+                const styleName = isLine ? ui('censorStyleLine') : ui('censorStyleCircle');
+                const fdk = isLine ? 'faceCensorLine' : 'faceCensorCircle';
+                const swap = () => { CONFIG.faceCensorStyle = isLine ? 'circle' : 'line'; saveSettings(); };
+                const bx = CX + BW + 40;
+                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 52, cy - 20, 110, 40, styleName, '#8E44A1', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('fx_faceCensorD'), swap, fdk);
+            }
+            cy += 52;
+            // 名稱識別障礙（演示）
+            this.title(cy, ui('fx_nameCensor'), ui('fx_nameCensorD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.nameCensor ? ui('on') : ui('off'), CONFIG.nameCensor, ui('fx_nameCensorD'),
+                () => { CONFIG.nameCensor = !CONFIG.nameCensor; saveSettings(); }, 'nameCensor');
+            cy += 52;
+            // 顯示人群（演示）
+            this.title(cy, ui('fx_crowd'), ui('fx_crowdD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.crowd ? ui('on') : ui('off'), CONFIG.crowd, ui('fx_crowdD'),
+                () => { CONFIG.crowd = !CONFIG.crowd; saveSettings(); }, 'crowd');
+            this._track(cy + 50);
         },
 
         // ════════ 文本設定 ════════
         _run_texts() {
+            if (this.ctx === 'remote') return this._run_texts_remote();
             this._defaultDesc = ui('textsHint');   // 常駐說明
-            this.title(228, ui('tab_texts'), ui('textsHint'));
+            // 逐段往下排（title 佔 28、段間留 GAP），避免固定座標互相遮住
+            const GAP = 30;
+            let cy = 228;
+            this.title(cy, ui('tab_texts'), ui('textsHint'));
+            // 還原預設：與標題同一行、右對齊；在內容框內（會隨捲動離開）
+            this.btn(1050, cy - 19, 200, 46, ui('restoreDefault'), 'White', ui('textsResetD'), () => this._resetTexts());
+            cy += 42;
 
-            this.title(286, ui('sec_hypnoText'), ui('hypnoTextD'));
-            this.input('ivh-texts', 500, 314, 800, 150, (CONFIG.customTexts || []).join('\n'),
-                { multiline: true, placeholder: ui('hypnoTextPh'), onChange: val => {
-                    CONFIG.customTexts = val.split('\n').map(s => s.trim()).filter(Boolean);
-                    saveSettings();
-                }});
+            const seg = (labelKey, descKey, id, value, h, opts) => {
+                this.title(cy, ui(labelKey), ui(descKey));
+                this.input(id, 450, cy + 28, 800, h, value, opts);
+                cy += 28 + h + GAP;
+            };
+            seg('sec_hypnoText', 'hypnoTextD', 'ivh-texts', (CONFIG.customTexts || []).join('\n'), 130,
+                { multiline: true, placeholder: ui('hypnoTextPh'), onChange: val => { CONFIG.customTexts = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
+            seg('sec_statusMsg', 'statusMsgD', 'ivh-emotes', (CONFIG.emoteList || []).join('\n'), 110,
+                { multiline: true, placeholder: ui('statusMsgPh'), onChange: val => { CONFIG.emoteList = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
+            seg('sec_triggerWords', 'triggerWordsD', 'ivh-triggers', (CONFIG.triggerWords || []).join('\n'), 90,
+                { multiline: true, placeholder: ui('triggerWordsPh'), onChange: val => { CONFIG.triggerWords = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
+            // 清醒詞（可多個；房內他人說出→你清醒，自己說無效）
+            seg('sec_wakeWord', 'wakeWordD', 'ivh-wake', (CONFIG.wakeWords || []).join('\n'), 80,
+                { multiline: true, placeholder: ui('wakeWordPh'), onChange: val => { CONFIG.wakeWords = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
+            // 催眠回應（強控中說話有機會被替換成其中一句）
+            seg('sec_hypnoResponse', 'hypnoResponseD', 'ivh-response', (CONFIG.responseList || []).join('\n'), 100,
+                { multiline: true, placeholder: ui('hypnoResponsePh'), onChange: val => { CONFIG.responseList = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
+            // 允許說的話（強控中整句符合就照說、不陷入思考）
+            seg('allowedPhrasesLabel', 'allowedPhrasesD', 'ivh-allowed', (CONFIG.allowedPhrases || []).join('\n'), 100,
+                { multiline: true, placeholder: ui('allowedPhrasesPh'), onChange: val => { CONFIG.allowedPhrases = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
 
-            this.title(496, ui('sec_statusMsg'), ui('statusMsgD'));
-            this.input('ivh-emotes', 500, 524, 800, 120, (CONFIG.emoteList || []).join('\n'),
-                { multiline: true, placeholder: ui('statusMsgPh'), onChange: val => {
-                    CONFIG.emoteList = val.split('\n').map(s => s.trim()).filter(Boolean);
-                    saveSettings();
-                }});
-
-            this.title(676, ui('sec_triggerWords'), ui('triggerWordsD'));
-            this.input('ivh-triggers', 500, 704, 800, 110, (CONFIG.triggerWords || []).join('\n'),
-                { multiline: true, placeholder: ui('triggerWordsPh'), onChange: val => {
-                    CONFIG.triggerWords = val.split('\n').map(s => s.trim()).filter(Boolean);
-                    saveSettings();
-                }});
-            this._track(825);
-
-            // 還原預設（把三類文本重設為「目前語言」的預設；靠右）
-            this.btn(1120, 826, 180, 46, ui('restoreDefault'), '#8C6046', ui('textsResetD'),
-                () => ivhConfirm(ui('confirmTextsReset'), () => {
-                    CONFIG.customTexts  = ui('defaultTexts').split('\n').map(s => s.trim()).filter(Boolean);
-                    CONFIG.emoteList    = ui('defaultEmotes').split('\n').map(s => s.trim()).filter(Boolean);
-                    CONFIG.triggerWords = [];
-                    try { document.activeElement && document.activeElement.blur(); } catch {}
-                    saveSettings(); publishSharedSettings();
-                }));
-            this._track(882);
+            this._track(cy + 20);   // 底部留白
+        },
+        // 文本設定右側：只放說明（還原預設已移到內容區標題列）
+        _right_texts() {
+            const desc = this.hoverDesc || this._defaultDesc;
+            if (desc) DrawTextWrap(desc, 1370, 260, 510, 540, 'Black', undefined, 6);
+        },
+        _resetTexts() {
+            ivhConfirm(ui('confirmTextsReset'), () => {
+                CONFIG.customTexts   = ui('defaultTexts').split('\n').map(s => s.trim()).filter(Boolean);
+                CONFIG.emoteList     = ui('defaultEmotes').split('\n').map(s => s.trim()).filter(Boolean);
+                CONFIG.triggerWords  = [];
+                CONFIG.responseList  = ui('defaultResponses').split('\n').map(s => s.trim()).filter(Boolean);
+                try { document.activeElement && document.activeElement.blur(); } catch {}
+                saveSettings(); publishSharedSettings();
+            });
+        },
+        // ════════ 文本設定（訪問別人：就地編輯，依權限唯讀/可編輯，儲存即送出）════════
+        _run_texts_remote() {
+            const r = this.remote;
+            if (!r) { this.closeRemote(); return; }
+            this._defaultDesc = ui('remoteEditHint');
+            this.title(228, ui('tab_texts'), ui('remoteEditHint'));
+            let cy = 286;
+            r.cats.forEach(c => {
+                this.title(cy, c.label + (c.editable ? '' : ' 🔒'), c.editable ? '' : ui('profileEditNoPerm'));
+                this.input('ivh-rtext-' + c.key, 450, cy + 30, 800, 120, (c.data || []).join('\n'),
+                    { multiline: true, readOnly: !c.editable,
+                      placeholder: c.editable ? ui('hypnoTextPh') : '',
+                      onChange: c.editable
+                          ? (val => { c.data = val.split('\n').map(s => s.trim()).filter(Boolean); r.dirty = true; })
+                          : null });
+                cy += 178;
+            });
+            this._track(cy);
+            // 儲存並送出（僅在有可編輯分類時顯示）
+            if (r.cats.some(c => c.editable)) {
+                this.btn(450, cy + 6, 320, 50, ui('remoteEditSave'), '#21872F', '',
+                    () => {
+                        try { document.activeElement && document.activeElement.blur(); } catch {}
+                        try { r.onSave && r.onSave(r.cats); } catch (e) {}
+                        this.closeRemote();
+                    });
+                this._track(cy + 60);
+            }
         },
         // ════════ 表情設定（最多 10 組）════════
         //  右側為一個「工作中表情」編輯區；點名稱→載入右側；點某列「保存」→把右側內容存到那一組
@@ -743,6 +991,12 @@ import { IVH_Z } from './zlayers.js';
             if (!this._exprWork) this._exprWork = this._exprWorkFrom(sets[0]);
 
             this.title(228, ui('tab_expr'), '');
+            // 還原預設：與標題同一行、右對齊（跟文本設定一致）
+            this.btn(1050, 209, 200, 46, ui('restoreDefault'), 'White', null,
+                () => ivhConfirm(ui('confirmReset'), () => {
+                    CONFIG.expressionSets = DEFAULT_EXPRESSIONS.map(e => ({ ...e }));
+                    setExpressionSets(CONFIG.expressionSets); saveSettings();
+                }));
 
             // 統一欄位：名稱列填滿左側，保存／刪除靠右對齊（右緣 1300）
             const E_R = 1300, E_BW = 132, E_GAP = 8;
@@ -768,26 +1022,9 @@ import { IVH_Z } from './zlayers.js';
             });
 
             const cyB = 300 + sets.length * 52 + 14;
-            if (sets.length < 10) {
-                this.btn(CONTENT_X, cyB, 300, 46, ui('expr_add'), '#8E44A1', null, () => {
-                        const w = this._exprWork;
-                        sets.push({ Eyebrows: w.Eyebrows, Eyes: w.Eyes, Mouth: w.Mouth, Blush: w.Blush });
-                        saveSettings(); setExpressionSets(CONFIG.expressionSets);
-                    });
-            }
-            // 還原預設靠右對齊（與保存／刪除欄同一右緣）
-            this.btn(E_R - 180, cyB, 180, 46, ui('restoreDefault'), '#8C6046', null,
-                () => ivhConfirm(ui('confirmReset'), () => {
-                    CONFIG.expressionSets = DEFAULT_EXPRESSIONS.map(e => ({ ...e }));
-                    setExpressionSets(CONFIG.expressionSets); saveSettings();
-                }));
-            // 說明文字（放最底；表情數 ≥8 時隱藏，避免太擠；過長自動換行）
-            if (sets.length < 8) {
-                DrawTextWrap(ui('expr_hint'), CONTENT_X, this._y(cyB + 60), 820, 60, 'Black', undefined, 4);
-                this._track(cyB + 110);
-            } else {
-                this._track(cyB + 60);
-            }
+            // 「新增」已移到右側編輯區（頭像右側）；此處只放說明
+            DrawTextWrap(ui('expr_hint'), CONTENT_X, this._y(cyB + 10), 820, 60, 'Black', undefined, 4);
+            this._track(cyB + 70);
         },
 
         // 右側：工作中表情編輯（四部位 ◀值▶、即時臉部預覽）
@@ -819,6 +1056,14 @@ import { IVH_Z } from './zlayers.js';
             } else {
                 DrawText(ui('previewLoading'), bx + bs / 2, by + bs / 2, '#555', '');
             }
+            // 新增表情：右下角（用目前工作中表情新增，最多 10 組）
+            const sets = CONFIG.expressionSets || [];
+            if (sets.length < 10)
+                this.rbtn(1790, 840, 105, 45, ui('expr_new'), '#8E44A1', null, () => {
+                    const w = this._exprWork;
+                    sets.push({ Eyebrows: w.Eyebrows, Eyes: w.Eyes, Mouth: w.Mouth, Blush: w.Blush });
+                    saveSettings(); setExpressionSets(CONFIG.expressionSets);
+                });
         },
 
         // 音效分類（順序：催眠 / 催眠2 / 高潮 / 深度）
@@ -830,7 +1075,7 @@ import { IVH_Z } from './zlayers.js';
         _run_sounds() {
             this.title(226, ui('tab_sounds'), ui('soundsHint'));
             const DEFAULTS = SOUND_DEFAULTS;   // 各分類預設音效
-            const LX = 580;        // 欄位左緣
+            const LX = 530;        // 欄位左緣
             // 按鈕靠右對齊（右緣 1300）：其他 / ✕ / ▶ / 上傳，輸入框填滿至按鈕前
             const S_R = 1300;
             const S_OTHER_X = S_R - 70;          // 其他 1230
@@ -841,7 +1086,7 @@ import { IVH_Z } from './zlayers.js';
             let cy = 286;
             this._soundCats().forEach(([cat, lbKey, max], ci) => {
                 const lb = ui(lbKey);
-                if (ci > 0) cy += 10;   // 各大類標題上多 10px 間距
+                if (ci > 0) cy += 40;   // 各大類之間加大間距
                 this.sep(cy, `── ${ui('sndSlotHead', { name: lb, max })} ──`);
                 cy += 26;
                 if (!CONFIG.sounds[cat]) CONFIG.sounds[cat] = [];

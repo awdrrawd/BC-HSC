@@ -4,6 +4,7 @@ import { registerCommandOnce } from './commands.js';
 import { CONFIG, MOD_VER, PREF_ID } from './config.js';
 import { runDepthEffect } from './depth.js';
 import { refreshCanvasCache } from './geometry.js';
+import { enterHypnoNow, wake } from './hypno.js';
 import { parseVoiceText } from './run.js';
 import { preloadSounds } from './sound.js';
 import { saveSettings } from './storage.js';
@@ -189,13 +190,19 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
             triggerVoiceEffect(txt, true);
         });
 
-        // 深度測試（依目前深度上限，至少 1 級）
-        const depthBtn = _mkBtn(T('🌀 深度','🌀 Depth'), '#3a2a6e', '#bb99ff', () => {
+        // 日常干擾測試（依目前深度上限，至少 1 級）
+        const depthBtn = _mkBtn(T('🌀 日常','🌀 Daily'), '#3a2a6e', '#bb99ff', () => {
             refreshCanvasCache();
             runDepthEffect(Math.max(1, CONFIG.depthMax || 1));
         });
 
-        actionRow.append(testInput, testBtn, depthBtn);
+        // 立即陷入催眠（拉滿催眠值 → 進強控；免每次催到 100%）
+        const hypnoBtn = _mkBtn(T('💫 催眠','💫 Hypnotize'), '#7a1f8e', '#ff99ee', () => {
+            refreshCanvasCache();
+            enterHypnoNow();
+        });
+
+        actionRow.append(testInput, testBtn, depthBtn, hypnoBtn);
 
         // ── 內容區 ──
         const collapsible = document.createElement('div');
@@ -334,6 +341,17 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
             msgEl.querySelector?.('.ChatMessageLocalMessage')) {
             const m = text.match(/\[Voice\]\s*(.*)/s);
             if (m) { triggerVoiceEffect(parseVoiceText(m[1])); return; }
+        }
+
+        // 清醒詞：房內「他人」在一般聊天說出清醒詞 → 你立即清醒（自己說無效）
+        const wws = (CONFIG.wakeWords || []).map(w => String(w).trim().toLowerCase()).filter(Boolean);
+        if (wws.length && msgEl.classList?.contains('ChatMessageChat')) {
+            const sender = getNodeSender(msgEl);
+            const isSelf = sender != null && Player && sender === Player.MemberNumber;
+            if (!isSelf) {
+                const spokenW = (extractChatText(msgEl) || '').toLowerCase();
+                if (spokenW && wws.some(w => spokenW.includes(w))) wake();
+            }
         }
 
         // ② 自訂觸發詞：一般聊天訊息含觸發詞，且發送者通過白名單

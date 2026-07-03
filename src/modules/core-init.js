@@ -3,7 +3,14 @@ import { hookChatInput, printChat } from './commands.js';
 import { MOD_VER, modApi, setModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from './depth.js';
 import { hookAtmosphere, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
+import { hookHypnoSpeech } from './hypno-speech.js';
+import { startHypnoDecay } from './hypno.js';
 import { ensureI18n, ui } from './i18n.js';
+import { hookCensor } from './censor.js';
+import { hookL10n } from './l10n.js';
+import { updateCrowd } from './crowd.js';
+import { isForced } from './hypno.js';
+import { stopHypnoAnim, updateHeadTalisman } from './hypno-anim.js';
 import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from './panel.js';
 import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from './profile.js';
 import { IVHDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
@@ -47,6 +54,19 @@ import { clearBCXCache } from './util.js';
     }
 
     let _fallbackInterval = null;
+    let _screenGuard = null;
+
+    // 離開 ChatRoom（切到 profile/偏好/更衣室等任何非聊天室畫面）→ 清掉所有暫態疊加特效。
+    //  例外：人臉／名稱識別障礙是繪圖 hook 自行判斷畫面，不在 overlay 內，不受此清除影響。
+    function clearTransientEffects() {
+        try { updateCrowd(false); } catch (e) {}
+        try { stopHypnoAnim(); } catch (e) {}
+        try { updateHeadTalisman(); } catch (e) {}   // 非 ChatRoom → want=false → 收起
+        const overlay = document.getElementById('ivh-overlay');
+        if (overlay) overlay.innerHTML = '';
+        const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
+        if (canvas) { canvas.style.transform = ''; canvas.style.filter = ''; }
+    }
 
     function waitForChatRoom() {
         if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') {
@@ -63,6 +83,8 @@ import { clearBCXCache } from './util.js';
                     setTimeout(setupDOMObserver, 500);
                     // 進房間時關係已同步 → 重新公告白名單($friend/$white 等才會即時)
                     setTimeout(() => { try { publishSharedSettings(); } catch (e) {} }, 800);
+                    // 若離開時仍在強控 → 回到房間重新顯示人群／頭上符咒（若啟用）
+                    setTimeout(() => { try { if (isForced()) { updateCrowd(true); updateHeadTalisman(); } } catch (e) {} }, 900);
                 }
                 return result;
             });
@@ -109,6 +131,7 @@ import { clearBCXCache } from './util.js';
         publishSharedSettings();
         registerPreferenceScreen();
         applyDepthLoop();
+        startHypnoDecay();     // 催眠值每 12 秒 -1
 
         if (sdkReady) {
             try {
@@ -127,6 +150,8 @@ import { clearBCXCache } from './util.js';
                     modApi.onUnload(() => {
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
+                        if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
+                        try { stopHypnoAnim(); updateHeadTalisman(); } catch (e) {}
                         if (_depthTimer)       { clearInterval(_depthTimer); setDepthTimer(null); }
                         removePanel();
                         const overlay = document.getElementById('ivh-overlay');
@@ -149,7 +174,20 @@ import { clearBCXCache } from './util.js';
         hookProfileButton();
         hookRemoteEdit();
         hookChatInput();       // 只掛 keydown 保底，CommandCombine 在進房間後才註冊
+        hookHypnoSpeech();     // 強控中攔截說話
+        hookL10n();            // 在地化訊息：接收端依自己語言替換夾帶標記的訊息
+        hookCensor();          // 面部/名稱識別障礙（強控中看不清他人臉與名字）
         waitForChatRoom();
+        // 邊緣觸發：只在「離開 ChatRoom 的那一刻」清一次暫態特效，
+        //  絕不在房內輪詢清除（避免誤清正在播放的特效）。
+        if (!_screenGuard) {
+            let _lastScreen = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';
+            _screenGuard = setInterval(() => {
+                const cur = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';
+                if (_lastScreen === 'ChatRoom' && cur !== 'ChatRoom') clearTransientEffects();
+                _lastScreen = cur;
+            }, 400);
+        }
         console.log(`🐈‍⬛ [IVH] ✅ 初始化完成 v${MOD_VER}`);
 
         // 進入房間後顯示載入提示（一次性）

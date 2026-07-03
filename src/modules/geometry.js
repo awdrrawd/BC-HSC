@@ -72,17 +72,21 @@ import { CONFIG } from './config.js';
         x:       0,    // 水平微調（asset 單位）
         yExtra:  0,    // 螢幕 Y 微調（像素）
     };
-    // 人物身上喘氣的 Y 微調（像素，往上 30）。自身與「看到他人喘氣」共用，確保兩端位置一致。
-    const BODY_PANT_DY = -30;
+    // 人物身上喘氣的 Y 微調（像素，往上 70）。自身與「看到他人喘氣」共用，確保兩端位置一致。
+    const BODY_PANT_DY = -70;
     const DEPTH_PANT_EXTRA = 30;   // 深度喘氣再往下 30
 
     // 把角色 asset 座標 (ax, ay) 轉成 BC 畫布座標（預設玩家；可傳入其他角色與其繪製座標）
+    //  身高/姿勢偏移優先用 BC 原生 CharacterAppearance[XY]Offset（含 ForceUpButton 等邊界，
+    //  最聰明也最不會與 BC 脫節）；舊版沒有這兩個函數時才退回本地公式。
     function bodyAssetToBc(ax, ay, C = Player, dp = playerDrawPos) {
         const ratio = (typeof C?.HeightRatio === 'number') ? C.HeightRatio : 1;
         const prop  = (typeof C?.HeightRatioProportion === 'number') ? C.HeightRatioProportion : 1;
         const hMod  = (typeof C?.HeightModifier === 'number') ? C.HeightModifier : 0;
-        const xOff  = 500 * (1 - ratio) / 2;
-        const yOff  = 1000 * (1 - ratio) * prop - hMod * ratio;
+        const xOff  = (typeof CharacterAppearanceXOffset === 'function')
+            ? CharacterAppearanceXOffset(C, ratio) : 500 * (1 - ratio) / 2;
+        const yOff  = (typeof CharacterAppearanceYOffset === 'function')
+            ? CharacterAppearanceYOffset(C, ratio) : 1000 * (1 - ratio) * prop - hMod * ratio;
         const z     = dp.zoom;
         return {
             x: dp.x + z * (xOff + ax * ratio),
@@ -115,8 +119,8 @@ import { CONFIG } from './config.js';
 
     // ignoreHeadshot=true → 強制用「人物身上」座標（給深度喘氣用，不受中央頭像影響）
     function getPlayerHeadScreenPos(ignoreHeadshot) {
-        // 中央頭像模式：螺旋等效果以畫面左半中心 BC(500,500) 為基準
-        if (!ignoreHeadshot && CONFIG.centerHeadshot) return bcToScreen(500, 360);
+        // 中央頭像模式：螺旋等效果以畫面左半中心為基準（對齊中央頭像，Y 往下 50）
+        if (!ignoreHeadshot && CONFIG.centerHeadshot) return bcToScreen(500, 410);
         // 玩家不在目前顯示頁 → 回到畫面正中間
         if (!isPlayerOnCurrentPage()) return bcToScreen(500, 500);
         if (!playerDrawPos.valid || !_cachedRect) {
@@ -131,7 +135,7 @@ import { CONFIG } from './config.js';
 
     // 嘴部螢幕座標（喘氣氣團用）
     function getPlayerMouthScreenPos(ignoreHeadshot) {
-        if (!ignoreHeadshot && CONFIG.centerHeadshot) return bcToScreen(500, 430);
+        if (!ignoreHeadshot && CONFIG.centerHeadshot) return bcToScreen(500, 480);
         if (!isPlayerOnCurrentPage()) return bcToScreen(500, 560);
         if (!playerDrawPos.valid || !_cachedRect) {
             const h = getPlayerHeadScreenPos(ignoreHeadshot);

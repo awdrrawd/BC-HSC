@@ -52,8 +52,8 @@ import { assetUrl } from './icons.js';
     // 取翻譯：優先用 _IVH_strings（支援手動語言覆蓋）；
     //   其次用引擎 t()（舊版線上字庫只 register、未 expose _IVH_strings 時仍可譯，但只跟遊戲語系）；
     //   最後才退中文 IVH_FALLBACK。
-    function ui(key, vars) {
-        const lang = ivhLang();
+    function ui(key, vars, forceLang) {
+        const lang = forceLang || ivhLang();
         let s;
         const store = window.Liko?._IVH_strings;
         const e = store && store[key];
@@ -86,9 +86,41 @@ import { assetUrl } from './icons.js';
         enabledDesc: '開啟後此插件會有更高沉浸性，並包含部分可能令人不適的效果（強閃光、畫面破碎、震動等），請依個人狀況使用。',
         intensity: '催眠強度', depthMax: '催眠深度', depthNone: '無', depthLight: '輕', depthMed: '中', depthHeavy: '重',
         interval: '循環時間', minutes: '分（1~99）', depthEffects: '── 深度效果 ──',
-        intensityD: '整體效果強度（0.1~3.0），同時決定背景深度等級（≈1輕/2中/3重，不超過深度上限）。可拖曳滑桿。',
-        depthMaxD: '背景催眠的最深程度（與 VOICE 觸發分開）。「無」＝關閉背景循環。',
-        intervalD: '每隔幾分鐘自動播放一次背景催眠（1~99）。深度「無」時不循環。',
+        intensityD: '整體效果強度（0.1~3.0）。可拖曳滑桿。',
+        depthMaxD: '不同於催眠強度的語音催眠，這是定時觸發的催眠效果。',
+        intervalD: '每隔幾分鐘自動播放一次背景催眠（1~99）。',
+        depthEffectsHint: '定時觸發時要出現哪些效果，自由勾選。',
+        arousalStepLabel: '興奮值', arousalStepD: '每次觸發催眠增加的興奮值（0~20，0＝停用）。',
+        tab_voice: '語言催眠', tab_daily: '日常干擾', tab_state: '催眠狀態',
+        sec_effects: '效果設定',
+        voiceEnabledLabel: '語言催眠', voiceEnabledD: '通過 BCX 的「聽我聲音」或 IVH 的設置來修改文本、觸發詞與催眠效果，請到語言催眠查閱並設置詳細內容。',
+        dailyEnabledLabel: '日常干擾', dailyEnabledD: '週期性的觸發催眠，沒有任何催眠詞，請到日常干擾查閱並設置詳細內容。',
+        stateEnabledLabel: '催眠狀態', stateEnabledD: '提供 IVH 的催眠異常狀態效果，當達到催眠度 100% 時觸發，請到催眠狀態查閱並設置詳細內容。',
+        arousalVoiceLabel: '興奮值 - 語音催眠', arousalVoiceD: '每次語音催眠增加的興奮值（0~20，0＝停用）。',
+        arousalDailyLabel: '興奮值 - 日常干擾', arousalDailyD: '每次日常干擾增加的興奮值（0~20，0＝停用）。',
+        hypnoVoiceLabel2: '催眠值 - 語音催眠', hypnoVoiceD2: '每次語音催眠增加的催眠值（0~20）。催眠狀態關閉則無效。',
+        hypnoDailyLabel: '催眠值 - 日常干擾', hypnoDailyD: '每次日常干擾增加的催眠值（0~20）。催眠狀態關閉則無效。',
+        seeOthersEffect: '看見他人效果',
+        autoWakeLabel: '自動清醒', autoWakeD: '開啟後催眠值低於 15% 時自動解除強控；關閉則只能靠清醒詞解除。',
+        forcedGrowthLabel: '催眠值', forcedGrowthD: '避免永遠無法清醒：強控中受到催眠時，催眠值成長為原本的 N/10（預設 1/10，例：原 20 → 2）。',
+        showProfileBtnLabel: '編輯他人文本', showProfileBtnD: '控制是否在別人的 profile 顯示 IVH 文本編輯按鈕；關閉則不顯示。',
+        hs_enterForced: '$me 的精神被不斷侵蝕，眼神越來越渙散，最終徹底墜入催眠的泥沼。',
+        hs_forcedIdle: '$me 的雙眼空洞呆滯，偶爾嘴唇會微微顫動，像是想說什麼，卻發不出任何聲音，整個人毫無反應，如同被徹底操控的人偶。',
+        hs_exitForced: '經過一段時間後，侵蝕效果慢慢從 $me 的腦中退去，空洞的雙眼逐漸恢復些許光澤，意識開始緩緩回歸。',
+        l10n_test: '【翻譯測試】{name} 傳來的訊息已被 IVH 依你的語言即時替換顯示 ✅',
+        hypnoAnimLabel: '催眠動畫', hypnoAnimD: '啟用催眠符咒動畫（開發中）。',
+        hypnoStyleLabel: '符咒樣式', hypnoStyleD: '催眠動畫使用的符咒圖樣（共 12 種）；滑鼠停在此處可預覽當前樣式。', hypnoStyleName: '樣式{n}',
+        fx_headTalisman: '頭上貼符咒', fx_headTalismanD: '強控中額頭常駐符咒且持續震動（需開啟催眠動畫）。',
+        fx_faceCensor: '面部識別障礙', fx_faceCensorD: '強控中：看不清「他人」的臉，臉上會蓋一團蠕動的塗鴉。',
+        fx_nameCensor: '名稱識別障礙', fx_nameCensorD: '強控中：看不清「他人」的名字／ID（聊天室名牌與 profile 一併遮蔽）。',
+        censorStyleLabel: '塗鴉樣式', censorStyleD: '面部塗鴉的樣式，二選一。',
+        censorOff: '關', censorStyleCircle: '圓圈', censorStyleLine: '線條',
+        fx_crowd: '顯示人群', fx_crowdD: '強控中：畫面下緣淡入一排圍觀人群，營造被注視／包圍的情境。',
+        resetAll: '恢復預設', resetAllD: '把 IVH 全部設定恢復為預設值。', confirmResetAll: '確定要把 IVH 所有設定恢復為預設值嗎？此動作無法復原。',
+        hypnoLabel: '催眠值', hypnoD: '收到催眠時累積的催眠值（0~100，每 12 秒 -1）。到 100% 進入強控，低於 15% 解除。',
+        hypnoVoiceLabel: '語音催眠值', hypnoVoiceD: '每次語音催眠增加（0~20，0＝停用）。',
+        hypnoDepthLabel: '深度催眠值', hypnoDepthD: '每次深度催眠增加（0~10，0＝停用）。',
+        sec_wakeWord: '清醒詞', wakeWordD: '房內「他人」說出此詞→你立即清醒（催眠值 >80% 設為 80%）；自己說無效。每行一個。', wakeWordPh: '例：wake',
         depthRowLight: '深度輕', depthRowMed: '深度中', depthRowHeavy: '深度重',
         fx_smoke: '煙霧', fx_smokeD: '不定時淡粉煙霧', fx_pant: '喘氣', fx_pantD: '規律喘氣白霧',
         fx_danmaku: '彈幕', fx_danmakuD: '聊天訊息變催眠彈幕', fx_ghost: '人影', fx_ghostD: '背後低語人影＋耳邊文字',
@@ -142,7 +174,7 @@ import { assetUrl } from './icons.js';
         sndCat_hypno: '催眠', sndCat_voice: '催眠2', sndCat_climax: '高潮', sndCat_depth: '深度',
         sndSlotHead: '{name}音效（最多 {max}）', sndDefaultPh: '（預設）{file}',
         sndUnsetPh: '未設定 — 網址／上傳／其他', sndLocalName: '本機音效',
-        expr_edit: '🎭 編輯表情', expr_item: '表情{n}', expr_add: '＋ 用右側內容新增',
+        expr_edit: '🎭 編輯表情', expr_item: '表情{n}', expr_add: '＋ 用右側內容新增', expr_new: '新增',
         expr_hint: '在右側設定好表情後，點某列「保存」或「＋新增」來儲存',
         eyebrows: '眉毛', eyes: '眼睛', mouth: '嘴巴', blush: '臉紅', exprNone: '— 無 —', previewLoading: '預覽載入中…',
         confirmReplace: '會用右側的內容替換「{name}」的資料，確定嗎？', confirmDelete: '確定刪除「{name}」嗎？',
@@ -153,6 +185,15 @@ import { assetUrl } from './icons.js';
         about_report: '🐛 GitHub 回報', about_assets: '── 使用素材皆為免費素材 ──',
         defaultTexts: '放鬆…放鬆…\n你的意識正在沉睡\n聽我的聲音\n什麼都不用想\n越來越深沉\n順從是舒服的\n沉淪下去吧\n好乖…好乖…',
         defaultEmotes: '$me 的思緒變得混亂了\n$me 的兩眼變得空洞…\n$me 的意識正在下沉\n$me 微微晃了一下，失神了\n$me 的表情變得恍惚',
+        defaultResponses: '是的主人\n$me是個乖女孩\n$me會乖乖聽話\n嗯嗯!!阿啊啊~!',
+        sec_hypnoResponse: '催眠回應', hypnoResponseD: '強控（催眠值 100%）時說話有機會被攔截，改說這裡的其中一句。每行一句，$me＝你的名字。', hypnoResponsePh: '例：是的主人',
+        allowedPhrasesLabel: '允許說的話', allowedPhrasesD: '強控中，若你說的整句剛好是這裡的其中一句，就不會陷入思考、照常說出。每行一句。', allowedPhrasesPh: '例：是的主人',
+        hs_thinking: '$me 呆呆地思考了一下…',
+        hs_blank: '$me 只是呆呆地站著，什麼也沒說',
+        hs_pause: '$me 停頓了一下才開口',
+        hs_intercept: '$me 想說些什麼，但意識馬上被干擾了',
+        hs_lewd: '$me 現在滿腦子只想著淫穢的事情',
+        hs_lewdFallback: '$me 開始不自覺地自慰起來…',
     };
 
 export {

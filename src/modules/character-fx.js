@@ -2,7 +2,7 @@
 import { CONFIG } from './config.js';
 import { _emitBreathPuff, breathIntervalMs } from './effects2.js';
 import { BODY_PANT_DY, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, otherCharMouthScreenPos, refreshCanvasCache } from './geometry.js';
-import { getOverlay, randInt } from './util.js';
+import { getOverlay } from './util.js';
 import { IVH_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
@@ -130,24 +130,39 @@ import { IVH_Z } from './zlayers.js';
     // ════════════════════════════════════════
     //  9. 興奮度
     // ════════════════════════════════════════
-function addArousal() {
-    if (!CONFIG.arousal) return 1;
+    // 興奮條震動：用 BC 原生 VibratorLevel（DrawArousalMeter 每幀讀取 → 免 CharacterRefresh）。
+    //  BC 的更新迴圈會把 VibratorLevel 歸零，所以在震動期間每 ~400ms 重設一次維持；
+    //  結束時歸零，交還給 BC 依實際玩具重算。
+    let _vibeUntil = 0, _vibeTimer = null;
+    function triggerArousalMeterVibe(durationMs = 5000, level = 4) {
+        if (typeof Player === 'undefined' || !Player.ArousalSettings) return;
+        _vibeUntil = Date.now() + durationMs;   // 持續震動 5 秒（期間再觸發只延長）
+        const tick = () => {
+            if (typeof Player === 'undefined' || !Player.ArousalSettings) { if (_vibeTimer) { clearInterval(_vibeTimer); _vibeTimer = null; } return; }
+            if (Date.now() >= _vibeUntil) {
+                Player.ArousalSettings.VibratorLevel = 0;
+                if (_vibeTimer) { clearInterval(_vibeTimer); _vibeTimer = null; }
+                return;
+            }
+            // 每 ~50ms 補寫（BC 更新迴圈會歸零 VibratorLevel），並持續刷新 ChangeTime
+            //  → 讓 DrawArousalGlow 的抖動幅度(AnimFactor)維持在最大，看起來是「連續」而非一閃一閃。
+            Player.ArousalSettings.VibratorLevel = level;
+            Player.ArousalSettings.ChangeTime = (typeof CommonTime === 'function') ? CommonTime() : Date.now();
+        };
+        tick();
+        if (!_vibeTimer) _vibeTimer = setInterval(tick, 50);
+    }
+
+function addArousal(kind) {
+    const step = (kind === 'depth' ? CONFIG.arousalStepDepth : CONFIG.arousalStepVoice) || 0;
+    if (step <= 0) return 1;   // 0 = 停用（仍回傳 1，讓彈幕數量等不歸零）
     try {
         if (!Player.ArousalSettings || Player.ArousalSettings.Active === "Inactive") return 1;
-
         const current = Player.ArousalSettings.Progress ?? 0;
-
-        let add = randInt(1, 5);
-
-        // 越接近滿值增加越慢（更自然）
-        if (current > 80) add = randInt(1, 3);
-        if (current > 92) add = randInt(1, 2);
-
-        const newVal = Math.min(current + add, 100);
-
+        const newVal = Math.min(current + step, 100);
         ActivitySetArousal(Player, newVal);
-
-        return add;
+        if (newVal > current) triggerArousalMeterVibe();   // 興奮成長 → 興奮條震動（BC 原生 VibratorLevel）
+        return step;
     } catch (e) {
         console.error("[IVH] addArousal 錯誤:", e);
         return 1;
@@ -262,19 +277,21 @@ function addArousal() {
     }
 
     // ════════════════════════════════════════
-    //  中央頭像：裁玩家臉部成 300×300，置於畫面左半中心
+    //  中央頭像：裁玩家臉部成 300×300，置於「人物 ZOOM 的正中央」
     //  （螺旋／喘氣等效果會以此為基準，忽略分頁問題）
+    //  breathe=true（啟用喘氣時）→ 頭像會隨呼吸微幅縮放（速度為原喘氣頭像的一半）
     // ════════════════════════════════════════
     let _centerHeadEl = null;
-    function showCenterHeadshot(durationMs) {
+    function showCenterHeadshot(durationMs, breathe = false) {
         try {
             if (_centerHeadEl) { _centerHeadEl.remove(); _centerHeadEl = null; }
 
             const SZ  = 300;
             const cv  = document.createElement('canvas'); cv.width = cv.height = SZ;
             const ctx = cv.getContext('2d');
-            const pos     = bcToScreen(500, 360);
-            const dispSZ  = Math.max(340, SZ * (_cachedScaleX || 0.35) * 1.7);
+            // 圓心固定在「左邊 Canvas 的 (500,500)」＝左側人物區中心（不隨分頁/人數飄移）
+            const pos = bcToScreen(500, 500);
+            const dispSZ  = Math.max(340, SZ * (_cachedScaleX || 0.35) * 1.7);   // 還原原本較大的圓
 
             const el = document.createElement('img');
             Object.assign(el.style, {
@@ -286,6 +303,7 @@ function addArousal() {
                 borderRadius:  '50%',
                 objectFit:     'cover',
                 pointerEvents: 'none',
+                transformOrigin: 'center',
                 zIndex:        IVH_Z.base, // 頭像層：煙霧 > 螺旋 > 頭像 > 其它特效(auto)
                 boxShadow:     '0 0 40px rgba(255,80,160,0.5)',
                 opacity:       '0',
@@ -294,14 +312,26 @@ function addArousal() {
             getOverlay().appendChild(el);  // 放 overlay
             _centerHeadEl = el;
 
+            // 呼吸縮放（啟用喘氣時）：週期 1300ms＝原喘氣頭像 650ms 的一半速度，±6%
+            if (breathe) {
+                const bstart = Date.now();
+                const doBreathe = () => {
+                    if (el !== _centerHeadEl) return;
+                    el.style.transform = `scale(${1 + Math.sin((Date.now() - bstart) / 1300 * Math.PI * 2) * 0.06})`;
+                    requestAnimationFrame(doBreathe);
+                };
+                requestAnimationFrame(doBreathe);
+            }
+
             // 從玩家自己的角色 Canvas 裁臉（FCM 同款來源，不會截到別人）
             // 正方裁切並以臉部為中心；側臉 0.43h 含瀏海，避免人物偏低
             const capture = () => {
                 const src = Player && Player.Canvas;
                 if (!src || !src.width) return false;
-                const side  = src.width * 0.42;             // 正方邊長（含頭髮）
+                // 較緊裁切 → 圓內的臉更大（比照設定頁臉部預覽 captureFaceImage 的做法）
+                const side  = src.width * 0.24;
                 const cropX = src.width  * 0.50 - side / 2; // 水平置中於臉
-                const cropY = src.height * 0.43 - side / 2; // 垂直置中於臉（略偏上含瀏海）
+                const cropY = src.height * 0.43 - side * 0.22; // 臉位於框上方（含瀏海）
                 ctx.clearRect(0, 0, SZ, SZ);
                 ctx.drawImage(src, cropX, cropY, side, side, 0, 0, SZ, SZ);
                 try { el.src = cv.toDataURL(); } catch (e) { return false; }

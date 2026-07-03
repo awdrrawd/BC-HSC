@@ -184,14 +184,10 @@ import { IVH_Z } from './zlayers.js';
     // 取得本次呼吸要噴氣的嘴部位置（中軸 X 與螺旋同在頭部，高度在嘴巴）
     //  ignoreHeadshot=true → 一律用人物身上座標（深度喘氣用，不判斷中央頭像）
     function getBreathMouths(ignoreHeadshot) {
-        // 中央頭像顯示中（且非深度）→ 氣團在頭像上、往下 60px
-        if (!ignoreHeadshot && CONFIG.centerHeadshot && _centerHeadEl) {
-            return [{ x: bcToScreen(500, 360).x, y: bcToScreen(500, 430).y + 60, ss: 1.8 }];
-        }
-        // 人物身上：中軸 X 在頭部、Y 在嘴巴 + 共用偏移（深度再往下 30）
+        // 一律用人物身上座標（催眠與干擾位置一致）：中軸 X 在頭部、Y 在嘴巴 + 共用偏移
         const head  = getPlayerHeadScreenPos(true);
         const mouth = getPlayerMouthScreenPos(true);
-        const dy = BODY_PANT_DY + (ignoreHeadshot ? DEPTH_PANT_EXTRA : 0);
+        const dy = BODY_PANT_DY + DEPTH_PANT_EXTRA;
         return [{ x: head.x, y: mouth.y + dy, ss: _breathSizeScale() }];
     }
 
@@ -261,9 +257,9 @@ import { IVH_Z } from './zlayers.js';
         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
         if (!canvas) return;
 
-        // 快照整個 canvas
-        let dataURL;
-        try { dataURL = canvas.toDataURL(); } catch(e) { return; }
+        // 注意：不要用 canvas.toDataURL() 當前置檢查——房間背景是跨網域圖片會讓 MainCanvas
+        //  被 taint，toDataURL 直接丟例外導致整個高潮特效被 return 掉（破裂消失）。
+        //  碎片是用 drawImage 貼「被 taint 的 canvas」再以 <canvas> 元素顯示，taint 完全不影響。
         const rect = canvas.getBoundingClientRect();
 
         // ── 全螢幕用 window 尺寸（不限 canvas rect）──

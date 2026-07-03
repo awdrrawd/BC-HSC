@@ -21,14 +21,9 @@ function copyInto(srcDir, dstDir, filter) {
   console.log(`🐈‍⬛ [IVH] ${srcDir} -> ${dstDir} (${n} 檔)`);
 }
 
-// icons：只複製部署用的兩張
+// 圖片：部署用的 IVH-*.png（icon、crowd、status-code 動畫圖等）全部複製到 public/
 mkdirSync(root + 'public', { recursive: true });
-for (const name of ['IVH-iconB.png', 'IVH-iconW.png']) {
-  const src = root + 'Images/' + name;
-  if (existsSync(src)) copyFileSync(src, root + 'public/' + name);
-  else console.warn(`🐈‍⬛ [IVH] ⚠️ 缺少 Images/${name}`);
-}
-console.log('🐈‍⬛ [IVH] icons -> public/');
+copyInto('Images/', 'public/', n => /^IVH-.*\.png$/i.test(n));
 
 copyInto('Sound/', 'public/Sound/', n => /\.(mp3|ogg|wav|m4a)$/i.test(n));
 copyInto('Translation/', 'public/Translation/', n => n.endsWith('.js'));

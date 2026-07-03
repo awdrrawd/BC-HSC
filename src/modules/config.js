@@ -40,7 +40,6 @@ import { ui } from './i18n.js';
             danmaku:        true,  // 彈幕文字
             steamParticles: true,  // 氣喘粒子
             expression:     true,  // 表情切換
-            arousal:        true,  // 興奮度+
             chatFade:       true,  // 訊息浮現（10 秒內新訊息字體慢慢浮現）
             climax:         true,  // 高潮特效
             climaxMode:    "orgasm", // orgasm=高潮才觸發 | always=每次催眠都觸發
@@ -59,19 +58,44 @@ import { ui } from './i18n.js';
             whitelist:      ['$owner'],
             triggerWords:   [],    // 自訂觸發詞（除了 [Voice]）
             seeOthersPant:  false, // 收到他人催眠廣播時，是否在其角色上顯示喘氣（預設關閉）
+            showProfileButton: true, // 是否在別人 profile 顯示 IVH 文本編輯按鈕
 
-            // ── 催眠深度（獨立背景循環；0=無=關閉）──
-            depthMax:       0,     // 0=無 1=輕 2=中 3=重（無則不循環）
+            // ── 三大系統開關（總開關為 enabled）──
+            voiceEnabled:   true,  // 語音催眠（[Voice]/觸發詞 → 效果）
+
+            // ── 興奮值：每次觸發增加（0~20，0=停用）；語音 / 日常干擾分開 ──
+            arousalStepVoice: 5,
+            arousalStepDepth: 5,
+
+            // ── 催眠值（0~100，每 12 秒 -1）：語音 / 日常干擾分開；催眠狀態關則不成長 ──
+            hypnoEnabled:    false, // 催眠狀態 啟/停用
+            hypnoVoiceStep:  5,     // 語音催眠每次 +（0~20）
+            hypnoDepthStep:  5,     // 日常干擾每次 +（0~20）
+            autoWake:        true,  // 自動清醒（催眠值 <15% 時解除強控）
+            forcedGrowthDiv: 1,     // 強控中催眠值成長 = 原值 × N/10（預設 1 → 1/10）
+            hypnoAnimEnabled: false, // 催眠動畫（符咒動畫等；預留）
+            hypnoAnimStyle:   1,     // 符咒樣式 1~12（IVH-Status-Code1.png 的 2×6 格）
+            hypnoAnimColor:   '#f500b4', // 符咒染色（mask 染色，顏色 100% 準）
+            headTalisman:     false, // 頭上貼符咒（強控中額頭常駐符咒且持續震動）
+            faceCensor:       false, // 面部識別障礙（強控中看不清他人的臉）
+            nameCensor:       false, // 名稱識別障礙（強控中看不清他人的名字/ID）
+            faceCensorStyle:  'circle', // 面部塗鴉樣式：'circle' 圓圈 / 'line' 線條（二選一）
+            crowd:            false, // 顯示人群（強控中畫面下緣圍觀人群）
+
+            // ── 日常干擾（原「催眠深度」；定時觸發；開/關 + 間隔 + 扁平效果；喘氣單一）──
+            depthEnabled:   false,
             depthIntervalMin: 5,   // 循環間隔（分鐘 1~99）
-            // 各深度層效果開關
-            depthLight: { smoke: true, pant: true, chatDanmaku: true, ghost: true },
-            depthMed:   { figureBlur: true, pant: true, sfx: true, fade: true },
-            depthHeavy: { chatlogBlur: true, pant: true },
+            depthEffects: { smoke: true, chatDanmaku: true, ghost: true, figureBlur: true, sfx: true, fade: true, chatlogBlur: true, pant: true },
 
             // ── 文本 ──
             textSource:     "ES",      // ES | DB
             customTexts:    ui('defaultTexts').split('\n').map(s => s.trim()).filter(Boolean),
             emoteList:      ui('defaultEmotes').split('\n').map(s => s.trim()).filter(Boolean),
+            wakeWords:      ['wake'],  // 清醒詞（可多個）：房內「他人」說出→你清醒；自己說無效
+            // 催眠回應：強控中說話有機會被攔截，改說其中一句（$me=名字）
+            responseList:   ui('defaultResponses').split('\n').map(s => s.trim()).filter(Boolean),
+            // 允許說的話：強控中整句剛好是這些之一 → 不攔截，照常說出
+            allowedPhrases: [],
 
             // ── 表情（最多 10 組）──
             expressionSets: DEFAULT_EXPRESSIONS.map(e => ({ ...e })),
@@ -81,7 +105,7 @@ import { ui } from './i18n.js';
 
             // ── 允許他人編輯各類內容：每類 off（僅自己）/ whitelist（白名單）/ any（所有人）──
             //    共用同一份 whitelist。透過角色資料頁的 IVH 按鈕遠端編輯。預設白名單（含 $owner）。
-            editModes: { catalyst: 'whitelist', status: 'whitelist', trigger: 'whitelist' },
+            editModes: { catalyst: 'whitelist', status: 'whitelist', trigger: 'whitelist', wake: 'whitelist', response: 'whitelist', allowed: 'whitelist' },
 
             // ── 音效（URL 清單；本機上傳另存 IndexedDB，此處放 id 參照）──
             soundSource:    "ES",      // ES | DB
