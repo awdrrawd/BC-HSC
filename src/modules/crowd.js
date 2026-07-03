@@ -11,6 +11,21 @@ import { HSC_Z } from './zlayers.js';
 
 const CROWD_URL = assetUrl('HSC-crowd1.png');
 let _crowdEl = null;
+let _crowdVisRAF = null;
+
+// Dialog 狀態（點角色開對話選單）時，隱藏周遭人群；離開對話再顯示。
+function _inDialog() {
+    try {
+        if (typeof CurrentCharacter !== 'undefined' && CurrentCharacter != null) return true;
+        if (typeof CurrentScreen !== 'undefined' && CurrentScreen !== 'ChatRoom') return true;
+    } catch (e) {}
+    return false;
+}
+function _crowdVisLoop() {
+    if (!_crowdEl) { _crowdVisRAF = null; return; }
+    _crowdEl.style.visibility = _inDialog() ? 'hidden' : 'visible';
+    _crowdVisRAF = requestAnimationFrame(_crowdVisLoop);
+}
 
 // 依 MainCanvas 位置，把人群定位在「左側人物區」＝BC 畫布 (0,0)~(1000,1000)。
 //  BC 畫布 2000×1000，左半 1000 寬＝人物區；右半是聊天區（不放圖）。
@@ -46,6 +61,7 @@ function _updateCrowd(show) {
         getOverlay().appendChild(el);
         _crowdEl = el;
         requestAnimationFrame(() => { if (_crowdEl === el) el.style.opacity = '0.85'; });
+        if (!_crowdVisRAF) _crowdVisRAF = requestAnimationFrame(_crowdVisLoop);   // Dialog 時隱藏
     } else if (_crowdEl) {
         const el = _crowdEl; _crowdEl = null;
         el.style.opacity = '0';

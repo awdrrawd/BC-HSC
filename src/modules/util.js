@@ -51,13 +51,26 @@ import { HSC_Z } from './zlayers.js';
 
     function clearBCXCache() { _bcxReminderCache = null; }
 
-    // 取訊息節點的純文字內容（去掉名稱、彈出選單、metadata）
+    // 取訊息節點「純訊息內容」（去掉名稱、冒號、回覆鍵、悄悄話前綴、彈出選單、metadata）
+    //  優先序：① BCE 保留的原始文字 bce-original-text ② 訊息內容 span ③ 清理後的 textContent
     function extractChatText(node) {
         try {
-            const clone = node.cloneNode(true);
-            clone.querySelectorAll('.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp')
-                 .forEach(el => el.remove());
-            return (clone.textContent || '').replace(/\s+/g, ' ').trim();
+            const el = node.matches?.('.ChatMessage') ? node : (node.querySelector?.('.ChatMessage') || node);
+            // ① BCE：原始輸入文字最乾淨（不含「悄悄話來自 X:」「名稱:」等前綴）
+            const orig = el.getAttribute?.('bce-original-text');
+            if (orig != null && String(orig).trim()) return String(orig).trim();
+            // ② 訊息內容 span（新版 BC / BCE 佈景）
+            const contentEl = el.querySelector?.('.chat-room-message-content');
+            if (contentEl && (contentEl.textContent || '').trim()) {
+                return (contentEl.textContent || '').replace(/\s+/g, ' ').trim();
+            }
+            // ③ fallback：clone 去雜訊（含所有按鈕：名稱鍵、回覆鍵 ↩️、選單鍵）+ 去開頭殘留的冒號
+            const clone = el.cloneNode(true);
+            clone.querySelectorAll('.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp, button')
+                 .forEach(x => x.remove());
+            let t = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+            t = t.replace(/^(?:\s|↩️|↩)+/, '').replace(/^[:：]\s*/, '');   // 去開頭回覆箭頭與冒號
+            return t;
         } catch { return ''; }
     }
 

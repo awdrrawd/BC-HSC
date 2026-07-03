@@ -3,6 +3,7 @@ import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '
 import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from './depth.js';
 import { assetUrl } from './icons.js';
+import { updateHeadTalisman } from './hypno-anim.js';
 import { HSC_LANGS, HSC_LANG_NAMES, ui } from './i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { hscConfirm } from './profile.js';
@@ -676,75 +677,87 @@ import { HSC_Z } from './zlayers.js';
         // ════════ 基本設定 ════════
         _run_basic() {
             const prev = MainCanvas.textAlign;
-            const CTRL_X = 700;   // 控制欄左緣（比照上一版往右移 50）
-            const ROW = 45;    // 列間距（紅 5px：控制高 40 + 5）
-            const GAP = 10;    // 群組間（藍 10px）
-            const HDR = 33;    // 群組標題 → 首列（紅 5px：標題約 28 + 5）
+            const CTRL_X = 700;
+            const ROW_GAP = 5;   // 藍：同組列距
+            const SEC_GAP = 10;  // 紅：跨組列距
+            const H_ROW   = 40;  // 一般 title+toggle / title+select 列高
+            const H_INPUT = 42;  // 白名單輸入框高
+            const H_PERM  = 44;  // 6 類編輯權限列高
+
+            // cy 永遠代表「這一列的中心」；用兩邊實際高度換算下一列中心，跟高度改動無關
+            const next = (cy, curH, nextH, gap) => cy + curH / 2 + gap + nextH / 2;
+
             let cy = 214;
-            const toggleRow = (labelKey, descKey, val, onClick) => {
+
+            const toggleRow = (labelKey, descKey, val, onClick, nextH = H_ROW, gap = ROW_GAP) => {
                 this.title(cy, ui(labelKey), ui(descKey));
-                this.toggle(CTRL_X, cy - 20, 116, 40, val ? ui('on') : ui('off'), val, ui(descKey), onClick);
-                cy += ROW;
+                this.toggle(CTRL_X, cy - H_ROW / 2, 116, H_ROW, val ? ui('on') : ui('off'), val, ui(descKey), onClick);
+                cy = next(cy, H_ROW, nextH, gap);
             };
 
-            // 頁名（第一行，與其他頁一致）
-            this.title(cy, ui('tab_basic'), ''); cy += HDR + 5;
+            // 頁名
+            this.title(cy, ui('tab_basic'), '');
+            cy = next(cy, H_ROW, H_ROW, ROW_GAP);
 
             // ── 三大系統開關 ──
             toggleRow('voiceEnabledLabel', 'voiceEnabledD', CONFIG.voiceEnabled, () => { CONFIG.voiceEnabled = !CONFIG.voiceEnabled; saveSettings(); });
             toggleRow('dailyEnabledLabel', 'dailyEnabledD', CONFIG.depthEnabled, () => { CONFIG.depthEnabled = !CONFIG.depthEnabled; saveSettings(); applyDepthLoop(); });
             toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); });
-            cy += GAP;
+            toggleRow('hypnoClimaxLabel', 'hypnoClimaxD', CONFIG.hypnoClimax, () => { CONFIG.hypnoClimax = !CONFIG.hypnoClimax; saveSettings(); }, H_ROW, SEC_GAP);
 
-            // ── 看見他人效果（喘氣 + 編輯他人文本）──
-            this.title(cy, ui('seeOthersEffect'), ''); cy += HDR;
+            // ── 看見他人效果 ──
+            this.title(cy, ui('seeOthersEffect'), ''); cy = next(cy, H_ROW, H_ROW, ROW_GAP);
             toggleRow('fx_pant', 'seeOthersPantD', CONFIG.seeOthersPant, () => { CONFIG.seeOthersPant = !CONFIG.seeOthersPant; saveSettings(); });
-            toggleRow('showProfileBtnLabel', 'showProfileBtnD', CONFIG.showProfileButton, () => { CONFIG.showProfileButton = !CONFIG.showProfileButton; saveSettings(); });
-            cy += GAP;
+            toggleRow('seeOthersHypnoLabel', 'seeOthersHypnoD', CONFIG.seeOthersHypno, () => { CONFIG.seeOthersHypno = !CONFIG.seeOthersHypno; saveSettings(); });
+            toggleRow('seeOthersTalisLabel', 'seeOthersTalisD', CONFIG.seeOthersTalisman, () => { CONFIG.seeOthersTalisman = !CONFIG.seeOthersTalisman; saveSettings(); });
+            toggleRow('showProfileBtnLabel', 'showProfileBtnD', CONFIG.showProfileButton, () => { CONFIG.showProfileButton = !CONFIG.showProfileButton; saveSettings(); }, H_ROW, SEC_GAP);
 
-            // ── 允許編輯對象（白名單 + 6 類權限）──
-            this.title(cy, ui('editPermTitle'), ui('editPermTitleD')); cy += HDR;
+            // ── 允許編輯對象 ──
+            this.title(cy, ui('editPermTitle'), ui('editPermTitleD')); cy = next(cy, H_ROW, H_ROW, ROW_GAP);
             this.title(cy, ui('whitelist'), ui('whitelistD'));
-            this.input('hsc-whitelist', CTRL_X, cy - 17, 480, 42, (CONFIG.whitelist || []).join(', '),
+            this.input('hsc-whitelist', CTRL_X, cy - H_INPUT / 2, 480, H_INPUT, (CONFIG.whitelist || []).join(', '),
                 { placeholder: ui('whitelistPh'), onChange: val => {
                     CONFIG.whitelist = val.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
                         .map(s => /^\d+$/.test(s) ? Number(s) : s)
                         .filter(s => typeof s === 'number' || WL_TOKENS.includes(s));
                     saveSettings(); publishSharedSettings();
                 }});
-            cy += ROW;
+            cy = next(cy, H_INPUT, H_PERM, ROW_GAP);
+
             const em = CONFIG.editModes || (CONFIG.editModes = {});
             const setEdit = (cat, m) => { em[cat] = m; saveSettings(); publishSharedSettings(); };
             const COLS = [['off', ui('editOff')], ['whitelist', ui('whitelist')], ['any', ui('editAny')]];
-            [['catalyst', 'sec_hypnoText'], ['status', 'sec_statusMsg'], ['trigger', 'sec_triggerWords'], ['wake', 'sec_wakeWord'], ['response', 'sec_hypnoResponse'], ['allowed', 'allowedPhrasesLabel']].forEach(([cat, lbKey]) => {
+            const permCats = [['catalyst', 'sec_hypnoText'], ['status', 'sec_statusMsg'], ['trigger', 'sec_triggerWords'], ['wake', 'sec_wakeWord'], ['response', 'sec_hypnoResponse'], ['allowed', 'allowedPhrasesLabel']];
+            permCats.forEach(([cat, lbKey], i) => {
                 const p2 = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-                DrawTextFit(ui(lbKey), CONTENT_X, this._y(cy + 30), 150, 'Black', '');
+                DrawTextFit(ui(lbKey), CONTENT_X, this._y(cy), 150, 'Black', '');
                 MainCanvas.textAlign = p2;
-                this._track(cy + 44);
-                COLS.forEach(([m, lb], ci) => this.toggle(CTRL_X + ci * 124, cy, 118, 44, lb, (em[cat] || 'off') === m, null, () => setEdit(cat, m)));
-                cy += 49;
+                this._track(cy + H_PERM / 2);
+                COLS.forEach(([m, lb], ci) => this.toggle(CTRL_X + ci * 124, cy - H_PERM / 2, 118, H_PERM, lb, (em[cat] || 'off') === m, null, () => setEdit(cat, m)));
+                const isLast = i === permCats.length - 1;
+                cy = next(cy, H_PERM, isLast ? H_ROW : H_PERM, isLast ? SEC_GAP : ROW_GAP);
             });
-            cy += GAP;
 
             // ── 語言 ──
             this.title(cy, ui('language'), ui('languageD'));
-            this.select('hsc-lang', CTRL_X, cy - 17, 240, 44, CONFIG.lang || 'auto',
+            this.select('hsc-lang', CTRL_X, cy - H_ROW / 2, 240, H_ROW, CONFIG.lang || 'auto',
                 HSC_LANGS.map(l => [l, HSC_LANG_NAMES[l] || l]),
                 v => { CONFIG.lang = v; saveSettings(); });
-            cy += ROW + GAP;
+            const BH = 45;
+            cy = next(cy, H_ROW, BH, SEC_GAP);
 
             // ── 導出 / 導入 / 恢復預設 ──
             const BW = 200, BGAP = 16;
             const cX = (FRAME_X + FRAME_W / 2);
             const expX = Math.round(cX - (BW * 3 + BGAP * 2) / 2);
-            this.btn(expX, cy, BW, 45, ui('export'), 'White', ui('exportD'), () => exportSettings());
-            this.btn(expX + (BW + BGAP), cy, BW, 45, ui('import'), 'White', ui('importD'), () => importSettings());
-            this.btn(expX + (BW + BGAP) * 2, cy, BW, 45, ui('resetAll'), 'White', ui('resetAllD'),
+            this.btn(expX, cy - BH / 2, BW, BH, ui('export'), 'White', ui('exportD'), () => exportSettings());
+            this.btn(expX + (BW + BGAP), cy - BH / 2, BW, BH, ui('import'), 'White', ui('importD'), () => importSettings());
+            this.btn(expX + (BW + BGAP) * 2, cy - BH / 2, BW, BH, ui('resetAll'), 'White', ui('resetAllD'),
                 () => hscConfirm(ui('confirmResetAll'), () => {
                     setConfig(makeDefaultConfig()); setExpressionSets(CONFIG.expressionSets);
                     saveSettings(true); publishSharedSettings(); applyDepthLoop();
                 }));
-            this._track(cy + 55);
+            this._track(cy + BH / 2 + 10);
 
             MainCanvas.textAlign = prev;
         },
@@ -849,30 +862,26 @@ import { HSC_Z } from './zlayers.js';
             cy += 58 + 12;
             // 效果設定
             this.title(cy, ui('sec_effects'), ''); cy += 40;
-            // 催眠動畫：開/關 ＋（開啟時）樣式按鈕 ＋ 顏色按鈕，同一行
+            // 催眠動畫：開/關
             this.title(cy, ui('hypnoAnimLabel'), ui('hypnoAnimD'));
             this.toggle(CX, cy - 20, BW, 40, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
                 () => { CONFIG.hypnoAnimEnabled = !CONFIG.hypnoAnimEnabled; saveSettings(); });
-            if (CONFIG.hypnoAnimEnabled) {
+            cy += 52;
+            // 頭上貼符咒（獨立開關，不需開動畫）＋ 同一行放：◀ 樣式N ▶ ＋ 染色（符咒與動畫共用）
+            this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
+                () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); try { updateHeadTalisman(); } catch (e) {} });
+            {
                 const st = Math.min(12, Math.max(1, CONFIG.hypnoAnimStyle || 1));
                 const dk = 'hypnoStyle' + st + '|' + (CONFIG.hypnoAnimColor || '');   // 顏色也納入 → 改色即時重繪預覽
-                // 往右鋪開，別擠在一起（右側空間充足）：◀ 樣式N ▶ ...... 顏色
                 const bx = CX + BW + 40;
                 this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st <= 1 ? 12 : st - 1; saveSettings(); }, dk);
                 this.btn(bx + 52, cy - 20, 110, 40, ui('hypnoStyleName', { n: st }), '#8E44A1', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
                 this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
-                // 顏色：色塊按鈕，點擊開色票（色票定位到按鈕旁）
                 this.colorBtn(bx + 240, cy - 20, 64, 40, CONFIG.hypnoAnimColor,
                     (col) => { CONFIG.hypnoAnimColor = col; saveSettings(); }, ui('hypnoStyleD'), dk);
             }
             cy += 52;
-            // 頭上貼符咒（需開催眠動畫）
-            if (CONFIG.hypnoAnimEnabled) {
-                this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
-                this.toggle(CX, cy - 20, BW, 40, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
-                    () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); });
-                cy += 52;
-            }
             // 面部識別障礙：開/關 ＋（開啟時）◀ 圓圈/線條 ▶（同催眠動畫樣式選擇器）
             this.title(cy, ui('fx_faceCensor'), ui('fx_faceCensorD'));
             this.toggle(CX, cy - 20, BW, 40, CONFIG.faceCensor ? ui('on') : ui('off'), CONFIG.faceCensor, ui('fx_faceCensorD'),
@@ -897,6 +906,28 @@ import { HSC_Z } from './zlayers.js';
             this.title(cy, ui('fx_crowd'), ui('fx_crowdD'));
             this.toggle(CX, cy - 20, BW, 40, CONFIG.crowd ? ui('on') : ui('off'), CONFIG.crowd, ui('fx_crowdD'),
                 () => { CONFIG.crowd = !CONFIG.crowd; saveSettings(); }, 'crowd');
+            cy += 52 + 12;
+            // ── 強控中的訊息類效果 ──
+            this.title(cy, ui('sec_stateMsgFx'), ''); cy += 40;
+            // 彈幕文字 - 聊天
+            this.title(cy, ui('stateDanmakuChatLabel'), ui('stateDanmakuChatD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateDanmakuChat ? ui('on') : ui('off'), CONFIG.stateDanmakuChat, ui('stateDanmakuChatD'),
+                () => { CONFIG.stateDanmakuChat = !CONFIG.stateDanmakuChat; saveSettings(); });
+            cy += 52;
+            // 彈幕文字 - 悄悄話
+            this.title(cy, ui('stateDanmakuWhisperLabel'), ui('stateDanmakuWhisperD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateDanmakuWhisper ? ui('on') : ui('off'), CONFIG.stateDanmakuWhisper, ui('stateDanmakuWhisperD'),
+                () => { CONFIG.stateDanmakuWhisper = !CONFIG.stateDanmakuWhisper; saveSettings(); });
+            cy += 52;
+            // 訊息妨礙
+            this.title(cy, ui('stateMsgSmokeLabel'), ui('stateMsgSmokeD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateMsgSmoke ? ui('on') : ui('off'), CONFIG.stateMsgSmoke, ui('stateMsgSmokeD'),
+                () => { CONFIG.stateMsgSmoke = !CONFIG.stateMsgSmoke; saveSettings(); });
+            cy += 52;
+            // 信息干擾
+            this.title(cy, ui('stateMsgInterfereLabel'), ui('stateMsgInterfereD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateMsgInterfere ? ui('on') : ui('off'), CONFIG.stateMsgInterfere, ui('stateMsgInterfereD'),
+                () => { CONFIG.stateMsgInterfere = !CONFIG.stateMsgInterfere; saveSettings(); });
             this._track(cy + 50);
         },
 

@@ -6,6 +6,7 @@ import { ui } from './i18n.js';
 import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark } from './icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
 import { EXT, waitForPreference } from './preference.js';
+import { interfereEnterLeave } from './state-fx.js';
 import { publishSharedSettings, saveSettings } from './storage.js';
 import { isZh } from './util.js';
 import { HSC_Z } from './zlayers.js';
@@ -142,6 +143,8 @@ import { HSC_Z } from './zlayers.js';
         try {
             modApi.hookFunction('ChatRoomMessage', 1, (args, next) => {
                 const data = args[0];
+                // 信息干擾（強控中）：把人員進/出訊息改寫成模糊幻覺敘述，攔截原訊息
+                try { if (interfereEnterLeave(data)) return; } catch (e) {}
                 // 有人問「我能否編輯你的內容」→ 即時依目前白名單回覆（只回給詢問者本人）
                 if (data && data.Type === 'Hidden' && data.Content === 'HSC_PermQuery') {
                     try {

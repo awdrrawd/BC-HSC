@@ -3,7 +3,7 @@ import { activateHypnoAtmosphere } from './atmosphere.js';
 import { addArousal, popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS, modApi } from './config.js';
 import { triggerPinkFlash, wrapDanmakuText } from './effects.js';
-import { triggerSteamParticles } from './effects2.js';
+import { triggerSteamParticles, fillWaveText } from './effects2.js';
 import { _cachedRect, _cachedScaleX, _cachedScaleY, bcToScreen, getPlayerHeadScreenPos, playerDrawPos, refreshCanvasCache } from './geometry.js';
 import { addHypno } from './hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
@@ -165,14 +165,15 @@ import { HSC_Z } from './zlayers.js';
         const txt = document.createElement('div');
         Object.assign(txt.style, {
             position: 'fixed', left: `${headS.x + offXpx}px`, top: `${headS.y + offYpx - 18}px`,
-            transform: 'translateX(-50%)', fontSize: '20px', fontWeight: '600',
+            transform: 'translateX(-50%)', fontSize: '26px', fontWeight: '600',
             fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif', textAlign: 'center',
             color: 'rgba(255,220,240,0.92)', textShadow: '0 0 10px rgba(180,80,200,0.85)',
             whiteSpace: 'pre-line', opacity: '0', transition: 'opacity 0.8s ease', pointerEvents: 'none', zIndex: HSC_Z.sceneText,
         });
-        txt.textContent = wrapDanmakuText(line, 12);
+        // 耳邊句子比照語音催眠的「主台詞」：逐字波浪浮現（共用 fillWaveText）
+        fillWaveText(txt, line, 12, 80);
         getOverlay().appendChild(txt);
-        requestAnimationFrame(() => { txt.style.opacity = '1'; });
+        requestAnimationFrame(() => { txt.style.opacity = '1'; txt.querySelectorAll('span').forEach(s => s.style.opacity = '1'); });
         setTimeout(() => { txt.style.opacity = '0'; }, D - FADE_OUT);
         setTimeout(() => txt.remove(), D);
     }

@@ -7,6 +7,7 @@ import { refreshCanvasCache } from './geometry.js';
 import { enterHypnoNow, wake } from './hypno.js';
 import { parseVoiceText } from './run.js';
 import { preloadSounds } from './sound.js';
+import { handleStateChatFx } from './state-fx.js';
 import { saveSettings } from './storage.js';
 import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js';
 
@@ -386,6 +387,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
                     if (!(node instanceof HTMLElement)) continue;
                     maybeFadeChatNode(node);   // 訊息浮現視窗內 → 新訊息字體慢慢浮現
                     handleChatNode(node);
+                    try { handleStateChatFx(node); } catch (e) {}   // 強控中：彈幕 / 訊息妨礙
                 }
             }
         });

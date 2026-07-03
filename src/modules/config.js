@@ -58,6 +58,8 @@ import { ui } from './i18n.js';
             whitelist:      ['$owner'],
             triggerWords:   [],    // 自訂觸發詞（除了 [Voice]）
             seeOthersPant:  false, // 收到他人催眠廣播時，是否在其角色上顯示喘氣（預設關閉）
+            seeOthersHypno: true,  // 在他人角色頭上顯示其催眠進度球（讀 OnlineSharedSettings；預設開啟）
+            seeOthersTalisman: true, // 他人陷入強控時，在其頭上顯示催眠符咒（預設開啟）
             showProfileButton: true, // 是否在別人 profile 顯示 HSC 文本編輯按鈕
 
             // ── 三大系統開關（總開關為 enabled）──
@@ -71,6 +73,7 @@ import { ui } from './i18n.js';
             hypnoEnabled:    false, // 催眠狀態 啟/停用
             hypnoVoiceStep:  5,     // 語音催眠每次 +（0~20）
             hypnoDepthStep:  5,     // 日常干擾每次 +（0~20）
+            hypnoClimax:     false, // 催眠高潮：陷入強控時觸發一次高潮（因催眠而達到高潮）
             autoWake:        true,  // 自動清醒（催眠值 <15% 時解除強控）
             forcedGrowthDiv: 1,     // 強控中催眠值成長 = 原值 × N/10（預設 1 → 1/10）
             hypnoAnimEnabled: false, // 催眠動畫（符咒動畫等；預留）
@@ -81,6 +84,11 @@ import { ui } from './i18n.js';
             nameCensor:       false, // 名稱識別障礙（強控中看不清他人的名字/ID）
             faceCensorStyle:  'circle', // 面部塗鴉樣式：'circle' 圓圈 / 'line' 線條（二選一）
             crowd:            false, // 顯示人群（強控中畫面下緣圍觀人群）
+            // ── 強控中的訊息類效果（僅強控時作用）──
+            stateDanmakuChat:    false, // 彈幕文字-聊天：他人聊天訊息化為彈幕（隨機字級 14~20）
+            stateDanmakuWhisper: false, // 彈幕文字-悄悄話：他人悄悄話在耳邊以紫色彈幕出現
+            stateMsgSmoke:       false, // 訊息妨礙：訊息被煙霧遮住，點擊才慢慢散去
+            stateMsgInterfere:   false, // 信息干擾：人員進/出訊息被改成模糊的幻覺敘述
 
             // ── 日常干擾（原「催眠深度」；定時觸發；開/關 + 間隔 + 扁平效果；喘氣單一）──
             depthEnabled:   false,

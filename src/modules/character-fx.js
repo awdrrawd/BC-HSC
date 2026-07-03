@@ -153,6 +153,25 @@ import { HSC_Z } from './zlayers.js';
         if (!_vibeTimer) _vibeTimer = setInterval(tick, 50);
     }
 
+// 催眠高潮：因催眠而達到高潮。興奮系統未啟用（Inactive）時不作用。
+//   climax=true  → 保證正常高潮：ActivityOrgasmRuined=false + ActivityOrgasmStart（OrgasmStage=2，直接釋放，
+//                  跳過玩家自己才會出現的「抵抗小遊戲」，所以一定會高潮）。
+//   climax=false → 邊緣效果：把興奮拉到臨界 99（BC 到 100 才觸發），只吊在邊緣、不釋放。
+function hypnoOrgasm(climax) {
+    try {
+        if (typeof Player === 'undefined' || !Player.ArousalSettings) return;
+        if (Player.ArousalSettings.Active === 'Inactive') return;
+        if (climax) {
+            if (typeof ActivitySetArousal === 'function') ActivitySetArousal(Player, 100);
+            try { window.ActivityOrgasmRuined = false; } catch (e) {}
+            if (typeof ActivityOrgasmStart === 'function') ActivityOrgasmStart(Player);
+            else if (typeof ActivityOrgasmPrepare === 'function') ActivityOrgasmPrepare(Player);   // 舊版後備
+        } else {
+            if (typeof ActivitySetArousal === 'function') ActivitySetArousal(Player, 99);   // 邊緣：吊在臨界
+        }
+    } catch (e) { console.warn('🐈‍⬛ [HSC] 催眠高潮觸發失敗:', e.message); }
+}
+
 function addArousal(kind) {
     const step = (kind === 'depth' ? CONFIG.arousalStepDepth : CONFIG.arousalStepVoice) || 0;
     if (step <= 0) return 1;   // 0 = 停用（仍回傳 1，讓彈幕數量等不歸零）
@@ -372,6 +391,7 @@ export {
     applyExpressionLocal,
     captureFaceImage,
     addArousal,
+    hypnoOrgasm,
     sendStatusEmote,
     startChatFade,
     maybeFadeChatNode,

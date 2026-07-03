@@ -26,7 +26,6 @@ import { assetUrl } from './icons.js';
 import { getOverlay } from './util.js';
 import { HSC_Z } from './zlayers.js';
 import { bcToScreen, playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from './geometry.js';
-import { isForced } from './hypno.js';
 
 const SPRITE = assetUrl('HSC-Status-Code1.png');
 const COLS = 6, ROWS = 2, CELL_AR = 0.5, BASE_W = 320;
@@ -37,7 +36,7 @@ export const ANIM = {
     blurXpct: 0, blurWpct: 100, blurPx: 10,          // 模糊區 X/寬（畫布 %）/強度
     behindHpct: 70, frontHpct: 85, headHpct: 10,     // 符咒高（人物高 %）：身後/身前/頭上
     waistPct: 50, frontYPct: 50, headYPct: 10,       // 符咒 Y（人物高 %）
-    headTalisPct: 25,                                // 頭上常駐符咒寬（人物寬 %）
+    headTalisPct: 14,                                // 頭上常駐符咒寬（人物寬 %）— 縮小，貼臉不會過大
     glowSize: 40, glowOpacity: 0.95, flashColor: '#ffffff',
     tIn: 1100, tHold: 700, tFlash: 500, tThru: 950, tFlash2: 500, tShrink: 900, tVibe: 3000, shakeAmt: 5,
     	talisOffsetXPct: -3,
@@ -250,7 +249,17 @@ export function playHypnoAnim(done) {
         else if (t < A.tIn + A.tHold + A.tFlash + A.tThru) { talis.style.zIndex = '3'; const e = _easeInOut((t - A.tIn - A.tHold - A.tFlash) / A.tThru); place(_lerp(cx, cx, e), _lerp(yWaist, yFront, e), wOf(_lerp(hBehind, hFront, e)), 1); }
         else if (t < A.tIn + A.tHold + A.tFlash + A.tThru + A.tFlash2) { place(cx, yFront, wOf(hFront), 1); if (!f4) { f4 = true; doFlash(cx, yFront, wOf(hFront), A.tFlash2, 3); } }
         else if (t < A.tIn + A.tHold + A.tFlash + A.tThru + A.tFlash2 + A.tShrink) { const e = _easeInOut((t - A.tIn - A.tHold - A.tFlash - A.tThru - A.tFlash2) / A.tShrink); place(cx, _lerp(yFront, yHead, e), wOf(_lerp(hFront, hHead, e)), 1); }
-        else if (t < total) { const vt = t - (total - A.tVibe); place(cx + (Math.random() - 0.5) * A.shakeAmt * 2, yHead + (Math.random() - 0.5) * A.shakeAmt * 2, wOf(hHead), 1); if (vt > A.tVibe - 1000 && !fadedOut) { fadedOut = true; charEl.style.opacity = '0'; blur.style.opacity = '0'; talis.style.transition = 'opacity 1s ease'; talis.style.opacity = '0'; } }
+        else if (t < total) {
+            const vt = t - (total - A.tVibe);
+            const fadeStart = A.tVibe - 1000;
+            // 符咒淡出必須靠 place() 的 opacity（否則每幀被 place 的 opacity=1 覆蓋，導致符咒不淡、突然消失）
+            let talisOp = 1;
+            if (vt > fadeStart) {
+                if (!fadedOut) { fadedOut = true; charEl.style.transition = 'opacity 1s ease'; blur.style.transition = 'opacity 1s ease'; charEl.style.opacity = '0'; blur.style.opacity = '0'; }
+                talisOp = Math.max(0, 1 - (vt - fadeStart) / 1000);   // 與人物同步的 1 秒淡出
+            }
+            place(cx + (Math.random() - 0.5) * A.shakeAmt * 2, yHead + (Math.random() - 0.5) * A.shakeAmt * 2, wOf(hHead), talisOp);
+        }
         else { stopHypnoAnim(); if (done) { try { done(); } catch (e) {} } return; }
         _rafMain = requestAnimationFrame(step);
     };
@@ -267,8 +276,9 @@ export function playHypnoAnim(done) {
 // scaleX/scaleY 是否使用同一個等比縮放值（做法同本檔案這次的修正精神）。
 let _headEl = null, _headRAF = null;
 export function updateHeadTalisman() {
-    const inChat = typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom';
-    const want = CONFIG.enabled && CONFIG.hypnoAnimEnabled && CONFIG.headTalisman && isForced() && inChat;
+    // 頭上符咒改由 hypno-orb.js 的 canvas 版本繪製（與他人尺寸/位置一致），
+    //  此 DOM 版本停用；保留函式僅負責清掉任何殘留的舊 DOM 符咒。
+    const want = false;
     if (want) {
         if (_headEl) return;
         const color = CONFIG.hypnoAnimColor || '#f500b4';
