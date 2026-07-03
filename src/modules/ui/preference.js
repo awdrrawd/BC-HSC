@@ -1,16 +1,16 @@
 // ── auto-wired cross-module imports ──
-import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from './character-fx.js';
-import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
-import { applyDepthLoop } from './depth.js';
-import { assetUrl } from './icons.js';
-import { updateHeadTalisman } from './hypno-anim.js';
-import { disableHypno } from './hypno.js';
-import { HSC_LANGS, HSC_LANG_NAMES, ui } from './i18n.js';
+import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '../effects/character-fx.js';
+import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from '../core/config.js';
+import { applyDepthLoop } from '../effects/depth.js';
+import { assetUrl } from '../util/icons.js';
+import { updateHeadTalisman } from '../hypno/hypno-anim.js';
+import { disableHypno } from '../hypno/hypno.js';
+import { HSC_LANGS, HSC_LANG_NAMES, ui } from '../i18n/i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { hscConfirm } from './profile.js';
-import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from './sound.js';
-import { HSCDB, exportSettings, importSettings, publishSharedSettings, saveSettings } from './storage.js';
-import { HSC_Z } from './zlayers.js';
+import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from '../effects/sound.js';
+import { HSCDB, exportSettings, importSettings, publishSharedSettings, saveSettings } from '../core/storage.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
 //  HSC module: preference.js

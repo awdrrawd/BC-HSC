@@ -1,14 +1,14 @@
 // ── auto-wired cross-module imports ──
 import { activateHypnoAtmosphere } from './atmosphere.js';
 import { addArousal, popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
-import { CONFIG, EXPRESSION_SETS, modApi } from './config.js';
+import { CONFIG, EXPRESSION_SETS, modApi } from '../core/config.js';
 import { triggerPinkFlash, wrapDanmakuText } from './effects.js';
 import { triggerSteamParticles, fillWaveText } from './effects2.js';
-import { _cachedRect, _cachedScaleX, _cachedScaleY, bcToScreen, getPlayerHeadScreenPos, playerDrawPos, refreshCanvasCache } from './geometry.js';
-import { addHypno } from './hypno.js';
+import { _cachedRect, _cachedScaleX, _cachedScaleY, bcToScreen, getPlayerHeadScreenPos, playerDrawPos, refreshCanvasCache } from '../util/geometry.js';
+import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
-import { getCatalystTexts, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from './util.js';
-import { HSC_Z } from './zlayers.js';
+import { getCatalystTexts, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
 //  HSC module: depth.js

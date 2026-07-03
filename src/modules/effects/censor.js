@@ -7,8 +7,8 @@
 //  任何身高／姿勢／翻頁都對得準。塗鴉幀預先烘焙成離屏畫布（快取），不吃效能。
 // ════════════════════════════════════════
 
-import { CONFIG, modApi } from './config.js';
-import { isForced } from './hypno.js';
+import { CONFIG, modApi } from '../core/config.js';
+import { isForced } from '../hypno/hypno.js';
 
 const CFG = {
     variants: 5, framesPerLoop: 16, loopSeconds: 1.6,

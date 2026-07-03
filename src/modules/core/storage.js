@@ -1,9 +1,9 @@
 // ── auto-wired cross-module imports ──
 import { printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
-import { applyDepthLoop } from './depth.js';
-import { ui } from './i18n.js';
-import { resolveWhitelistNumbers } from './panel.js';
+import { applyDepthLoop } from '../effects/depth.js';
+import { ui } from '../i18n/i18n.js';
+import { resolveWhitelistNumbers } from '../ui/panel.js';
 
 // ════════════════════════════════════════
 //  HSC module: storage.js

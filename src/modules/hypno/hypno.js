@@ -7,12 +7,12 @@
 //  執行期數值，重載後歸零（與 BC 興奮值行為一致，不存帳號）。
 // ════════════════════════════════════════
 
-import { CONFIG, EXPRESSION_SETS } from './config.js';
-import { pushExprEffect, popExprEffect, hypnoOrgasm } from './character-fx.js';
-import { sendLocalizedAction } from './l10n.js';
-import { updateCrowd } from './crowd.js';
+import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
+import { pushExprEffect, popExprEffect, hypnoOrgasm } from '../effects/character-fx.js';
+import { sendLocalizedAction } from '../i18n/l10n.js';
+import { updateCrowd } from '../effects/crowd.js';
 import { updateHeadTalisman, playHypnoAnim, stopHypnoAnim } from './hypno-anim.js';
-import { publishHypnoState } from './storage.js';
+import { publishHypnoState } from '../core/storage.js';
 
 // 把目前催眠進度公告出去（供房內其他 HSC 玩家在你頭上顯示進度球／符咒）
 function _publishHypno(immediate = false) {

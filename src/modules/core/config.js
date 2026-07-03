@@ -3,7 +3,7 @@
 //  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
-import { ui } from './i18n.js';
+import { ui } from '../i18n/i18n.js';
 
     // 版本號由 package.json 經 vite define 注入（見 vite.config.js）
     const MOD_VER = (typeof __HSC_VERSION__ !== 'undefined' && __HSC_VERSION__) || "2.1.1";

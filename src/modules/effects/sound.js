@@ -1,10 +1,10 @@
 // ── auto-wired cross-module imports ──
-import { printChat } from './commands.js';
-import { CONFIG } from './config.js';
-import { assetUrl } from './icons.js';
-import { EXT } from './preference.js';
-import { HSCDB, saveSettings } from './storage.js';
-import { T } from './util.js';
+import { printChat } from '../core/commands.js';
+import { CONFIG } from '../core/config.js';
+import { assetUrl } from '../util/icons.js';
+import { EXT } from '../ui/preference.js';
+import { HSCDB, saveSettings } from '../core/storage.js';
+import { T } from '../util/util.js';
 
 // ════════════════════════════════════════
 //  HSC module: sound.js

@@ -8,13 +8,13 @@
 //   3) 信息干擾   — 人員進/出房間的訊息被改寫成模糊的幻覺敘述。
 // ════════════════════════════════════════
 
-import { CONFIG } from './config.js';
-import { isForced } from './hypno.js';
-import { getOverlay } from './util.js';
-import { extractChatText } from './util.js';
-import { bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from './geometry.js';
-import { HSC_Z } from './zlayers.js';
-import { ui } from './i18n.js';
+import { CONFIG } from '../core/config.js';
+import { isForced } from '../hypno/hypno.js';
+import { getOverlay } from '../util/util.js';
+import { extractChatText } from '../util/util.js';
+import { bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from '../util/geometry.js';
+import { HSC_Z } from '../util/zlayers.js';
+import { ui } from '../i18n/i18n.js';
 
 const _randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const _FONT = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';

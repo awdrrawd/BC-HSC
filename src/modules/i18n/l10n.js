@@ -6,7 +6,7 @@
 //  藉此驗證：同一條訊息，發送端看亂碼、另一端看翻譯。
 // ════════════════════════════════════════
 
-import { modApi } from './config.js';
+import { modApi } from '../core/config.js';
 import { ui } from './i18n.js';
 
 const L10N_TAG = 'HSC_L10N';

@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
-import { CONFIG } from './config.js';
-import { runEffect } from './run.js';
+import { CONFIG } from '../core/config.js';
+import { runEffect } from '../effects/run.js';
 import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════

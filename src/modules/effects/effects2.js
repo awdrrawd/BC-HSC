@@ -1,11 +1,11 @@
 // ── auto-wired cross-module imports ──
 import { _centerHeadEl } from './character-fx.js';
-import { CONFIG } from './config.js';
+import { CONFIG } from '../core/config.js';
 import { wrapDanmakuText } from './effects.js';
-import { BASE_DANMAKU_DURATION, BODY_PANT_DY, DEPTH_PANT_EXTRA, _cachedScaleX, bcToScreen, getPlayerHeadScreenPos, getPlayerMouthScreenPos, playerDrawPos } from './geometry.js';
+import { BASE_DANMAKU_DURATION, BODY_PANT_DY, DEPTH_PANT_EXTRA, _cachedScaleX, bcToScreen, getPlayerHeadScreenPos, getPlayerMouthScreenPos, playerDrawPos } from '../util/geometry.js';
 import { playSoundCategory } from './sound.js';
-import { effectScale, getBCXReminderList, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from './util.js';
-import { HSC_Z } from './zlayers.js';
+import { effectScale, getBCXReminderList, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
 //  HSC module: effects2.js

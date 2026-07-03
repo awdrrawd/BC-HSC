@@ -4,10 +4,10 @@
 //  營造「被眾人注視/包圍」的催眠情境。解除強控時淡出移除。
 // ════════════════════════════════════════
 
-import { CONFIG } from './config.js';
-import { assetUrl } from './icons.js';
-import { getOverlay } from './util.js';
-import { HSC_Z } from './zlayers.js';
+import { CONFIG } from '../core/config.js';
+import { assetUrl } from '../util/icons.js';
+import { getOverlay } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 const CROWD_URL = assetUrl('HSC-crowd1.png');
 let _crowdEl = null;

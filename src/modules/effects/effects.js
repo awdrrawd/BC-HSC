@@ -1,9 +1,9 @@
 // ── auto-wired cross-module imports ──
-import { printChat } from './commands.js';
-import { CONFIG } from './config.js';
-import { BASE_PINK_DURATION, BASE_WAVE_DURATION, HEAD_OFFSET, SPIRAL_DURATION, VIGNETTE_DURATION, bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from './geometry.js';
-import { effectScale, getOverlay, randInt } from './util.js';
-import { HSC_Z } from './zlayers.js';
+import { printChat } from '../core/commands.js';
+import { CONFIG } from '../core/config.js';
+import { BASE_PINK_DURATION, BASE_WAVE_DURATION, HEAD_OFFSET, SPIRAL_DURATION, VIGNETTE_DURATION, bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from '../util/geometry.js';
+import { effectScale, getOverlay, randInt } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
 //  HSC module: effects.js

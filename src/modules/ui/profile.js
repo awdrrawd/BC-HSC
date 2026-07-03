@@ -1,15 +1,15 @@
 // ── auto-wired cross-module imports ──
-import { startOtherPant } from './character-fx.js';
-import { printChat } from './commands.js';
-import { CONFIG, ES_KEY, PREF_ID, modApi } from './config.js';
-import { ui } from './i18n.js';
-import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark } from './icons.js';
+import { startOtherPant } from '../effects/character-fx.js';
+import { printChat } from '../core/commands.js';
+import { CONFIG, ES_KEY, PREF_ID, modApi } from '../core/config.js';
+import { ui } from '../i18n/i18n.js';
+import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark } from '../util/icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
 import { EXT, waitForPreference } from './preference.js';
-import { interfereEnterLeave } from './state-fx.js';
-import { publishSharedSettings, saveSettings } from './storage.js';
-import { isZh } from './util.js';
-import { HSC_Z } from './zlayers.js';
+import { interfereEnterLeave } from '../effects/state-fx.js';
+import { publishSharedSettings, saveSettings } from '../core/storage.js';
+import { isZh } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
 //  HSC module: profile.js

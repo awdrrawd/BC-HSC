@@ -1,21 +1,21 @@
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
 import { ES_KEY, MOD_VER, modApi, setModApi } from './config.js';
-import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from './depth.js';
+import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
 import { hookAtmosphere, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
-import { hookHypnoSpeech } from './hypno-speech.js';
-import { startHypnoDecay, restoreHypnoState } from './hypno.js';
-import { ensureI18n, ui } from './i18n.js';
-import { hookCensor } from './censor.js';
-import { hookL10n } from './l10n.js';
-import { updateCrowd } from './crowd.js';
-import { isForced } from './hypno.js';
-import { stopHypnoAnim, updateHeadTalisman } from './hypno-anim.js';
-import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from './panel.js';
-import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from './profile.js';
+import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
+import { startHypnoDecay, restoreHypnoState } from '../hypno/hypno.js';
+import { ensureI18n, ui } from '../i18n/i18n.js';
+import { hookCensor } from '../effects/censor.js';
+import { hookL10n } from '../i18n/l10n.js';
+import { updateCrowd } from '../effects/crowd.js';
+import { isForced } from '../hypno/hypno.js';
+import { stopHypnoAnim, updateHeadTalisman } from '../hypno/hypno-anim.js';
+import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from '../ui/panel.js';
+import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from '../ui/profile.js';
 import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
-import { injectStyles } from './styles.js';
-import { clearBCXCache } from './util.js';
+import { injectStyles } from '../ui/styles.js';
+import { clearBCXCache } from '../util/util.js';
 
 // ════════════════════════════════════════
 //  HSC module: core-init.js

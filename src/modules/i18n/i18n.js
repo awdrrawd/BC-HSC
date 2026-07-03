@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
-import { CONFIG } from './config.js';
-import { assetUrl } from './icons.js';
+import { CONFIG } from '../core/config.js';
+import { assetUrl } from '../util/icons.js';
 
 // ════════════════════════════════════════
 //  HSC module: i18n.js

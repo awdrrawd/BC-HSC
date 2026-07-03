@@ -7,10 +7,10 @@
 //    3 滿腦子淫穢（觸發自慰活動；無法執行則發 Action 描述）
 // ════════════════════════════════════════
 
-import { CONFIG, modApi } from './config.js';
+import { CONFIG, modApi } from '../core/config.js';
 import { isForced } from './hypno.js';
-import { sendLocalizedAction } from './l10n.js';
-import { resolveMe, pickRandom } from './util.js';
+import { sendLocalizedAction } from '../i18n/l10n.js';
+import { resolveMe, pickRandom } from '../util/util.js';
 
 let _busy = false;
 

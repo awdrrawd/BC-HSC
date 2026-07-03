@@ -12,10 +12,10 @@
 //  座標系：charX/charY/zoom 皆為 BC 主畫布座標（0~2000 × 0~1000），直接畫在 MainCanvas。
 // ════════════════════════════════════════
 
-import { CONFIG, ES_KEY } from './config.js';
-import { assetUrl } from './icons.js';
+import { CONFIG, ES_KEY } from '../core/config.js';
+import { assetUrl } from '../util/icons.js';
 import { getHypnoValue, isForced } from './hypno.js';
-import { ui } from './i18n.js';
+import { ui } from '../i18n/i18n.js';
 
 // ── 素材預載 ──
 // HSC-Hypnosis.png 為 200×75 的 1×2 精靈：左格＝外框（透明底），右格＝填滿的心形遮罩（用來裁水位形狀）。

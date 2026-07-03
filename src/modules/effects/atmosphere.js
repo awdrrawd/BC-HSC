@@ -1,5 +1,5 @@
 // ── auto-wired cross-module imports ──
-import { isForced } from './hypno.js';
+import { isForced } from '../hypno/hypno.js';
 
 // ════════════════════════════════════════
 //  HSC module: atmosphere.js
@@ -12,7 +12,7 @@ import { isForced } from './hypno.js';
 //  正確、且尊重玩家的 AllowBlur / AllowTints 設定（關掉就不強制，保護低效能機器）。
 // ════════════════════════════════════════
 
-import { CONFIG } from './config.js';
+import { CONFIG } from '../core/config.js';
 
 // 以「開始時間 + 持續時間」控制，讀取時即時算出淡入/淡出係數（0~1），
 // BC 每幀都會重讀 → 免費做出平滑淡入淡出。

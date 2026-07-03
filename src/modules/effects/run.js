@@ -1,12 +1,12 @@
 // ── auto-wired cross-module imports ──
 import { addArousal, broadcastHypnotized, popExprEffect, pushExprEffect, sendStatusEmote, showCenterHeadshot, startChatFade } from './character-fx.js';
-import { CONFIG, EXPRESSION_SETS } from './config.js';
+import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
 import { triggerHypnoSpiral, triggerHypnoWaves, triggerPinkFlash, triggerScreenDistort, triggerVignette } from './effects.js';
 import { triggerClimaxEffect, triggerDanmakuMulti, triggerSteamParticles } from './effects2.js';
-import { BASE_EFFECT_DURATION, refreshCanvasCache } from './geometry.js';
-import { addHypno } from './hypno.js';
+import { BASE_EFFECT_DURATION, refreshCanvasCache } from '../util/geometry.js';
+import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
-import { effectScale, getArousalLevel, wait } from './util.js';
+import { effectScale, getArousalLevel, wait } from '../util/util.js';
 
 // ════════════════════════════════════════
 //  HSC module: run.js

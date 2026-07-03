@@ -1,15 +1,15 @@
 // ── auto-wired cross-module imports ──
-import { maybeFadeChatNode } from './character-fx.js';
-import { registerCommandOnce } from './commands.js';
-import { CONFIG, MOD_VER, PREF_ID } from './config.js';
-import { runDepthEffect } from './depth.js';
-import { refreshCanvasCache } from './geometry.js';
-import { enterHypnoNow, wake } from './hypno.js';
-import { parseVoiceText } from './run.js';
-import { preloadSounds } from './sound.js';
-import { handleStateChatFx } from './state-fx.js';
-import { saveSettings } from './storage.js';
-import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js';
+import { maybeFadeChatNode } from '../effects/character-fx.js';
+import { registerCommandOnce } from '../core/commands.js';
+import { CONFIG, MOD_VER, PREF_ID } from '../core/config.js';
+import { runDepthEffect } from '../effects/depth.js';
+import { refreshCanvasCache } from '../util/geometry.js';
+import { enterHypnoNow, wake } from '../hypno/hypno.js';
+import { parseVoiceText } from '../effects/run.js';
+import { preloadSounds } from '../effects/sound.js';
+import { handleStateChatFx } from '../effects/state-fx.js';
+import { saveSettings } from '../core/storage.js';
+import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/util.js';
 
 // ════════════════════════════════════════
 //  HSC module: panel.js

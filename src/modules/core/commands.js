@@ -1,12 +1,12 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG, MOD_VER, PREF_ID } from './config.js';
-import { currentDepthLevel, runDepthEffect } from './depth.js';
-import { openCalibratePanel } from './effects.js';
-import { triggerClimaxEffect } from './effects2.js';
-import { refreshCanvasCache } from './geometry.js';
-import { ui } from './i18n.js';
-import { _panel, buildPanel, removePanel } from './panel.js';
-import { T, triggerVoiceEffect } from './util.js';
+import { currentDepthLevel, runDepthEffect } from '../effects/depth.js';
+import { openCalibratePanel } from '../effects/effects.js';
+import { triggerClimaxEffect } from '../effects/effects2.js';
+import { refreshCanvasCache } from '../util/geometry.js';
+import { ui } from '../i18n/i18n.js';
+import { _panel, buildPanel, removePanel } from '../ui/panel.js';
+import { T, triggerVoiceEffect } from '../util/util.js';
 
 // ════════════════════════════════════════
 //  HSC module: commands.js

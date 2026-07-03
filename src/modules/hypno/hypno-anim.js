@@ -21,11 +21,11 @@
 //  座標/尺寸/時間全放 ANIM，用 showAnimPanel() 即時調 →「輸出」貼給我定案。
 // ════════════════════════════════════════
 
-import { CONFIG } from './config.js';
-import { assetUrl } from './icons.js';
-import { getOverlay } from './util.js';
-import { HSC_Z } from './zlayers.js';
-import { bcToScreen, playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from './geometry.js';
+import { CONFIG } from '../core/config.js';
+import { assetUrl } from '../util/icons.js';
+import { getOverlay } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
+import { bcToScreen, playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from '../util/geometry.js';
 
 const SPRITE = assetUrl('HSC-Status-Code1.png');
 const COLS = 6, ROWS = 2, CELL_AR = 0.5, BASE_W = 320;
