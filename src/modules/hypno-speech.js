@@ -1,5 +1,5 @@
 // ════════════════════════════════════════
-//  IVH module: hypno-speech.js
+//  HSC module: hypno-speech.js
 //  強控（催眠值 100%）中說話 → 攔截一般 Chat：先發「思考」Action，等 2 秒後隨機四選一：
 //    0 呆呆站著（什麼也不說）
 //    1 停頓一下才開口（照說原句）
@@ -90,6 +90,6 @@ export function hookHypnoSpeech() {
             return next(args);
         });
     } catch (e) {
-        console.warn('🐈‍⬛ [IVH] 催眠說話攔截 hook 失敗:', e.message);
+        console.warn('🐈‍⬛ [HSC] 催眠說話攔截 hook 失敗:', e.message);
     }
 }

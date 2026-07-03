@@ -6,15 +6,15 @@ import { ui } from './i18n.js';
 import { resolveWhitelistNumbers } from './panel.js';
 
 // ════════════════════════════════════════
-//  IVH module: storage.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: storage.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  儲存層
-    //  - Player.ExtensionSettings.IVH  ← 設定本體（LZString 壓縮，跟帳號同步）
-    //  - Player.OnlineSharedSettings.IVH ← 對外公告（版本 + 是否允許他人編輯）
-    //  - IndexedDB "liko-ivh"          ← 本機上傳音效 bytes / 大量文本（無上限）
+    //  - Player.ExtensionSettings.HSC  ← 設定本體（LZString 壓縮，跟帳號同步）
+    //  - Player.OnlineSharedSettings.HSC ← 對外公告（版本 + 是否允許他人編輯）
+    //  - IndexedDB "liko-hsc"          ← 本機上傳音效 bytes / 大量文本（無上限）
     // ════════════════════════════════════════
 
     // 深合併：以 defaults 為底，用 saved 覆蓋（陣列直接取代）
@@ -69,10 +69,10 @@ import { resolveWhitelistNumbers } from './panel.js';
     }
 
     // 音效設定改存 localStorage（同瀏覽器跨帳號共用），不跟著帳號走
-    const SND_LS_KEY = 'IVH_sounds';
+    const SND_LS_KEY = 'HSC_sounds';
     function loadSounds() {
         try {
-            const raw = localStorage.getItem(SND_LS_KEY);
+            const raw = localStorage.getItem(SND_LS_KEY);   // 舊 IVH_sounds 已由 migrateFromIVH() 搬移
             if (raw) {
                 const s = JSON.parse(raw);
                 CONFIG.sounds = mergeDefaults(makeDefaultConfig().sounds, s);
@@ -96,7 +96,32 @@ import { resolveWhitelistNumbers } from './panel.js';
         });
     }
 
+    // ★ 一次性改名遷移（BC-IVH → BC-HSC）：把舊 IVH 設定搬到 HSC，然後清掉舊鍵，
+    //   玩家不需手動備份。搬完後舊帳號同步鍵設空字串再同步（BC 的 sync 不接受 undefined），
+    //   本地物件則直接刪除。localStorage 音效設定同樣搬移。
+    function migrateFromIVH() {
+        try {
+            const es = Player && Player.ExtensionSettings;
+            if (es && es.IVH && !es[ES_KEY]) {
+                es[ES_KEY] = es.IVH;                       // 搬到新鍵
+                try { if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync(ES_KEY); } catch (e) {}
+                es.IVH = '';                               // 清空舊鍵資料（不能用 undefined，否則 sync 會丟例外）
+                try { if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync('IVH'); } catch (e) {}
+                delete es.IVH;                             // 本地物件清掉
+                console.log('🐈‍⬛ [HSC] 已將舊 IVH 設定遷移到 HSC 並移除舊鍵');
+            }
+        } catch (e) {}
+        try {
+            const oldSnd = localStorage.getItem('IVH_sounds');
+            if (oldSnd && !localStorage.getItem(SND_LS_KEY)) {
+                localStorage.setItem(SND_LS_KEY, oldSnd);
+                localStorage.removeItem('IVH_sounds');
+            }
+        } catch (e) {}
+    }
+
     function loadSettings() {
+        migrateFromIVH();   // 先把舊 IVH 資料搬到 HSC（並清除舊鍵）
         try {
             const raw = Player?.ExtensionSettings?.[ES_KEY];
             if (raw) {
@@ -138,7 +163,7 @@ import { resolveWhitelistNumbers } from './panel.js';
                 }
             }
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] 設定讀取失敗，使用預設:', e.message);
+            console.warn('🐈‍⬛ [HSC] 設定讀取失敗，使用預設:', e.message);
             setConfig(makeDefaultConfig());
         }
         loadSounds();   // 音效改從 localStorage（跨帳號共用）
@@ -159,7 +184,7 @@ import { resolveWhitelistNumbers } from './panel.js';
                 saveSounds();   // 音效另存 localStorage（跨帳號共用）
                 setExpressionSets(CONFIG.expressionSets);
             } catch (e) {
-                console.warn('🐈‍⬛ [IVH] 設定儲存失敗:', e.message);
+                console.warn('🐈‍⬛ [HSC] 設定儲存失敗:', e.message);
             }
         };
         if (immediate) { if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; } doSave(); return; }
@@ -167,7 +192,7 @@ import { resolveWhitelistNumbers } from './panel.js';
         _saveTimer = setTimeout(() => { _saveTimer = null; doSave(); }, 600);
     }
 
-    // 對外公告：他人查看 profile 時用來判斷是否裝了 IVH / 是否允許編輯
+    // 對外公告：他人查看 profile 時用來判斷是否裝了 HSC / 是否允許編輯
     function publishSharedSettings() {
         try {
             if (!Player || !Player.OnlineSharedSettings) return;
@@ -194,17 +219,17 @@ import { resolveWhitelistNumbers } from './panel.js';
                 ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings });
             }
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] OnlineSharedSettings 公告失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] OnlineSharedSettings 公告失敗:', e.message);
         }
     }
 
     // ── IndexedDB（本機上傳音效 / 大量文本）──
-    const IVHDB = {
+    const HSCDB = {
         db: null,
         open() {
             return new Promise(resolve => {
                 try {
-                    const req = indexedDB.open('liko-ivh', 1);
+                    const req = indexedDB.open('liko-hsc', 1);
                     req.onupgradeneeded = e => {
                         const db = e.target.result;
                         if (!db.objectStoreNames.contains('sounds')) db.createObjectStore('sounds', { keyPath: 'id' });
@@ -250,16 +275,16 @@ import { resolveWhitelistNumbers } from './panel.js';
     // ════════════════════════════════════════
     function exportSettings() {
         try {
-            const data = { plugin: 'Liko-IVH', v: MOD_VER, ivh: serializeConfig() };
+            const data = { plugin: 'Liko-HSC', v: MOD_VER, hsc: serializeConfig() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
             const a    = document.createElement('a');
-            a.href = url; a.download = 'IVH-settings.json';
+            a.href = url; a.download = 'HSC-settings.json';
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             printChat(ui('exportDone'), 6000);
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] 匯出失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] 匯出失敗:', e.message);
         }
     }
 
@@ -273,7 +298,7 @@ import { resolveWhitelistNumbers } from './panel.js';
             r.onload = () => {
                 try {
                     const data  = JSON.parse(String(r.result));
-                    const saved = data.ivh || data;
+                    const saved = data.hsc || data;
                     setConfig(mergeDefaults(makeDefaultConfig(), saved));
                     setExpressionSets(CONFIG.expressionSets);
                     saveSettings(true);
@@ -281,8 +306,8 @@ import { resolveWhitelistNumbers } from './panel.js';
                     applyDepthLoop();
                     printChat(ui('importDone'), 6000);
                 } catch (e) {
-                    console.warn('🐈‍⬛ [IVH] 匯入失敗:', e.message);
-                    printChat('⚠️ IVH 設定匯入失敗：' + e.message, 8000);
+                    console.warn('🐈‍⬛ [HSC] 匯入失敗:', e.message);
+                    printChat('⚠️ HSC 設定匯入失敗：' + e.message, 8000);
                 }
             };
             r.readAsText(f);
@@ -301,7 +326,7 @@ export {
     loadSettings,
     saveSettings,
     publishSharedSettings,
-    IVHDB,
+    HSCDB,
     exportSettings,
     importSettings,
 };

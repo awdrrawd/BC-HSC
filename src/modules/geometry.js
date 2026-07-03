@@ -2,8 +2,8 @@
 import { CONFIG } from './config.js';
 
 // ════════════════════════════════════════
-//  IVH module: geometry.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: geometry.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════

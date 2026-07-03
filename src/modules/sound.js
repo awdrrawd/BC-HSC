@@ -3,12 +3,12 @@ import { printChat } from './commands.js';
 import { CONFIG } from './config.js';
 import { assetUrl } from './icons.js';
 import { EXT } from './preference.js';
-import { IVHDB, saveSettings } from './storage.js';
+import { HSCDB, saveSettings } from './storage.js';
 import { T } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: sound.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: sound.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -17,7 +17,7 @@ import { T } from './util.js';
     //  載入失敗 → 本地聊天訊息提示（10秒後自動消失）
     //  音源來自 https://www.pincree.jp/
     // ════════════════════════════════════════
-    // 音源自我裝載：與 bundle 同源（正式站 = BC-IVH Pages，本地 = vite preview）。
+    // 音源自我裝載：與 bundle 同源（正式站 = BC-HSC Pages，本地 = vite preview）。
     // 檔案放 Sound/，build 前由 copy-assets 複製到 public/Sound/ 一併部署。
     const SND_BASE = assetUrl('Sound/');
 
@@ -84,7 +84,7 @@ import { T } from './util.js';
                     // 延遲 3 秒，等玩家看完催眠特效再顯示
                     setTimeout(() => {
                         printChat(
-                            T('🔇 IVH 音源載入失敗，聲音效果暫時停用', '🔇 IVH sound load failed, audio disabled'),
+                            T('🔇 HSC 音源載入失敗，聲音效果暫時停用', '🔇 HSC sound load failed, audio disabled'),
                             10000  // 10 秒後消失
                         );
                     }, 3000);
@@ -103,7 +103,7 @@ import { T } from './util.js';
                 .then(buf => { _soundBufferCache.set(entry, buf); resolve(buf); })
                 .catch(() => resolve(null));
             if (entry.startsWith('idb:')) {
-                IVHDB.get('sounds', entry.slice(4)).then(rec => {
+                HSCDB.get('sounds', entry.slice(4)).then(rec => {
                     if (rec && rec.bytes) onAB(rec.bytes); else resolve(null);
                 });
             } else {
@@ -145,7 +145,7 @@ import { T } from './util.js';
             r.onload = async () => {
                 const id = 'snd_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
                 const name = f.name.replace(/\.[^.]+$/, '');   // 去副檔名當名稱
-                await IVHDB.put('sounds', { id, name, bytes: r.result });
+                await HSCDB.put('sounds', { id, name, bytes: r.result });
                 _sndNameCache[id] = name;
                 CONFIG.sounds[cat][idx] = 'idb:' + id;
                 saveSettings();
@@ -160,7 +160,7 @@ import { T } from './util.js';
     // 刪除一個本機音效（從 DB 移除、清掉所有引用的格子、刷新音效庫）
     function deleteLocalSound(id) {
         const ref = 'idb:' + id;
-        try { IVHDB.delete('sounds', id); } catch (e) {}
+        try { HSCDB.delete('sounds', id); } catch (e) {}
         for (const cat in CONFIG.sounds) {
             CONFIG.sounds[cat] = (CONFIG.sounds[cat] || []).map(e => (e === ref ? '' : e));
         }

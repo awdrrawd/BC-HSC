@@ -9,8 +9,8 @@ import { playSoundCategory, triggerBreathSound } from './sound.js';
 import { effectScale, getArousalLevel, wait } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: run.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: run.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -24,7 +24,7 @@ import { effectScale, getArousalLevel, wait } from './util.js';
         }
         refreshCanvasCache();
 
-        // ① 先換表情（高潮時用 BC 自帶表情，跳過 IVH 替換）
+        // ① 先換表情（高潮時用 BC 自帶表情，跳過 HSC 替換）
         const orgasmStageNow = Player?.ArousalSettings?.OrgasmStage ?? 0;
         const willOrgasm = orgasmStageNow === 2;
         const doExpr = CONFIG.expression && !willOrgasm && EXPRESSION_SETS && EXPRESSION_SETS.length;
@@ -45,7 +45,7 @@ import { effectScale, getArousalLevel, wait } from './util.js';
         //  ★ 包 try/catch：這一段任何失敗都不能擋住下面的視覺效果（否則「正常觸發沒特效、
         //     SHOW 測試卻正常」——因為測試走 isTest 跳過本段）。
         //  開催眠動畫 → 先播特效、第 5 秒才漲催眠值（破百時 _enterForced 會清場播符咒）；否則即時漲
-        if (!isTest) { try { sendStatusEmote(); broadcastHypnotized(); if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('voice'); } catch (e) {} }, 5000); else addHypno('voice'); } catch (e) { console.warn('🐈‍⬛ [IVH] 狀態廣播失敗（不影響特效）:', e.message); } }
+        if (!isTest) { try { sendStatusEmote(); broadcastHypnotized(); if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('voice'); } catch (e) {} }, 5000); else addHypno('voice'); } catch (e) { console.warn('🐈‍⬛ [HSC] 狀態廣播失敗（不影響特效）:', e.message); } }
 
         // ③ 視覺效果同時觸發
         if (CONFIG.centerHeadshot) showCenterHeadshot(totalDur + 1500, true);   // 喘氣時頭像呼吸縮放

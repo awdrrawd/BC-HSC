@@ -13,13 +13,13 @@ import { isForced } from './hypno.js';
 import { stopHypnoAnim, updateHeadTalisman } from './hypno-anim.js';
 import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from './panel.js';
 import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from './profile.js';
-import { IVHDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
+import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
 import { injectStyles } from './styles.js';
 import { clearBCXCache } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: core-init.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: core-init.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -62,7 +62,7 @@ import { clearBCXCache } from './util.js';
         try { updateCrowd(false); } catch (e) {}
         try { stopHypnoAnim(); } catch (e) {}
         try { updateHeadTalisman(); } catch (e) {}   // 非 ChatRoom → want=false → 收起
-        const overlay = document.getElementById('ivh-overlay');
+        const overlay = document.getElementById('hsc-overlay');
         if (overlay) overlay.innerHTML = '';
         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
         if (canvas) { canvas.style.transform = ''; canvas.style.filter = ''; }
@@ -111,14 +111,14 @@ import { clearBCXCache } from './util.js';
     //  初始化
     // ════════════════════════════════════════
     async function initialize() {
-        console.log(`🐈‍⬛ [IVH] ⌛ 初始化 v${MOD_VER}...`);
+        console.log(`🐈‍⬛ [HSC] ⌛ 初始化 v${MOD_VER}...`);
         injectStyles();
 
         const sdkReady  = await waitForBcModSdk();
         const gameReady = await waitForGame();
 
         if (!gameReady) {
-            console.error('🐈‍⬛ [IVH] ❌ 遊戲載入逾時');
+            console.error('🐈‍⬛ [HSC] ❌ 遊戲載入逾時');
             return;
         }
 
@@ -127,7 +127,7 @@ import { clearBCXCache } from './util.js';
         await waitForExtensionSettings();
         // 還原設定 + 開啟本地 DB + 對外公告
         loadSettings();
-        await IVHDB.open();
+        await HSCDB.open();
         publishSharedSettings();
         registerPreferenceScreen();
         applyDepthLoop();
@@ -136,13 +136,13 @@ import { clearBCXCache } from './util.js';
         if (sdkReady) {
             try {
                 setModApi(bcModSdk.registerMod({
-                    name:       'liko - IVH',
-                    fullName:   "liko's Immersive Voice Hypnosis",
+                    name:       'liko - HSC',
+                    fullName:   "liko's Hypnotic Slave Club",
                     version:    MOD_VER,
-                    repository: '沉浸式催眠效果 | Immersive Voice Hypnosis',
+                    repository: '沉浸式催眠效果 | Hypnotic Slave Club',
                 }));
             } catch (e) {
-                console.warn('🐈‍⬛ [IVH] ⚠️ registerMod 失敗，進入相容模式:', e.message);
+                console.warn('🐈‍⬛ [HSC] ⚠️ registerMod 失敗，進入相容模式:', e.message);
             }
 
             if (modApi) {
@@ -154,9 +154,9 @@ import { clearBCXCache } from './util.js';
                         try { stopHypnoAnim(); updateHeadTalisman(); } catch (e) {}
                         if (_depthTimer)       { clearInterval(_depthTimer); setDepthTimer(null); }
                         removePanel();
-                        const overlay = document.getElementById('ivh-overlay');
+                        const overlay = document.getElementById('hsc-overlay');
                         if (overlay) overlay.remove();
-                        const styles = document.getElementById('ivh-styles');
+                        const styles = document.getElementById('hsc-styles');
                         if (styles) styles.remove();
                         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
                         if (canvas) { canvas.style.filter = ''; canvas.style.transform = ''; }
@@ -188,7 +188,7 @@ import { clearBCXCache } from './util.js';
                 _lastScreen = cur;
             }, 400);
         }
-        console.log(`🐈‍⬛ [IVH] ✅ 初始化完成 v${MOD_VER}`);
+        console.log(`🐈‍⬛ [HSC] ✅ 初始化完成 v${MOD_VER}`);
 
         // 進入房間後顯示載入提示（一次性）
         let _loadedNotified = false;

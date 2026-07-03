@@ -1,6 +1,6 @@
 // ════════════════════════════════════════
-//  IVH module: icons.js
-//  註冊按鈕圖示：IVH-iconW（白底用）/ IVH-iconB（黑底用）
+//  HSC module: icons.js
+//  註冊按鈕圖示：HSC-iconW（白底用）/ HSC-iconB（黑底用）
 //  圖檔放在 public/，隨 build 部署到 bundle 根目錄；用 import.meta.url 解析出網址，
 //  本地 vite preview 與 GitHub Pages 皆適用。
 // ════════════════════════════════════════
@@ -14,9 +14,9 @@ export function assetUrl(path) {
 }
 
 // 白底按鈕用（深色線稿）
-export const IVH_ICON_W = assetUrl('IVH-iconW.png');
+export const HSC_ICON_W = assetUrl('HSC-iconW.png');
 // 黑底按鈕用（白色線稿）
-export const IVH_ICON_B = assetUrl('IVH-iconB.png');
+export const HSC_ICON_B = assetUrl('HSC-iconB.png');
 
 // 粗略判斷 DrawButton 背景色是否為淺色（→ 用白底圖 W；深色 → 用黑底圖 B）。
 // 接受 'White' / 'Black' / '#ccc' / '#8E44A1' / 'rgb(...)' 等寫法。
@@ -43,8 +43,8 @@ export function isLightColor(color) {
 }
 
 // 依按鈕背景色挑正確的圖示網址。
-export function ivhIconFor(bgColor) {
-    return isLightColor(bgColor) ? IVH_ICON_W : IVH_ICON_B;
+export function hscIconFor(bgColor) {
+    return isLightColor(bgColor) ? HSC_ICON_W : HSC_ICON_B;
 }
 
 // ── BC 沒有主題色判定，改由我們自己取樣畫布背景 ──
@@ -76,14 +76,14 @@ export function sampleCanvasIsDark(x, y, w, h) {
 }
 
 // 依「按鈕實際所在畫布背景」自動選圖：暗底 → B，亮底 → W。
-export function ivhIconForButton(x, y, w, h) {
-    return sampleCanvasIsDark(x, y, w, h) ? IVH_ICON_B : IVH_ICON_W;
+export function hscIconForButton(x, y, w, h) {
+    return sampleCanvasIsDark(x, y, w, h) ? HSC_ICON_B : HSC_ICON_W;
 }
 
 // ── 判定「當前 UI 主題色」是否過深 ──
 // 主題染色的原因很多；優先讀主題插件設的 CSS 變數（BC 官方推薦的 Themed-BC 會設
 // --tmd-element = 當前按鈕色），讀不到再退而取樣畫布上方選單帶。都失敗則預設亮底。
-export function ivhThemeIsDark() {
+export function hscThemeIsDark() {
     try {
         const cs = getComputedStyle(document.documentElement);
         // Themed-BC 主色 + 幾個常見的變數名（各主題插件命名不一，盡量涵蓋）
@@ -97,6 +97,6 @@ export function ivhThemeIsDark() {
 }
 
 // 依當前主題深淺選圖（給不易取樣座標的按鈕，如偏好頁註冊鈕）
-export function ivhIconForTheme() {
-    return ivhThemeIsDark() ? IVH_ICON_B : IVH_ICON_W;
+export function hscIconForTheme() {
+    return hscThemeIsDark() ? HSC_ICON_B : HSC_ICON_W;
 }

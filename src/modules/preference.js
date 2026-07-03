@@ -3,16 +3,16 @@ import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '
 import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from './depth.js';
 import { assetUrl } from './icons.js';
-import { IVH_LANGS, IVH_LANG_NAMES, ui } from './i18n.js';
+import { HSC_LANGS, HSC_LANG_NAMES, ui } from './i18n.js';
 import { WL_TOKENS } from './panel.js';
-import { ivhConfirm } from './profile.js';
+import { hscConfirm } from './profile.js';
 import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from './sound.js';
-import { IVHDB, exportSettings, importSettings, publishSharedSettings, saveSettings } from './storage.js';
-import { IVH_Z } from './zlayers.js';
+import { HSCDB, exportSettings, importSettings, publishSharedSettings, saveSettings } from './storage.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: preference.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: preference.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -35,7 +35,7 @@ import { IVH_Z } from './zlayers.js';
     //  remote = 在「訪問別人」（profile 就地設定頁）出現
     //  remotePerm(remote) = 訪問模式下，依權限決定此分頁是否顯示（回傳 false 則隱藏）
     //  之後要擴充別人可遠端設定的項目，只要在此新增分頁並標 remote:true 即可。
-    const IVH_TABS = [
+    const HSC_TABS = [
         { key: 'basic',   label: () => ui('tab_basic'),   self: true,  remote: false },
         { key: 'voice',   label: () => ui('tab_voice'),   self: true,  remote: false },
         { key: 'daily',   label: () => ui('tab_daily'),   self: true,  remote: false },
@@ -70,7 +70,7 @@ import { IVH_Z } from './zlayers.js';
 
         // 目前情境下可見的分頁（remote 再過 remotePerm 權限）
         _tabsFor() {
-            return IVH_TABS.filter(t => t[this.ctx] && (this.ctx !== 'remote' || !t.remotePerm || t.remotePerm(this.remote)));
+            return HSC_TABS.filter(t => t[this.ctx] && (this.ctx !== 'remote' || !t.remotePerm || t.remotePerm(this.remote)));
         },
 
         // ── 就地開啟訪問別人的設定頁（由 profile 按鈕呼叫）──
@@ -211,11 +211,11 @@ import { IVH_Z } from './zlayers.js';
             const tabs = this._tabsFor();
             // 標題 + 離開鈕
             DrawText(remote ? ui('remoteEditTitle', { name: this.remote?.name || '' })
-                            : 'Immersive Voice Hypnosis  v' + MOD_VER,
+                            : 'Hypnotic Slave Club  v' + MOD_VER,
                      950, 110, 'Black', '');
             DrawButton(1815, 75, 90, 90, '', 'White', 'Icons/Exit.png', ui('exit'));
 
-            // 左上「IVH 啟用」主開關（僅個人設定）
+            // 左上「HSC 啟用」主開關（僅個人設定）
             if (!remote) {
                 DrawButton(100, 205, 300, 50,
                            CONFIG.enabled ? ui('enabledOn') : ui('enabledOff'),
@@ -284,7 +284,7 @@ import { IVH_Z } from './zlayers.js';
             if (!this._demoEl) {
                 const el = document.createElement('div');
                 Object.assign(el.style, {
-                    position: 'fixed', zIndex: IVH_Z.prefInput, pointerEvents: 'none',
+                    position: 'fixed', zIndex: HSC_Z.prefInput, pointerEvents: 'none',
                     overflow: 'hidden', borderRadius: '8px',
                     // 用臥室背景當演示底圖（灰暗斜角等暗色效果才看得出來）
                     background: 'center/cover no-repeat url("Backgrounds/Bedroom.jpg"), #2a1830',
@@ -345,16 +345,16 @@ import { IVH_Z } from './zlayers.js';
             const face = this._demoFace;
             const HS = (overlay = '', img = face) => W(`<div style="position:relative;width:${SZ}px;height:${SZ}px">
                 ${img
-                    ? `<img src="${img}" style="width:${SZ}px;height:${SZ}px;border-radius:50%;object-fit:cover;box-shadow:0 0 24px #ff66bb88;animation:ivhPinkPulse 2.6s ease-in-out infinite"/>`
+                    ? `<img src="${img}" style="width:${SZ}px;height:${SZ}px;border-radius:50%;object-fit:cover;box-shadow:0 0 24px #ff66bb88;animation:hscPinkPulse 2.6s ease-in-out infinite"/>`
                     : `<div style="width:${SZ}px;height:${SZ}px;border-radius:50%;background:radial-gradient(circle,#3a1040,#1a0028);box-shadow:0 0 24px #ff66bb88"></div>`}
                 ${overlay}</div>`);
             // 塗鴉 SVG 置中疊在頭像上（比頭像小一圈）
-            const scrib = (inner, spin) => `<svg viewBox="-75 -75 150 150" width="140" height="140" style="position:absolute;left:${(SZ-140)/2}px;top:${(SZ-140)/2}px;animation:ivhSpiralSpin ${spin}s linear infinite">${inner}</svg>`;
+            const scrib = (inner, spin) => `<svg viewBox="-75 -75 150 150" width="140" height="140" style="position:absolute;left:${(SZ-140)/2}px;top:${(SZ-140)/2}px;animation:hscSpiralSpin ${spin}s linear infinite">${inner}</svg>`;
             // 符咒樣式預覽：kind = 'hypnoStyle<N>|<color>'；切第 N 格並用當前顏色 mask 染色（所見即所得）
             if (typeof kind === 'string' && kind.indexOf('hypnoStyle') === 0) {
                 const st = Math.min(12, Math.max(1, parseInt(kind.slice(10), 10) || 1));
                 const i = st - 1, col = i % 6, row = Math.floor(i / 6);
-                const spr = assetUrl('IVH-Status-Code1.png');
+                const spr = assetUrl('HSC-Status-Code1.png');
                 const color = CONFIG.hypnoAnimColor || '#f500b4';
                 const pos = `${(col / 5 * 100).toFixed(2)}% ${row * 100}%`;
                 return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">
@@ -372,36 +372,36 @@ import { IVH_Z } from './zlayers.js';
                         const y = (r * Math.sin(a)).toFixed(1);
                         d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
                     }
-                    return HS(`<svg viewBox="-100 -100 200 200" width="${SZ}" height="${SZ}" style="position:absolute;left:0;top:0;animation:ivhSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
+                    return HS(`<svg viewBox="-100 -100 200 200" width="${SZ}" height="${SZ}" style="position:absolute;left:0;top:0;animation:hscSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
                         <path d="${d}" fill="none" stroke="#ff88cc" stroke-width="3.5" stroke-linecap="round"/>
                         <circle cx="0" cy="0" r="5" fill="#ffe6f5"/>
                     </svg>`);
                 }
                 case 'hypnoWaves':
-                    return W(['0s','0.6s','1.2s'].map(d=>`<div style="position:absolute;width:24px;height:24px;border:3px solid #ff88cc;border-radius:50%;animation:ivhDemoRing 1.8s ease-out ${d} infinite"></div>`).join(''));
+                    return W(['0s','0.6s','1.2s'].map(d=>`<div style="position:absolute;width:24px;height:24px;border:3px solid #ff88cc;border-radius:50%;animation:hscDemoRing 1.8s ease-out ${d} infinite"></div>`).join(''));
                 case 'pinkFlash':
                     // 覆蓋整個底圖（Bedroom）的粉紅暈染／煙霧
-                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 25%,rgba(255,60,150,0.15) 100%);animation:ivhPinkPulse 2s ease-in-out infinite"></div>`;
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 25%,rgba(255,60,150,0.15) 100%);animation:hscPinkPulse 2s ease-in-out infinite"></div>`;
                 case 'vignette':
                     // 覆蓋整個底圖的邊緣暗角
-                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:ivhVignette 2.6s ease-in-out infinite"></div>`;
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:hscVignette 2.6s ease-in-out infinite"></div>`;
                 case 'screenDistort':
                     // 畫面扭曲：讓 Bedroom 底圖本身被扭曲（疊一張會扭動的同底圖）
-                    return `<div style="position:absolute;inset:0;background:center/cover no-repeat url('Backgrounds/Bedroom.jpg');animation:ivhDemoDistort 1.8s ease-in-out infinite"></div>`;
+                    return `<div style="position:absolute;inset:0;background:center/cover no-repeat url('Backgrounds/Bedroom.jpg');animation:hscDemoDistort 1.8s ease-in-out infinite"></div>`;
                 case 'danmaku':
-                    return W('催眠中…'.split('').map((c,i)=>`<span style="display:inline-block;font-size:30px;color:#ffd6eb;text-shadow:0 0 10px #ff50a0;animation:ivhWaveChar 1.6s ease-in-out ${i*90}ms infinite">${c}</span>`).join(''));
+                    return W('催眠中…'.split('').map((c,i)=>`<span style="display:inline-block;font-size:30px;color:#ffd6eb;text-shadow:0 0 10px #ff50a0;animation:hscWaveChar 1.6s ease-in-out ${i*90}ms infinite">${c}</span>`).join(''));
                 case 'steamParticles':
                     // 喘氣氣團：X 置中（left50% + margin-left -18，不用 transform 以免被 keyframe 蓋掉）、Y 再往下
-                    return HS(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;margin-left:-18px;top:calc(34% + 60px);width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.6),transparent 70%);filter:blur(4px);animation:ivhBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
+                    return HS(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;margin-left:-18px;top:calc(34% + 60px);width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.6),transparent 70%);filter:blur(4px);animation:hscBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
                 case 'expression':
                     // 用「預設表情三」的頭像演示（無 emoji）
                     this._ensureExprDemoFace();
                     return HS('', this._exprDemoFace || face);
                 case 'climax':
                     // 覆蓋整個底圖的紅白閃光 + 幾片碎裂示意
-                    return `<div style="position:absolute;inset:0;background:white;animation:ivhClimaxFlash 1.3s ease-out infinite"></div>
+                    return `<div style="position:absolute;inset:0;background:white;animation:hscClimaxFlash 1.3s ease-out infinite"></div>
                         <div style="position:absolute;inset:0;pointer-events:none">
-                        ${[[15,20,-25],[60,15,20],[30,55,-15],[70,60,25]].map(([l,t,r])=>`<div style="position:absolute;left:${l}%;top:${t}%;width:26%;height:26%;background:center/cover url('Backgrounds/Bedroom.jpg');clip-path:polygon(0 0,100% 15%,85% 100%,10% 80%);transform:rotate(${r}deg);animation:ivhPinkPulse 1.3s ease-out infinite"></div>`).join('')}
+                        ${[[15,20,-25],[60,15,20],[30,55,-15],[70,60,25]].map(([l,t,r])=>`<div style="position:absolute;left:${l}%;top:${t}%;width:26%;height:26%;background:center/cover url('Backgrounds/Bedroom.jpg');clip-path:polygon(0 0,100% 15%,85% 100%,10% 80%);transform:rotate(${r}deg);animation:hscPinkPulse 1.3s ease-out infinite"></div>`).join('')}
                         </div>`;
                 case 'centerHeadshot':
                     return HS('');   // 玩家頭像（呼吸縮放示意）
@@ -415,29 +415,29 @@ import { IVH_Z } from './zlayers.js';
                         </g>`, 4));
                 case 'nameCensor':
                     return HS(`<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:20px;font-weight:700;color:#fff;text-shadow:0 0 4px #000;white-space:nowrap">Nymphaea
-                        <span style="position:absolute;left:-5px;top:-3px;right:-5px;bottom:-3px;background:#000;border-radius:3px;animation:ivhPinkPulse 1.8s ease-in-out infinite"></span></div>`);
+                        <span style="position:absolute;left:-5px;top:-3px;right:-5px;bottom:-3px;background:#000;border-radius:3px;animation:hscPinkPulse 1.8s ease-in-out infinite"></span></div>`);
                 case 'crowd':
                     return `<div style="width:100%;height:100%;position:relative;overflow:hidden">
-                        <img src="${assetUrl('IVH-crowd1.png')}" style="position:absolute;left:0;bottom:0;width:100%;max-height:72%;object-fit:cover;object-position:bottom;filter:brightness(0.75) saturate(0.9);animation:ivhPinkPulse 3s ease-in-out infinite"/>
+                        <img src="${assetUrl('HSC-crowd1.png')}" style="position:absolute;left:0;bottom:0;width:100%;max-height:72%;object-fit:cover;object-position:bottom;filter:brightness(0.75) saturate(0.9);animation:hscPinkPulse 3s ease-in-out infinite"/>
                     </div>`;
                 case 'ghost':
                     return W(`<div style="position:relative;width:180px;height:180px">
-                        <div style="position:absolute;left:18px;top:30px;width:90px;height:140px;border-radius:40px 40px 0 0;background:rgba(8,2,14,0.85);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
-                        <div style="position:absolute;left:70px;top:0;font-size:16px;color:#ffd6eb;text-shadow:0 0 8px #b050c8;animation:ivhWaveChar 1.8s ease-in-out infinite">好乖…</div>
+                        <div style="position:absolute;left:18px;top:30px;width:90px;height:140px;border-radius:40px 40px 0 0;background:rgba(8,2,14,0.85);animation:hscPinkPulse 2.4s ease-in-out infinite"></div>
+                        <div style="position:absolute;left:70px;top:0;font-size:16px;color:#ffd6eb;text-shadow:0 0 8px #b050c8;animation:hscWaveChar 1.8s ease-in-out infinite">好乖…</div>
                     </div>`);
                 case 'figureBlur':
-                    return W(`<div style="position:relative;width:200px;height:150px;border-radius:8px;background:repeating-linear-gradient(45deg,#5a3a6a,#5a3a6a 10px,#42284f 10px,#42284f 20px);filter:blur(5px);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
+                    return W(`<div style="position:relative;width:200px;height:150px;border-radius:8px;background:repeating-linear-gradient(45deg,#5a3a6a,#5a3a6a 10px,#42284f 10px,#42284f 20px);filter:blur(5px);animation:hscPinkPulse 2.4s ease-in-out infinite"></div>
                         <div style="position:absolute;width:70px;height:110px;border-radius:30px 30px 0 0;background:#caa6e6"></div>`);
                 case 'chatlogBlur':
                     // 覆蓋整個底圖：把底圖（Bedroom）模糊化
-                    return `<div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(40,25,55,0.15);animation:ivhPinkPulse 2.6s ease-in-out infinite"></div>`;
+                    return `<div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(40,25,55,0.15);animation:hscPinkPulse 2.6s ease-in-out infinite"></div>`;
                 case 'chatFade':
                     return W(`<div style="width:200px">
-                        ${[0,1,2].map(i=>`<div style="height:13px;margin:9px 0;border-radius:6px;background:#caa6e6;animation:ivhChatEmerge 2.2s ease-out ${(i*0.55).toFixed(2)}s infinite"></div>`).join('')}
+                        ${[0,1,2].map(i=>`<div style="height:13px;margin:9px 0;border-radius:6px;background:#caa6e6;animation:hscChatEmerge 2.2s ease-out ${(i*0.55).toFixed(2)}s infinite"></div>`).join('')}
                     </div>`);
                 default: {
                     const map = { expression:'😳', arousal:'💗', sound:'🔊', dualSound:'🔊', emoteEnabled:'📢' };
-                    return W(`<div style="font-size:74px;opacity:0.9;animation:ivhPinkPulse 2.2s ease-in-out infinite">${map[kind]||'✨'}</div>`);
+                    return W(`<div style="font-size:74px;opacity:0.9;animation:hscPinkPulse 2.2s ease-in-out infinite">${map[kind]||'✨'}</div>`);
                 }
             }
         },
@@ -560,7 +560,7 @@ import { IVH_Z } from './zlayers.js';
                 inp.type = 'color'; inp.value = color || '#f500b4';
                 Object.assign(inp.style, {
                     position: 'fixed', left: `${r.left + cx * sx}px`, top: `${r.top + (cy + h) * sy}px`,
-                    width: `${w * sx}px`, height: '10px', opacity: '0', border: 'none', padding: '0', zIndex: String(IVH_Z.dialog),
+                    width: `${w * sx}px`, height: '10px', opacity: '0', border: 'none', padding: '0', zIndex: String(HSC_Z.dialog),
                 });
                 document.body.appendChild(inp);
                 inp.oninput = inp.onchange = () => { try { onPick(inp.value); } catch (e) {} };
@@ -590,7 +590,7 @@ import { IVH_Z } from './zlayers.js';
                 el = document.createElement(opts.multiline ? 'textarea' : 'input');
                 if (!opts.multiline) el.type = opts.type || 'text';
                 Object.assign(el.style, {
-                    position: 'fixed', zIndex: IVH_Z.prefInput, boxSizing: 'border-box',
+                    position: 'fixed', zIndex: HSC_Z.prefInput, boxSizing: 'border-box',
                     background: '#301B3D', color: '#ffeeff',
                     border: '1px solid #b060c0', borderRadius: '4px',
                     padding: '2px 6px', fontFamily: 'monospace', outline: 'none',
@@ -637,7 +637,7 @@ import { IVH_Z } from './zlayers.js';
             if (!el) {
                 el = document.createElement('select');
                 Object.assign(el.style, {
-                    position: 'fixed', zIndex: IVH_Z.prefInput, boxSizing: 'border-box',
+                    position: 'fixed', zIndex: HSC_Z.prefInput, boxSizing: 'border-box',
                     background: '#8E44A1', color: '#ffffff',
                     border: '1px solid #b060c0', borderRadius: '4px',
                     padding: '2px 6px', fontFamily: 'sans-serif', outline: 'none', cursor: 'pointer',
@@ -705,7 +705,7 @@ import { IVH_Z } from './zlayers.js';
             // ── 允許編輯對象（白名單 + 6 類權限）──
             this.title(cy, ui('editPermTitle'), ui('editPermTitleD')); cy += HDR;
             this.title(cy, ui('whitelist'), ui('whitelistD'));
-            this.input('ivh-whitelist', CTRL_X, cy - 17, 480, 42, (CONFIG.whitelist || []).join(', '),
+            this.input('hsc-whitelist', CTRL_X, cy - 17, 480, 42, (CONFIG.whitelist || []).join(', '),
                 { placeholder: ui('whitelistPh'), onChange: val => {
                     CONFIG.whitelist = val.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
                         .map(s => /^\d+$/.test(s) ? Number(s) : s)
@@ -728,8 +728,8 @@ import { IVH_Z } from './zlayers.js';
 
             // ── 語言 ──
             this.title(cy, ui('language'), ui('languageD'));
-            this.select('ivh-lang', CTRL_X, cy - 17, 240, 44, CONFIG.lang || 'auto',
-                IVH_LANGS.map(l => [l, IVH_LANG_NAMES[l] || l]),
+            this.select('hsc-lang', CTRL_X, cy - 17, 240, 44, CONFIG.lang || 'auto',
+                HSC_LANGS.map(l => [l, HSC_LANG_NAMES[l] || l]),
                 v => { CONFIG.lang = v; saveSettings(); });
             cy += ROW + GAP;
 
@@ -740,7 +740,7 @@ import { IVH_Z } from './zlayers.js';
             this.btn(expX, cy, BW, 45, ui('export'), 'White', ui('exportD'), () => exportSettings());
             this.btn(expX + (BW + BGAP), cy, BW, 45, ui('import'), 'White', ui('importD'), () => importSettings());
             this.btn(expX + (BW + BGAP) * 2, cy, BW, 45, ui('resetAll'), 'White', ui('resetAllD'),
-                () => ivhConfirm(ui('confirmResetAll'), () => {
+                () => hscConfirm(ui('confirmResetAll'), () => {
                     setConfig(makeDefaultConfig()); setExpressionSets(CONFIG.expressionSets);
                     saveSettings(true); publishSharedSettings(); applyDepthLoop();
                 }));
@@ -811,7 +811,7 @@ import { IVH_Z } from './zlayers.js';
             let cy = 226;
             this.title(cy, ui('tab_daily'), ''); cy += 44;
             this.title(cy, ui('interval'), ui('intervalD'));
-            this.input('ivh-interval', 650, cy - 17, 110, 42, String(CONFIG.depthIntervalMin),
+            this.input('hsc-interval', 650, cy - 17, 110, 42, String(CONFIG.depthIntervalMin),
                 { type: 'number', onChange: val => { let n = parseInt(val, 10); if (isNaN(n)) n = CONFIG.depthIntervalMin; CONFIG.depthIntervalMin = Math.max(1, Math.min(99, n)); saveSettings(); applyDepthLoop(); } });
             { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawTextFit(ui('minutes'), 780, this._y(cy), 150, 'Black', ''); MainCanvas.textAlign = p; }
             cy += 52;
@@ -917,20 +917,20 @@ import { IVH_Z } from './zlayers.js';
                 this.input(id, 450, cy + 28, 800, h, value, opts);
                 cy += 28 + h + GAP;
             };
-            seg('sec_hypnoText', 'hypnoTextD', 'ivh-texts', (CONFIG.customTexts || []).join('\n'), 130,
+            seg('sec_hypnoText', 'hypnoTextD', 'hsc-texts', (CONFIG.customTexts || []).join('\n'), 130,
                 { multiline: true, placeholder: ui('hypnoTextPh'), onChange: val => { CONFIG.customTexts = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
-            seg('sec_statusMsg', 'statusMsgD', 'ivh-emotes', (CONFIG.emoteList || []).join('\n'), 110,
+            seg('sec_statusMsg', 'statusMsgD', 'hsc-emotes', (CONFIG.emoteList || []).join('\n'), 110,
                 { multiline: true, placeholder: ui('statusMsgPh'), onChange: val => { CONFIG.emoteList = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
-            seg('sec_triggerWords', 'triggerWordsD', 'ivh-triggers', (CONFIG.triggerWords || []).join('\n'), 90,
+            seg('sec_triggerWords', 'triggerWordsD', 'hsc-triggers', (CONFIG.triggerWords || []).join('\n'), 90,
                 { multiline: true, placeholder: ui('triggerWordsPh'), onChange: val => { CONFIG.triggerWords = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
             // 清醒詞（可多個；房內他人說出→你清醒，自己說無效）
-            seg('sec_wakeWord', 'wakeWordD', 'ivh-wake', (CONFIG.wakeWords || []).join('\n'), 80,
+            seg('sec_wakeWord', 'wakeWordD', 'hsc-wake', (CONFIG.wakeWords || []).join('\n'), 80,
                 { multiline: true, placeholder: ui('wakeWordPh'), onChange: val => { CONFIG.wakeWords = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
             // 催眠回應（強控中說話有機會被替換成其中一句）
-            seg('sec_hypnoResponse', 'hypnoResponseD', 'ivh-response', (CONFIG.responseList || []).join('\n'), 100,
+            seg('sec_hypnoResponse', 'hypnoResponseD', 'hsc-response', (CONFIG.responseList || []).join('\n'), 100,
                 { multiline: true, placeholder: ui('hypnoResponsePh'), onChange: val => { CONFIG.responseList = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
             // 允許說的話（強控中整句符合就照說、不陷入思考）
-            seg('allowedPhrasesLabel', 'allowedPhrasesD', 'ivh-allowed', (CONFIG.allowedPhrases || []).join('\n'), 100,
+            seg('allowedPhrasesLabel', 'allowedPhrasesD', 'hsc-allowed', (CONFIG.allowedPhrases || []).join('\n'), 100,
                 { multiline: true, placeholder: ui('allowedPhrasesPh'), onChange: val => { CONFIG.allowedPhrases = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
 
             this._track(cy + 20);   // 底部留白
@@ -941,7 +941,7 @@ import { IVH_Z } from './zlayers.js';
             if (desc) DrawTextWrap(desc, 1370, 260, 510, 540, 'Black', undefined, 6);
         },
         _resetTexts() {
-            ivhConfirm(ui('confirmTextsReset'), () => {
+            hscConfirm(ui('confirmTextsReset'), () => {
                 CONFIG.customTexts   = ui('defaultTexts').split('\n').map(s => s.trim()).filter(Boolean);
                 CONFIG.emoteList     = ui('defaultEmotes').split('\n').map(s => s.trim()).filter(Boolean);
                 CONFIG.triggerWords  = [];
@@ -959,7 +959,7 @@ import { IVH_Z } from './zlayers.js';
             let cy = 286;
             r.cats.forEach(c => {
                 this.title(cy, c.label + (c.editable ? '' : ' 🔒'), c.editable ? '' : ui('profileEditNoPerm'));
-                this.input('ivh-rtext-' + c.key, 450, cy + 30, 800, 120, (c.data || []).join('\n'),
+                this.input('hsc-rtext-' + c.key, 450, cy + 30, 800, 120, (c.data || []).join('\n'),
                     { multiline: true, readOnly: !c.editable,
                       placeholder: c.editable ? ui('hypnoTextPh') : '',
                       onChange: c.editable
@@ -993,7 +993,7 @@ import { IVH_Z } from './zlayers.js';
             this.title(228, ui('tab_expr'), '');
             // 還原預設：與標題同一行、右對齊（跟文本設定一致）
             this.btn(1050, 209, 200, 46, ui('restoreDefault'), 'White', null,
-                () => ivhConfirm(ui('confirmReset'), () => {
+                () => hscConfirm(ui('confirmReset'), () => {
                     CONFIG.expressionSets = DEFAULT_EXPRESSIONS.map(e => ({ ...e }));
                     setExpressionSets(CONFIG.expressionSets); saveSettings();
                 }));
@@ -1009,13 +1009,13 @@ import { IVH_Z } from './zlayers.js';
                 this.btn(CONTENT_X, cy, E_NAME_W, 46, nm, 'White', null,
                     () => { this._exprWork = this._exprWorkFrom(set); this._exprPrevKey = ''; });
                 this.btn(E_SAVE_X, cy, E_BW, 46, ui('save'), '#21872F', null,
-                    () => ivhConfirm(ui('confirmReplace', { name: nm }), () => {
+                    () => hscConfirm(ui('confirmReplace', { name: nm }), () => {
                         const w = this._exprWork;
                         sets[i] = { Eyebrows: w.Eyebrows, Eyes: w.Eyes, Mouth: w.Mouth, Blush: w.Blush };
                         saveSettings(); setExpressionSets(CONFIG.expressionSets);
                     }));
                 this.btn(E_DEL_X, cy, E_BW, 46, ui('delete'), '#872626', null,
-                    () => ivhConfirm(ui('confirmDelete', { name: nm }), () => {
+                    () => hscConfirm(ui('confirmDelete', { name: nm }), () => {
                         this._restoreExpr(); sets.splice(i, 1);
                         saveSettings(); setExpressionSets(CONFIG.expressionSets);
                     }));
@@ -1105,7 +1105,7 @@ import { IVH_Z } from './zlayers.js';
                         MainCanvas.textAlign = p3;
                     } else {
                         const ph = def ? ui('sndDefaultPh', { file: def.split('/').pop() }) : ui('sndUnsetPh');
-                        this.input('ivh-snd-' + cat + i, LX, rowY + 2, FIELD_W, 40, entry,
+                        this.input('hsc-snd-' + cat + i, LX, rowY + 2, FIELD_W, 40, entry,
                             { placeholder: ph, onChange: v => { CONFIG.sounds[cat][i] = v.trim(); saveSettings(); } });
                     }
                     this.btn(S_UP_X, rowY, 58, 44, ui('upload'), '#8E44A1', null,
@@ -1131,7 +1131,7 @@ import { IVH_Z } from './zlayers.js';
             // 載入本機上傳清單（一次）
             if (!this._localLoaded) {
                 this._localLoaded = true; this._localSnd = [];
-                IVHDB.getAll('sounds').then(list => {
+                HSCDB.getAll('sounds').then(list => {
                     this._localSnd = list || [];
                     (list || []).forEach(r => { _sndNameCache[r.id] = r.name; });
                 });
@@ -1188,7 +1188,7 @@ import { IVH_Z } from './zlayers.js';
             DrawTextWrap(descText, 1365, 840, 515, 48, 'Black', undefined, 4);
         },
         _run_about() {
-            this.sep(240, 'IVH — Immersive Voice Hypnosis  v' + MOD_VER);
+            this.sep(240, 'HSC — Hypnotic Slave Club  v' + MOD_VER);
             this.sep(292, ui('about_author'));
             // 說明：給足寬度與行數，避免壅擠（其他語言較長）
             DrawTextWrap(ui('about_dev'), 505, 330, 790, 190, 'Black', undefined, 7);
@@ -1206,7 +1206,7 @@ import { IVH_Z } from './zlayers.js';
 
 export {
     waitForPreference,
-    IVH_TABS,
+    HSC_TABS,
     FRAME_X,
     FRAME_Y,
     FRAME_W,
