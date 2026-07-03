@@ -105,10 +105,7 @@ import { IVH_Z } from './zlayers.js';
                         : (info.edit ? ui('profileEditNoPerm') : ui('profileEditOff'));
                     // 依當前 UI 主題深淺自動切換：暗底用深色鈕+白線稿(B)，亮底用白鈕+深線稿(W)
                     const darkBg = ivhThemeIsDark();
-                    const btnColor = darkBg ? (canEdit ? '#2b2b2b' : '#555') : (canEdit ? 'White' : '#ccc');
-                    // DrawButton 內部 DrawImage 是「原尺寸」不縮放，圖檔是 1311×1311 會爆框；
-                    // 改成先畫無圖按鈕、再用 DrawImageResize 把圖示縮到 90×90 框內（留 2px 邊）
-                    DrawButton(1700, 75, 90, 90, '', btnColor, '', tip, !canEdit);
+                    DrawButton(1700, 75, 90, 90, '', "White", '', tip, !canEdit);
                     DrawImageResize(darkBg ? IVH_ICON_B : IVH_ICON_W, 1702, 77, 86, 86);
                 }
                 return r;

@@ -53,7 +53,8 @@ import { IVH_Z } from './zlayers.js';
             if (E.chatlogBlur) depthChatlogBlur();
             if (E.pant)        triggerSteamParticles(true, true);   // 單一喘氣（人物身上）
             addArousal('depth');   // 日常干擾興奮值
-            addHypno('depth');     // 日常干擾催眠值
+            // 催眠值：開催眠動畫 → 先播特效、第 5 秒才漲（破百時清場播符咒）；否則即時漲
+            if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('depth'); } catch (e) {} }, 5000); else addHypno('depth');
         } catch (e) {
             console.warn('🐈‍⬛ [IVH] 深度效果錯誤:', e.message);
         }

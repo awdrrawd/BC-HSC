@@ -66,7 +66,6 @@ import { ui } from './i18n.js';
             // ── 興奮值：每次觸發增加（0~20，0=停用）；語音 / 日常干擾分開 ──
             arousalStepVoice: 5,
             arousalStepDepth: 5,
-            arousalShake:     3,   // 興奮成長時的畫面震動強度（0~10，0＝關）
 
             // ── 催眠值（0~100，每 12 秒 -1）：語音 / 日常干擾分開；催眠狀態關則不成長 ──
             hypnoEnabled:    false, // 催眠狀態 啟/停用
@@ -75,9 +74,13 @@ import { ui } from './i18n.js';
             autoWake:        true,  // 自動清醒（催眠值 <15% 時解除強控）
             forcedGrowthDiv: 1,     // 強控中催眠值成長 = 原值 × N/10（預設 1 → 1/10）
             hypnoAnimEnabled: false, // 催眠動畫（符咒動畫等；預留）
+            hypnoAnimStyle:   1,     // 符咒樣式 1~12（IVH-Status-Code1.png 的 2×6 格）
+            hypnoAnimColor:   '#f500b4', // 符咒染色（mask 染色，顏色 100% 準）
+            headTalisman:     false, // 頭上貼符咒（強控中額頭常駐符咒且持續震動）
             faceCensor:       false, // 面部識別障礙（強控中看不清他人的臉）
             nameCensor:       false, // 名稱識別障礙（強控中看不清他人的名字/ID）
             faceCensorStyle:  'circle', // 面部塗鴉樣式：'circle' 圓圈 / 'line' 線條（二選一）
+            crowd:            false, // 顯示人群（強控中畫面下緣圍觀人群）
 
             // ── 日常干擾（原「催眠深度」；定時觸發；開/關 + 間隔 + 扁平效果；喘氣單一）──
             depthEnabled:   false,

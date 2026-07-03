@@ -42,7 +42,10 @@ import { effectScale, getArousalLevel, wait } from './util.js';
         const wordCount    = voiceText.trim().split(/\s+/).length;
 
         // ② 狀態 emote + 催眠廣播 + 語音催眠值（僅真實觸發，避免測試時洗版）
-        if (!isTest) { sendStatusEmote(); broadcastHypnotized(); addHypno('voice'); }
+        //  ★ 包 try/catch：這一段任何失敗都不能擋住下面的視覺效果（否則「正常觸發沒特效、
+        //     SHOW 測試卻正常」——因為測試走 isTest 跳過本段）。
+        //  開催眠動畫 → 先播特效、第 5 秒才漲催眠值（破百時 _enterForced 會清場播符咒）；否則即時漲
+        if (!isTest) { try { sendStatusEmote(); broadcastHypnotized(); if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('voice'); } catch (e) {} }, 5000); else addHypno('voice'); } catch (e) { console.warn('🐈‍⬛ [IVH] 狀態廣播失敗（不影響特效）:', e.message); } }
 
         // ③ 視覺效果同時觸發
         if (CONFIG.centerHeadshot) showCenterHeadshot(totalDur + 1500, true);   // 喘氣時頭像呼吸縮放

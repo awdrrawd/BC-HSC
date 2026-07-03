@@ -1,8 +1,7 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG } from './config.js';
 import { _emitBreathPuff, breathIntervalMs } from './effects2.js';
-import { triggerArousalShake } from './effects.js';
-import { BODY_PANT_DY, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, otherCharMouthScreenPos, playerDrawPos, refreshCanvasCache } from './geometry.js';
+import { BODY_PANT_DY, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, otherCharMouthScreenPos, refreshCanvasCache } from './geometry.js';
 import { getOverlay } from './util.js';
 import { IVH_Z } from './zlayers.js';
 
@@ -131,6 +130,29 @@ import { IVH_Z } from './zlayers.js';
     // ════════════════════════════════════════
     //  9. 興奮度
     // ════════════════════════════════════════
+    // 興奮條震動：用 BC 原生 VibratorLevel（DrawArousalMeter 每幀讀取 → 免 CharacterRefresh）。
+    //  BC 的更新迴圈會把 VibratorLevel 歸零，所以在震動期間每 ~400ms 重設一次維持；
+    //  結束時歸零，交還給 BC 依實際玩具重算。
+    let _vibeUntil = 0, _vibeTimer = null;
+    function triggerArousalMeterVibe(durationMs = 5000, level = 4) {
+        if (typeof Player === 'undefined' || !Player.ArousalSettings) return;
+        _vibeUntil = Date.now() + durationMs;   // 持續震動 5 秒（期間再觸發只延長）
+        const tick = () => {
+            if (typeof Player === 'undefined' || !Player.ArousalSettings) { if (_vibeTimer) { clearInterval(_vibeTimer); _vibeTimer = null; } return; }
+            if (Date.now() >= _vibeUntil) {
+                Player.ArousalSettings.VibratorLevel = 0;
+                if (_vibeTimer) { clearInterval(_vibeTimer); _vibeTimer = null; }
+                return;
+            }
+            // 每 ~50ms 補寫（BC 更新迴圈會歸零 VibratorLevel），並持續刷新 ChangeTime
+            //  → 讓 DrawArousalGlow 的抖動幅度(AnimFactor)維持在最大，看起來是「連續」而非一閃一閃。
+            Player.ArousalSettings.VibratorLevel = level;
+            Player.ArousalSettings.ChangeTime = (typeof CommonTime === 'function') ? CommonTime() : Date.now();
+        };
+        tick();
+        if (!_vibeTimer) _vibeTimer = setInterval(tick, 50);
+    }
+
 function addArousal(kind) {
     const step = (kind === 'depth' ? CONFIG.arousalStepDepth : CONFIG.arousalStepVoice) || 0;
     if (step <= 0) return 1;   // 0 = 停用（仍回傳 1，讓彈幕數量等不歸零）
@@ -139,7 +161,7 @@ function addArousal(kind) {
         const current = Player.ArousalSettings.Progress ?? 0;
         const newVal = Math.min(current + step, 100);
         ActivitySetArousal(Player, newVal);
-        if (newVal > current && CONFIG.arousalShake > 0) triggerArousalShake(CONFIG.arousalShake);   // 興奮成長 → 畫面震動
+        if (newVal > current) triggerArousalMeterVibe();   // 興奮成長 → 興奮條震動（BC 原生 VibratorLevel）
         return step;
     } catch (e) {
         console.error("[IVH] addArousal 錯誤:", e);
@@ -267,11 +289,9 @@ function addArousal(kind) {
             const SZ  = 300;
             const cv  = document.createElement('canvas'); cv.width = cv.height = SZ;
             const ctx = cv.getContext('2d');
-            // 定位在「玩家角色 ZOOM 的正中央」：BC 角色畫布 500×1000，中心 = (250,500)
-            const pos = (playerDrawPos && playerDrawPos.valid)
-                ? bcToScreen(playerDrawPos.x + 250 * playerDrawPos.zoom, playerDrawPos.y + 500 * playerDrawPos.zoom)
-                : bcToScreen(500, 500);
-            const dispSZ  = Math.max(340, SZ * (_cachedScaleX || 0.35) * 1.7);
+            // 圓心固定在「左邊 Canvas 的 (500,500)」＝左側人物區中心（不隨分頁/人數飄移）
+            const pos = bcToScreen(500, 500);
+            const dispSZ  = Math.max(340, SZ * (_cachedScaleX || 0.35) * 1.7);   // 還原原本較大的圓
 
             const el = document.createElement('img');
             Object.assign(el.style, {
@@ -308,9 +328,10 @@ function addArousal(kind) {
             const capture = () => {
                 const src = Player && Player.Canvas;
                 if (!src || !src.width) return false;
-                const side  = src.width * 0.42;             // 正方邊長（含頭髮）
+                // 較緊裁切 → 圓內的臉更大（比照設定頁臉部預覽 captureFaceImage 的做法）
+                const side  = src.width * 0.24;
                 const cropX = src.width  * 0.50 - side / 2; // 水平置中於臉
-                const cropY = src.height * 0.43 - side / 2; // 垂直置中於臉（略偏上含瀏海）
+                const cropY = src.height * 0.43 - side * 0.22; // 臉位於框上方（含瀏海）
                 ctx.clearRect(0, 0, SZ, SZ);
                 ctx.drawImage(src, cropX, cropY, side, side, 0, 0, SZ, SZ);
                 try { el.src = cv.toDataURL(); } catch (e) { return false; }

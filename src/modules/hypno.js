@@ -10,6 +10,8 @@
 import { CONFIG, EXPRESSION_SETS } from './config.js';
 import { pushExprEffect, popExprEffect } from './character-fx.js';
 import { sendLocalizedAction } from './l10n.js';
+import { updateCrowd } from './crowd.js';
+import { updateHeadTalisman, playHypnoAnim } from './hypno-anim.js';
 
 let _hypno = 0;              // 0~100
 let _forced = false;         // 強控中
@@ -24,6 +26,13 @@ function _enterForced() {
     if (_forced) return;
     _forced = true;
     sendLocalizedAction('hs_enterForced');   // 被催眠時（在地化：發英文、接收端各看各語言）
+    // 符咒動畫：只在陷入催眠（破百）時播一次儀式（會先清場）；播完才顯示人群/頭上符咒。
+    //  未開催眠動畫 → 直接顯示人群。
+    if (CONFIG.hypnoAnimEnabled) {
+        try { playHypnoAnim(() => { updateCrowd(true); updateHeadTalisman(); }); } catch (e) { updateCrowd(true); }
+    } else {
+        updateCrowd(true);
+    }
     // 強控視覺：套一組催眠表情並保持到解除
     try {
         if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprPushed) {
@@ -40,6 +49,8 @@ function _exitForced() {
     _forced = false;
     if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
     if (_forcedExprPushed) { try { popExprEffect(); } catch (e) {} _forcedExprPushed = false; }
+    updateCrowd(false);         // 收起人群
+    updateHeadTalisman();       // 收起頭上符咒
     if (was) sendLocalizedAction('hs_exitForced');   // 醒來時
 }
 
@@ -51,6 +62,12 @@ export function addHypno(kind) {
     if (_forced) step = step * ((CONFIG.forcedGrowthDiv || 1) / 10);   // 強控中增量 = 原值 × N/10，防永不醒來
     _hypno = Math.min(100, _hypno + step);
     if (_hypno >= 100) _enterForced();
+}
+
+// 測試用：立即把催眠值拉滿並陷入強控（免催到 100%）
+export function enterHypnoNow() {
+    _hypno = 100;
+    _enterForced();
 }
 
 // 清醒詞：立即清醒；催眠值 >80% → 設為 80%

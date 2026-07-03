@@ -2,6 +2,7 @@
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from './character-fx.js';
 import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from './depth.js';
+import { assetUrl } from './icons.js';
 import { IVH_LANGS, IVH_LANG_NAMES, ui } from './i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { ivhConfirm } from './profile.js';
@@ -285,7 +286,8 @@ import { IVH_Z } from './zlayers.js';
                 Object.assign(el.style, {
                     position: 'fixed', zIndex: IVH_Z.prefInput, pointerEvents: 'none',
                     overflow: 'hidden', borderRadius: '8px',
-                    background: 'rgba(10,0,18,0.6)',
+                    // 用臥室背景當演示底圖（灰暗斜角等暗色效果才看得出來）
+                    background: 'center/cover no-repeat url("Backgrounds/Bedroom.jpg"), #2a1830',
                     display: 'none',
                 });
                 document.body.appendChild(el);
@@ -313,15 +315,52 @@ import { IVH_Z } from './zlayers.js';
             }
             if (this._demoCur !== kind) { this._demoCur = kind; el.innerHTML = this._demoHTML(kind); }
         },
+        // 表情演示頭像：套「預設表情三」到克隆體再截臉（不動真實 Player）
+        _ensureExprDemoFace() {
+            if (this._exprDemoFace || this._exprDemoBusy) return;
+            try {
+                const sets = DEFAULT_EXPRESSIONS;
+                if (!Array.isArray(sets) || !sets.length || typeof Player === 'undefined' || !Player.Appearance) return;
+                this._exprDemoBusy = true;
+                const set = sets[Math.min(2, sets.length - 1)];   // 第三個（不足則取最後一個）
+                const map = _expandExpr(set);
+                const clone = Object.assign(Object.create(Object.getPrototypeOf(Player)), Player);
+                clone.MemberNumber = -77778;
+                clone.Appearance = Player.Appearance.map(a => {
+                    const gn = a.Asset.Group.Name;
+                    if (map[gn] === undefined) return a;
+                    const na = Object.assign({}, a); na.Property = Object.assign({}, a.Property); na.Property.Expression = map[gn];
+                    return na;
+                });
+                clone.Canvas = null; clone.CanvasBlink = null; clone.MustDraw = true;
+                CharacterLoadCanvas(clone);
+                const cap = () => captureFaceImage(img => { this._exprDemoFace = img.src; this._demoCur = ''; }, clone.Canvas);
+                cap(); setTimeout(cap, 180); setTimeout(cap, 450);
+            } catch (e) {}
+        },
         _demoHTML(kind) {
             const W = (inner) => `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative">${inner}</div>`;
-            // 玩家頭像底圖（載入前退回漸層圓）；overlay 疊在頭像上
+            // 玩家頭像底圖（載入前退回漸層圓）；overlay 疊在頭像上。頭像放大到 190，塗鴉相對縮小。
+            const SZ = 190;
             const face = this._demoFace;
-            const HS = (overlay = '') => W(`<div style="position:relative;width:150px;height:150px">
-                ${face
-                    ? `<img src="${face}" style="width:150px;height:150px;border-radius:50%;object-fit:cover;box-shadow:0 0 24px #ff66bb88;animation:ivhPinkPulse 2.6s ease-in-out infinite"/>`
-                    : `<div style="width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#3a1040,#1a0028);box-shadow:0 0 24px #ff66bb88"></div>`}
+            const HS = (overlay = '', img = face) => W(`<div style="position:relative;width:${SZ}px;height:${SZ}px">
+                ${img
+                    ? `<img src="${img}" style="width:${SZ}px;height:${SZ}px;border-radius:50%;object-fit:cover;box-shadow:0 0 24px #ff66bb88;animation:ivhPinkPulse 2.6s ease-in-out infinite"/>`
+                    : `<div style="width:${SZ}px;height:${SZ}px;border-radius:50%;background:radial-gradient(circle,#3a1040,#1a0028);box-shadow:0 0 24px #ff66bb88"></div>`}
                 ${overlay}</div>`);
+            // 塗鴉 SVG 置中疊在頭像上（比頭像小一圈）
+            const scrib = (inner, spin) => `<svg viewBox="-75 -75 150 150" width="140" height="140" style="position:absolute;left:${(SZ-140)/2}px;top:${(SZ-140)/2}px;animation:ivhSpiralSpin ${spin}s linear infinite">${inner}</svg>`;
+            // 符咒樣式預覽：kind = 'hypnoStyle<N>|<color>'；切第 N 格並用當前顏色 mask 染色（所見即所得）
+            if (typeof kind === 'string' && kind.indexOf('hypnoStyle') === 0) {
+                const st = Math.min(12, Math.max(1, parseInt(kind.slice(10), 10) || 1));
+                const i = st - 1, col = i % 6, row = Math.floor(i / 6);
+                const spr = assetUrl('IVH-Status-Code1.png');
+                const color = CONFIG.hypnoAnimColor || '#f500b4';
+                const pos = `${(col / 5 * 100).toFixed(2)}% ${row * 100}%`;
+                return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center">
+                    <div style="width:130px;height:216px;background-color:${color};-webkit-mask-image:url('${spr}');mask-image:url('${spr}');-webkit-mask-size:600% 200%;mask-size:600% 200%;-webkit-mask-position:${pos};mask-position:${pos};-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;filter:drop-shadow(0 0 10px ${color})"></div>
+                </div>`;
+            }
             switch (kind) {
                 case 'hypnoSpiral': {
                     // 真正的阿基米德螺旋線（與實際效果一致）
@@ -333,7 +372,7 @@ import { IVH_Z } from './zlayers.js';
                         const y = (r * Math.sin(a)).toFixed(1);
                         d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
                     }
-                    return W(`<svg viewBox="-100 -100 200 200" width="150" height="150" style="animation:ivhSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
+                    return HS(`<svg viewBox="-100 -100 200 200" width="${SZ}" height="${SZ}" style="position:absolute;left:0;top:0;animation:ivhSpiralSpin 2.6s linear infinite;filter:drop-shadow(0 0 6px #ff66bb)">
                         <path d="${d}" fill="none" stroke="#ff88cc" stroke-width="3.5" stroke-linecap="round"/>
                         <circle cx="0" cy="0" r="5" fill="#ffe6f5"/>
                     </svg>`);
@@ -341,34 +380,46 @@ import { IVH_Z } from './zlayers.js';
                 case 'hypnoWaves':
                     return W(['0s','0.6s','1.2s'].map(d=>`<div style="position:absolute;width:24px;height:24px;border:3px solid #ff88cc;border-radius:50%;animation:ivhDemoRing 1.8s ease-out ${d} infinite"></div>`).join(''));
                 case 'pinkFlash':
-                    return W(`<div style="width:200px;height:130px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 30%,rgba(255,60,150,0.1) 100%);animation:ivhPinkPulse 2s ease-in-out infinite"></div>`);
+                    // 覆蓋整個底圖（Bedroom）的粉紅暈染／煙霧
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,105,180,0.55) 25%,rgba(255,60,150,0.15) 100%);animation:ivhPinkPulse 2s ease-in-out infinite"></div>`;
                 case 'vignette':
-                    return W(`<div style="width:230px;height:150px;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:ivhVignette 2.6s ease-in-out infinite"></div>`);
+                    // 覆蓋整個底圖的邊緣暗角
+                    return `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.85) 100%);animation:ivhVignette 2.6s ease-in-out infinite"></div>`;
                 case 'screenDistort':
-                    return W(`<div style="font-size:54px;animation:ivhDemoDistort 1.8s ease-in-out infinite">🔮</div>`);
+                    // 畫面扭曲：讓 Bedroom 底圖本身被扭曲（疊一張會扭動的同底圖）
+                    return `<div style="position:absolute;inset:0;background:center/cover no-repeat url('Backgrounds/Bedroom.jpg');animation:ivhDemoDistort 1.8s ease-in-out infinite"></div>`;
                 case 'danmaku':
                     return W('催眠中…'.split('').map((c,i)=>`<span style="display:inline-block;font-size:30px;color:#ffd6eb;text-shadow:0 0 10px #ff50a0;animation:ivhWaveChar 1.6s ease-in-out ${i*90}ms infinite">${c}</span>`).join(''));
                 case 'steamParticles':
-                    return HS(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;top:34%;width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.6),transparent 70%);filter:blur(4px);animation:ivhBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
+                    // 喘氣氣團：X 置中（left50% + margin-left -18，不用 transform 以免被 keyframe 蓋掉）、Y 再往下
+                    return HS(['0s','0.4s','0.8s','0.6s'].map((d,i)=>`<div style="position:absolute;left:50%;margin-left:-18px;top:calc(34% + 60px);width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.6),transparent 70%);filter:blur(4px);animation:ivhBreath${i%3} 1.9s ease-out ${d} infinite"></div>`).join(''));
                 case 'expression':
-                    return HS(`<div style="position:absolute;right:6px;bottom:6px;font-size:40px;animation:ivhPinkPulse 1.8s ease-in-out infinite">😳</div>`);
+                    // 用「預設表情三」的頭像演示（無 emoji）
+                    this._ensureExprDemoFace();
+                    return HS('', this._exprDemoFace || face);
                 case 'climax':
-                    return W(`<div style="width:210px;height:140px;border-radius:8px;background:white;animation:ivhClimaxFlash 1.3s ease-out infinite"></div>`);
+                    // 覆蓋整個底圖的紅白閃光 + 幾片碎裂示意
+                    return `<div style="position:absolute;inset:0;background:white;animation:ivhClimaxFlash 1.3s ease-out infinite"></div>
+                        <div style="position:absolute;inset:0;pointer-events:none">
+                        ${[[15,20,-25],[60,15,20],[30,55,-15],[70,60,25]].map(([l,t,r])=>`<div style="position:absolute;left:${l}%;top:${t}%;width:26%;height:26%;background:center/cover url('Backgrounds/Bedroom.jpg');clip-path:polygon(0 0,100% 15%,85% 100%,10% 80%);transform:rotate(${r}deg);animation:ivhPinkPulse 1.3s ease-out infinite"></div>`).join('')}
+                        </div>`;
                 case 'centerHeadshot':
                     return HS('');   // 玩家頭像（呼吸縮放示意）
                 case 'faceCensorCircle':
-                    return HS(`<svg viewBox="-75 -75 150 150" width="150" height="150" style="position:absolute;left:0;top:0;animation:ivhSpiralSpin 3.2s linear infinite">
-                        <g fill="none" stroke="#000" stroke-width="7" stroke-linecap="round">
-                            <ellipse cx="0" cy="0" rx="52" ry="46"/><ellipse cx="8" cy="-5" rx="38" ry="44"/><ellipse cx="-7" cy="6" rx="45" ry="34"/>
-                        </g></svg>`);
+                    return HS(scrib(`<g fill="none" stroke="#000" stroke-width="7" stroke-linecap="round">
+                            <ellipse cx="0" cy="0" rx="40" ry="35"/><ellipse cx="7" cy="-4" rx="29" ry="34"/><ellipse cx="-6" cy="5" rx="34" ry="26"/>
+                        </g>`, 3.2));
                 case 'faceCensorLine':
-                    return HS(`<svg viewBox="-75 -75 150 150" width="150" height="150" style="position:absolute;left:0;top:0;animation:ivhSpiralSpin 4s linear infinite reverse">
-                        <g fill="none" stroke="#000" stroke-width="8" stroke-linecap="round">
-                            <path d="M-58 -22 L60 18 M-42 52 L34 -58 M-62 28 L56 -38 M-4 -62 L12 62 M-60 -4 L62 8"/>
-                        </g></svg>`);
+                    return HS(scrib(`<g fill="none" stroke="#000" stroke-width="8" stroke-linecap="round">
+                            <path d="M-45 -18 L46 14 M-32 40 L26 -45 M-48 22 L44 -30 M-3 -48 L9 48 M-46 -3 L48 6"/>
+                        </g>`, 4));
                 case 'nameCensor':
                     return HS(`<div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:20px;font-weight:700;color:#fff;text-shadow:0 0 4px #000;white-space:nowrap">Nymphaea
                         <span style="position:absolute;left:-5px;top:-3px;right:-5px;bottom:-3px;background:#000;border-radius:3px;animation:ivhPinkPulse 1.8s ease-in-out infinite"></span></div>`);
+                case 'crowd':
+                    return `<div style="width:100%;height:100%;position:relative;overflow:hidden">
+                        <img src="${assetUrl('IVH-crowd1.png')}" style="position:absolute;left:0;bottom:0;width:100%;max-height:72%;object-fit:cover;object-position:bottom;filter:brightness(0.75) saturate(0.9);animation:ivhPinkPulse 3s ease-in-out infinite"/>
+                    </div>`;
                 case 'ghost':
                     return W(`<div style="position:relative;width:180px;height:180px">
                         <div style="position:absolute;left:18px;top:30px;width:90px;height:140px;border-radius:40px 40px 0 0;background:rgba(8,2,14,0.85);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
@@ -378,9 +429,8 @@ import { IVH_Z } from './zlayers.js';
                     return W(`<div style="position:relative;width:200px;height:150px;border-radius:8px;background:repeating-linear-gradient(45deg,#5a3a6a,#5a3a6a 10px,#42284f 10px,#42284f 20px);filter:blur(5px);animation:ivhPinkPulse 2.4s ease-in-out infinite"></div>
                         <div style="position:absolute;width:70px;height:110px;border-radius:30px 30px 0 0;background:#caa6e6"></div>`);
                 case 'chatlogBlur':
-                    return W(`<div style="width:200px;animation:ivhPinkPulse 2.4s ease-in-out infinite">
-                        ${[0,1,2,3].map(()=>`<div style="height:12px;margin:8px 0;border-radius:6px;background:#caa6e6;filter:blur(2.5px)"></div>`).join('')}
-                    </div>`);
+                    // 覆蓋整個底圖：把底圖（Bedroom）模糊化
+                    return `<div style="position:absolute;inset:0;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);background:rgba(40,25,55,0.15);animation:ivhPinkPulse 2.6s ease-in-out infinite"></div>`;
                 case 'chatFade':
                     return W(`<div style="width:200px">
                         ${[0,1,2].map(i=>`<div style="height:13px;margin:9px 0;border-radius:6px;background:#caa6e6;animation:ivhChatEmerge 2.2s ease-out ${(i*0.55).toFixed(2)}s infinite"></div>`).join('')}
@@ -491,6 +541,33 @@ import { IVH_Z } from './zlayers.js';
         // 開關按鈕（on=反紫）
         toggle(cx, cy, w, h, label, on, desc, onClick, demoKind) {
             this.btn(cx, cy, w, h, label, on ? '#8E44A1' : 'White', desc, onClick, demoKind);
+        },
+        // 顏色按鈕：按鈕底色＝目前顏色，點擊開原生色票（DOM input type=color）
+        colorBtn(cx, cy, w, h, color, onPick, desc, demoKind) {
+            const y = this._y(cy);
+            DrawButton(cx, y, w, h, '', color || '#f500b4', '', '', false);
+            this._track(cy + h);
+            if (MouseIn(cx, y, w, h) && MouseY >= FRAME_Y && MouseY <= FRAME_BOT) {
+                if (desc) this.hoverDesc = desc;
+                if (demoKind) this._demoKind = demoKind;
+            }
+            this._mid.push({ x: cx, y, w, h, onClick: () => {
+                // 把原生色票 input 定位到「按鈕的螢幕位置」→ 系統色票會開在按鈕旁，而非左上角
+                const cv = this._cv || document.getElementById('MainCanvas') || document.querySelector('canvas');
+                const r = cv ? cv.getBoundingClientRect() : { left: 0, top: 0, width: 2000, height: 1000 };
+                const sx = r.width / 2000, sy = r.height / 1000;
+                const inp = document.createElement('input');
+                inp.type = 'color'; inp.value = color || '#f500b4';
+                Object.assign(inp.style, {
+                    position: 'fixed', left: `${r.left + cx * sx}px`, top: `${r.top + (cy + h) * sy}px`,
+                    width: `${w * sx}px`, height: '10px', opacity: '0', border: 'none', padding: '0', zIndex: String(IVH_Z.dialog),
+                });
+                document.body.appendChild(inp);
+                inp.oninput = inp.onchange = () => { try { onPick(inp.value); } catch (e) {} };
+                const done = () => setTimeout(() => { try { inp.remove(); } catch (e) {} }, 200);
+                inp.addEventListener('blur', done);
+                inp.click();
+            } });
         },
         // 滑桿（可拖曳；key 用於儲存）
         slider(cx, cy, w, val, min, max, step, desc, setFn, saveFn) {
@@ -712,9 +789,7 @@ import { IVH_Z } from './zlayers.js';
             cy += 52;
             // 興奮值 / 催眠值（在效果設定上方；標籤不加後綴，已分類到本子頁）
             this._sliderVal(cy, 'arousalStepLabel', 'arousalVoiceD', () => CONFIG.arousalStepVoice, v => { CONFIG.arousalStepVoice = Math.round(v); }, 0, 20, 1); cy += 48;
-            this._sliderVal(cy, 'hypnoLabel', 'hypnoVoiceD2', () => CONFIG.hypnoVoiceStep, v => { CONFIG.hypnoVoiceStep = Math.round(v); }, 0, 20, 1); cy += 48;
-            // 興奮成長震動（全域：語音／日常干擾興奮成長時都套用）
-            this._sliderVal(cy, 'arousalShakeLabel', 'arousalShakeD', () => CONFIG.arousalShake, v => { CONFIG.arousalShake = Math.round(v); }, 0, 10, 1); cy += 54;
+            this._sliderVal(cy, 'hypnoLabel', 'hypnoVoiceD2', () => CONFIG.hypnoVoiceStep, v => { CONFIG.hypnoVoiceStep = Math.round(v); }, 0, 20, 1); cy += 54;
             // 效果設定
             this.title(cy, ui('sec_effects'), ui('effectsHint')); cy += 40;
             const list = this._effectToggles();
@@ -760,38 +835,68 @@ import { IVH_Z } from './zlayers.js';
         // ════════ 催眠狀態設定（頁名 + 自動清醒/成長 + 效果設定）════════
         _run_state() {
             let cy = 226;
+            const CX = 750;            // 控制欄 X
+            const BW = 116;            // 按鈕寬度（與其他分頁一致）
             this.title(cy, ui('tab_state'), ''); cy += 44;
             this.title(cy, ui('autoWakeLabel'), ui('autoWakeD'));
-            this.toggle(650, cy - 20, 116, 40, CONFIG.autoWake ? ui('on') : ui('off'), CONFIG.autoWake, ui('autoWakeD'),
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.autoWake ? ui('on') : ui('off'), CONFIG.autoWake, ui('autoWakeD'),
                 () => { CONFIG.autoWake = !CONFIG.autoWake; saveSettings(); });
             cy += 58;
             this.title(cy, ui('forcedGrowthLabel'), ui('forcedGrowthD'));
-            this.slider(650, cy - 17, 380, CONFIG.forcedGrowthDiv, 1, 10, 1, ui('forcedGrowthD'),
+            this.slider(CX, cy - 17, 300, CONFIG.forcedGrowthDiv, 1, 10, 1, ui('forcedGrowthD'),
                 v => { CONFIG.forcedGrowthDiv = Math.round(v); }, () => saveSettings());
-            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText((CONFIG.forcedGrowthDiv || 1) + '/10', 1070, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText((CONFIG.forcedGrowthDiv || 1) + '/10', CX + 312, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
             cy += 58 + 12;
             // 效果設定
             this.title(cy, ui('sec_effects'), ''); cy += 40;
+            // 催眠動畫：開/關 ＋（開啟時）樣式按鈕 ＋ 顏色按鈕，同一行
             this.title(cy, ui('hypnoAnimLabel'), ui('hypnoAnimD'));
-            this.toggle(650, cy - 20, 116, 40, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
                 () => { CONFIG.hypnoAnimEnabled = !CONFIG.hypnoAnimEnabled; saveSettings(); });
+            if (CONFIG.hypnoAnimEnabled) {
+                const st = Math.min(12, Math.max(1, CONFIG.hypnoAnimStyle || 1));
+                const dk = 'hypnoStyle' + st + '|' + (CONFIG.hypnoAnimColor || '');   // 顏色也納入 → 改色即時重繪預覽
+                // 往右鋪開，別擠在一起（右側空間充足）：◀ 樣式N ▶ ...... 顏色
+                const bx = CX + BW + 40;
+                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st <= 1 ? 12 : st - 1; saveSettings(); }, dk);
+                this.btn(bx + 52, cy - 20, 110, 40, ui('hypnoStyleName', { n: st }), '#8E44A1', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                // 顏色：色塊按鈕，點擊開色票（色票定位到按鈕旁）
+                this.colorBtn(bx + 240, cy - 20, 64, 40, CONFIG.hypnoAnimColor,
+                    (col) => { CONFIG.hypnoAnimColor = col; saveSettings(); }, ui('hypnoStyleD'), dk);
+            }
             cy += 52;
-            // 面部識別障礙：關 / 圓圈 / 線條（三選一，各自演示）
+            // 頭上貼符咒（需開催眠動畫）
+            if (CONFIG.hypnoAnimEnabled) {
+                this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
+                this.toggle(CX, cy - 20, BW, 40, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
+                    () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); });
+                cy += 52;
+            }
+            // 面部識別障礙：開/關 ＋（開啟時）◀ 圓圈/線條 ▶（同催眠動畫樣式選擇器）
             this.title(cy, ui('fx_faceCensor'), ui('fx_faceCensorD'));
-            const fcOff = !CONFIG.faceCensor;
-            const fcCircle = CONFIG.faceCensor && CONFIG.faceCensorStyle !== 'line';
-            const fcLine = CONFIG.faceCensor && CONFIG.faceCensorStyle === 'line';
-            this.toggle(650, cy - 20, 90, 40, ui('censorOff'), fcOff, ui('fx_faceCensorD'),
-                () => { CONFIG.faceCensor = false; saveSettings(); });
-            this.toggle(748, cy - 20, 108, 40, ui('censorStyleCircle'), fcCircle, ui('fx_faceCensorD'),
-                () => { CONFIG.faceCensor = true; CONFIG.faceCensorStyle = 'circle'; saveSettings(); }, 'faceCensorCircle');
-            this.toggle(864, cy - 20, 108, 40, ui('censorStyleLine'), fcLine, ui('fx_faceCensorD'),
-                () => { CONFIG.faceCensor = true; CONFIG.faceCensorStyle = 'line'; saveSettings(); }, 'faceCensorLine');
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.faceCensor ? ui('on') : ui('off'), CONFIG.faceCensor, ui('fx_faceCensorD'),
+                () => { CONFIG.faceCensor = !CONFIG.faceCensor; saveSettings(); });
+            if (CONFIG.faceCensor) {
+                const isLine = CONFIG.faceCensorStyle === 'line';
+                const styleName = isLine ? ui('censorStyleLine') : ui('censorStyleCircle');
+                const fdk = isLine ? 'faceCensorLine' : 'faceCensorCircle';
+                const swap = () => { CONFIG.faceCensorStyle = isLine ? 'circle' : 'line'; saveSettings(); };
+                const bx = CX + BW + 40;
+                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 52, cy - 20, 110, 40, styleName, '#8E44A1', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('fx_faceCensorD'), swap, fdk);
+            }
             cy += 52;
             // 名稱識別障礙（演示）
             this.title(cy, ui('fx_nameCensor'), ui('fx_nameCensorD'));
-            this.toggle(650, cy - 20, 116, 40, CONFIG.nameCensor ? ui('on') : ui('off'), CONFIG.nameCensor, ui('fx_nameCensorD'),
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.nameCensor ? ui('on') : ui('off'), CONFIG.nameCensor, ui('fx_nameCensorD'),
                 () => { CONFIG.nameCensor = !CONFIG.nameCensor; saveSettings(); }, 'nameCensor');
+            cy += 52;
+            // 顯示人群（演示）
+            this.title(cy, ui('fx_crowd'), ui('fx_crowdD'));
+            this.toggle(CX, cy - 20, BW, 40, CONFIG.crowd ? ui('on') : ui('off'), CONFIG.crowd, ui('fx_crowdD'),
+                () => { CONFIG.crowd = !CONFIG.crowd; saveSettings(); }, 'crowd');
             this._track(cy + 50);
         },
 

@@ -23,7 +23,7 @@ const bcGlobals = [
   'AssetGetActivity', 'ActivityRun', 'ActivityCanBeDone', 'DrawFlashScreen',
   'ChatRoomTargetMemberNumber',
   'CharacterAppearanceXOffset', 'CharacterAppearanceYOffset', 'ServerPlayerIsInChatRoom',
-  'CanvasUpperOverflow', 'DrawImageEx', 'CurrentTime', 'CommonGetFont', 'CurrentModule',
+  'CanvasUpperOverflow', 'DrawImageEx', 'CurrentTime', 'CommonGetFont', 'CommonTime', 'CurrentModule',
   'CurrentCharacter', 'ChatRoomMapViewIsActive', 'ChatRoomHideIconState', 'CommonPhotoMode',
 ];
 

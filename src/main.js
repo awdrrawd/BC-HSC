@@ -10,6 +10,7 @@ import { loadSettings, saveSettings, exportSettings, importSettings } from './mo
 import { handleIVHCommand } from './modules/commands.js';
 import { currentDepthLevel, runDepthEffect } from './modules/depth.js';
 import { getHypnoValue, isForced, wake } from './modules/hypno.js';
+import { playHypnoAnim } from './modules/hypno-anim.js';
 import { EXT } from './modules/preference.js';
 import { l10nTest } from './modules/l10n.js';
 import { initialize } from './modules/core-init.js';
@@ -33,6 +34,8 @@ window.Liko.IVH = {
     hypno: () => getHypnoValue(),
     isForced: () => isForced(),
     wake: () => wake(),
+    // 直接播一次符咒儀式動畫（測試用，免催到 100%）
+    anim: () => playHypnoAnim(),
     // 設定存取
     getConfig: () => CONFIG,
     save: () => saveSettings(true),
