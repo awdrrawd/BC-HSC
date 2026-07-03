@@ -13,7 +13,7 @@ for (const file of ['loader.user.js', 'loader.local.user.js']) {
     const out = src.replace(/(\/\/ @version\s+)\S+/, `$1${version}`);
     if (out !== src) {
       writeFileSync(path, out);
-      console.log(`🐈‍⬛ [IVH] synced ${file} -> v${version}`);
+      console.log(`🐈‍⬛ [HSC] synced ${file} -> v${version}`);
     }
   } catch {
     /* loader file may not exist yet */

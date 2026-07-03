@@ -3,43 +3,43 @@ import { CONFIG } from './config.js';
 import { assetUrl } from './icons.js';
 
 // ════════════════════════════════════════
-//  IVH module: i18n.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: i18n.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
-    //  i18n（多語）：動態載入共用引擎 + IVH 字庫，ui(key,vars) 取字串
+    //  i18n（多語）：動態載入共用引擎 + HSC 字庫，ui(key,vars) 取字串
     //  引擎未就緒時，ui() 回傳 fallbacks[key]（中文原文），不丟例外
     // ════════════════════════════════════════
-    const I18N_NS = 'IVH';
-    // 翻譯自我裝載：與 bundle 同源（正式站 = BC-IVH Pages，本地 = vite preview）。
-    //  Liko-i18n.js 是共用引擎（有防重複載入），IVH-i18n.js 是本插件字庫；
+    const I18N_NS = 'HSC';
+    // 翻譯自我裝載：與 bundle 同源（正式站 = BC-HSC Pages，本地 = vite preview）。
+    //  Liko-i18n.js 是共用引擎（有防重複載入），HSC-i18n.js 是本插件字庫；
     //  兩者放 Translation/，build 前由 copy-assets 複製到 public/Translation/ 一併部署。
     const LIKO_I18N_ENGINE_URL = assetUrl('Translation/Liko-i18n.js');
-    const LIKO_IVH_STRINGS_URL = assetUrl('Translation/IVH-i18n.js');
+    const LIKO_HSC_STRINGS_URL = assetUrl('Translation/HSC-i18n.js');
 
     // 加時間戳避免 CDN 快取到舊字庫（翻譯會經常修改）
     function _i18nLoadScript(url) {
         const u = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
         return fetch(u)
-            .then(res => { if (!res.ok) throw new Error(`[IVH] 無法載入 ${url} (${res.status})`); return res.text(); })
+            .then(res => { if (!res.ok) throw new Error(`[HSC] 無法載入 ${url} (${res.status})`); return res.text(); })
             .then(code => { new Function(code)(); });
     }
     async function ensureI18n() {
         try {
             if (!window.Liko?.i18n?.version) await _i18nLoadScript(LIKO_I18N_ENGINE_URL);
-            if (!window.Liko?.i18n?._ivhStringsLoaded) {
-                await _i18nLoadScript(LIKO_IVH_STRINGS_URL);
-                if (window.Liko?.i18n) window.Liko.i18n._ivhStringsLoaded = true;
+            if (!window.Liko?.i18n?._hscStringsLoaded) {
+                await _i18nLoadScript(LIKO_HSC_STRINGS_URL);
+                if (window.Liko?.i18n) window.Liko.i18n._hscStringsLoaded = true;
             }
-        } catch (e) { console.warn('🐈‍⬛ [IVH] i18n 載入失敗，改用中文原文:', e.message); }
+        } catch (e) { console.warn('🐈‍⬛ [HSC] i18n 載入失敗，改用中文原文:', e.message); }
     }
     // 可選語言（auto = 依遊戲語系）
-    const IVH_LANGS = ['auto', 'TW', 'CN', 'EN', 'DE', 'FR', 'RU', 'UA'];
-    const IVH_LANG_NAMES = { auto: 'Auto', TW: '繁體中文', CN: '简体中文', EN: 'English', DE: 'Deutsch', FR: 'Français', RU: 'Русский', UA: 'Українська' };
+    const HSC_LANGS = ['auto', 'TW', 'CN', 'EN', 'DE', 'FR', 'RU', 'UA'];
+    const HSC_LANG_NAMES = { auto: 'Auto', TW: '繁體中文', CN: '简体中文', EN: 'English', DE: 'Deutsch', FR: 'Français', RU: 'Русский', UA: 'Українська' };
 
     // 目前語言：玩家手動選 > 遊戲語系
-    function ivhLang() {
+    function hscLang() {
         try {
             const sel = (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.lang) || 'auto';
             if (sel && sel !== 'auto') return sel;
@@ -49,13 +49,13 @@ import { assetUrl } from './icons.js';
         } catch { return 'EN'; }
     }
 
-    // 取翻譯：優先用 _IVH_strings（支援手動語言覆蓋）；
-    //   其次用引擎 t()（舊版線上字庫只 register、未 expose _IVH_strings 時仍可譯，但只跟遊戲語系）；
-    //   最後才退中文 IVH_FALLBACK。
+    // 取翻譯：優先用 _HSC_strings（支援手動語言覆蓋）；
+    //   其次用引擎 t()（舊版線上字庫只 register、未 expose _HSC_strings 時仍可譯，但只跟遊戲語系）；
+    //   最後才退中文 HSC_FALLBACK。
     function ui(key, vars, forceLang) {
-        const lang = forceLang || ivhLang();
+        const lang = forceLang || hscLang();
         let s;
-        const store = window.Liko?._IVH_strings;
+        const store = window.Liko?._HSC_strings;
         const e = store && store[key];
         if (e) {
             s = e[lang] ?? e[lang === 'CN' ? 'TW' : 'XX'] ?? e['EN'];
@@ -64,25 +64,25 @@ import { assetUrl } from './icons.js';
             const fn = window.Liko?.i18n;
             if (fn?.t && fn.has?.(I18N_NS, key)) return fn.t(I18N_NS, key, vars);
         }
-        if (s == null) s = IVH_FALLBACK[key] ?? key;
+        if (s == null) s = HSC_FALLBACK[key] ?? key;
         if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
         return s;
     }
 
-    // 引擎未載入時的中文 fallback（與 IVH-i18n.js 的 TW 一致）
-    const IVH_FALLBACK = {
-        loaded: 'IVH v{v} 已載入 ✅\n/ivh help 說明 | /ivh setting 設定頁',
-        help: '🌀 IVH v{v} 指令列表：\n  /ivh setting       — 開啟偏好設定頁\n  /ivh show          — 顯示控制面板\n  /ivh test [文字]   — 立即觸發效果\n  /ivh climax        — 測試高潮特效\n  /ivh depth [1~3]   — 測試催眠深度效果\n  /ivh calibrate     — 頭部座標校正面板\n  /ivh help          — 顯示此說明',
-        cmdUnknown: '⚠️ [IVH] 未知指令「{sub}」，輸入 /ivh help 查看說明',
+    // 引擎未載入時的中文 fallback（與 HSC-i18n.js 的 TW 一致）
+    const HSC_FALLBACK = {
+        loaded: 'HSC v{v} 已載入 ✅\n/hsc help 說明 | /hsc setting 設定頁',
+        help: '🌀 HSC v{v} 指令列表：\n  /hsc setting       — 開啟偏好設定頁\n  /hsc show          — 顯示控制面板\n  /hsc test [文字]   — 立即觸發效果\n  /hsc climax        — 測試高潮特效\n  /hsc depth [1~3]   — 測試催眠深度效果\n  /hsc calibrate     — 頭部座標校正面板\n  /hsc help          — 顯示此說明',
+        cmdUnknown: '⚠️ [HSC] 未知指令「{sub}」，輸入 /hsc help 查看說明',
         cantOpenSettings: '⚠️ 無法開啟設定頁（偏好系統未就緒）',
-        exportDone: '📤 IVH 設定已匯出 (IVH-settings.json)',
-        importDone: '📥 IVH 設定已匯入',
-        editedYourText: '📝 {who} 編輯了你的 IVH 催眠文本',
-        accessedYourText: '👁 {who} 正在查看你的 IVH 文本',
+        exportDone: '📤 HSC 設定已匯出 (HSC-settings.json)',
+        importDone: '📥 HSC 設定已匯入',
+        editedYourText: '📝 {who} 編輯了你的 HSC 催眠文本',
+        accessedYourText: '👁 {who} 正在查看你的 HSC 文本',
         tab_basic: '基本設定', tab_effects: '效果設定', tab_texts: '文本設定', tab_expr: '表情設定', tab_sounds: '音效設定', tab_about: '關於插件',
         exit: '離開', info: '── 說明 ──', cancel: '取消', confirm: '確定', save: '💾 保存', delete: '🗑 刪除',
         upload: '上傳', clear: '清除', other: '其他', restoreDefault: '還原預設', export: '匯出全部設定', import: '匯入全部設定',
-        enabledOn: 'IVH 啟用中', enabledOff: 'IVH 停用中',
+        enabledOn: 'HSC 啟用中', enabledOff: 'HSC 停用中',
         enabledDesc: '開啟後此插件會有更高沉浸性，並包含部分可能令人不適的效果（強閃光、畫面破碎、震動等），請依個人狀況使用。',
         intensity: '催眠強度', depthMax: '催眠深度', depthNone: '無', depthLight: '輕', depthMed: '中', depthHeavy: '重',
         interval: '循環時間', minutes: '分（1~99）', depthEffects: '── 深度效果 ──',
@@ -93,9 +93,9 @@ import { assetUrl } from './icons.js';
         arousalStepLabel: '興奮值', arousalStepD: '每次觸發催眠增加的興奮值（0~20，0＝停用）。',
         tab_voice: '語言催眠', tab_daily: '日常干擾', tab_state: '催眠狀態',
         sec_effects: '效果設定',
-        voiceEnabledLabel: '語言催眠', voiceEnabledD: '通過 BCX 的「聽我聲音」或 IVH 的設置來修改文本、觸發詞與催眠效果，請到語言催眠查閱並設置詳細內容。',
+        voiceEnabledLabel: '語言催眠', voiceEnabledD: '通過 BCX 的「聽我聲音」或 HSC 的設置來修改文本、觸發詞與催眠效果，請到語言催眠查閱並設置詳細內容。',
         dailyEnabledLabel: '日常干擾', dailyEnabledD: '週期性的觸發催眠，沒有任何催眠詞，請到日常干擾查閱並設置詳細內容。',
-        stateEnabledLabel: '催眠狀態', stateEnabledD: '提供 IVH 的催眠異常狀態效果，當達到催眠度 100% 時觸發，請到催眠狀態查閱並設置詳細內容。',
+        stateEnabledLabel: '催眠狀態', stateEnabledD: '提供 HSC 的催眠異常狀態效果，當達到催眠度 100% 時觸發，請到催眠狀態查閱並設置詳細內容。',
         arousalVoiceLabel: '興奮值 - 語音催眠', arousalVoiceD: '每次語音催眠增加的興奮值（0~20，0＝停用）。',
         arousalDailyLabel: '興奮值 - 日常干擾', arousalDailyD: '每次日常干擾增加的興奮值（0~20，0＝停用）。',
         hypnoVoiceLabel2: '催眠值 - 語音催眠', hypnoVoiceD2: '每次語音催眠增加的催眠值（0~20）。催眠狀態關閉則無效。',
@@ -103,11 +103,11 @@ import { assetUrl } from './icons.js';
         seeOthersEffect: '看見他人效果',
         autoWakeLabel: '自動清醒', autoWakeD: '開啟後催眠值低於 15% 時自動解除強控；關閉則只能靠清醒詞解除。',
         forcedGrowthLabel: '催眠值', forcedGrowthD: '避免永遠無法清醒：強控中受到催眠時，催眠值成長為原本的 N/10（預設 1/10，例：原 20 → 2）。',
-        showProfileBtnLabel: '編輯他人文本', showProfileBtnD: '控制是否在別人的 profile 顯示 IVH 文本編輯按鈕；關閉則不顯示。',
+        showProfileBtnLabel: '編輯他人文本', showProfileBtnD: '控制是否在別人的 profile 顯示 HSC 文本編輯按鈕；關閉則不顯示。',
         hs_enterForced: '$me 的精神被不斷侵蝕，眼神越來越渙散，最終徹底墜入催眠的泥沼。',
         hs_forcedIdle: '$me 的雙眼空洞呆滯，偶爾嘴唇會微微顫動，像是想說什麼，卻發不出任何聲音，整個人毫無反應，如同被徹底操控的人偶。',
         hs_exitForced: '經過一段時間後，侵蝕效果慢慢從 $me 的腦中退去，空洞的雙眼逐漸恢復些許光澤，意識開始緩緩回歸。',
-        l10n_test: '【翻譯測試】{name} 傳來的訊息已被 IVH 依你的語言即時替換顯示 ✅',
+        l10n_test: '【翻譯測試】{name} 傳來的訊息已被 HSC 依你的語言即時替換顯示 ✅',
         hypnoAnimLabel: '催眠動畫', hypnoAnimD: '啟用催眠符咒動畫（開發中）。',
         hypnoStyleLabel: '符咒樣式', hypnoStyleD: '催眠動畫使用的符咒圖樣（共 12 種）；滑鼠停在此處可預覽當前樣式。', hypnoStyleName: '樣式{n}',
         fx_headTalisman: '頭上貼符咒', fx_headTalismanD: '強控中額頭常駐符咒且持續震動（需開啟催眠動畫）。',
@@ -116,7 +116,7 @@ import { assetUrl } from './icons.js';
         censorStyleLabel: '塗鴉樣式', censorStyleD: '面部塗鴉的樣式，二選一。',
         censorOff: '關', censorStyleCircle: '圓圈', censorStyleLine: '線條',
         fx_crowd: '顯示人群', fx_crowdD: '強控中：畫面下緣淡入一排圍觀人群，營造被注視／包圍的情境。',
-        resetAll: '恢復預設', resetAllD: '把 IVH 全部設定恢復為預設值。', confirmResetAll: '確定要把 IVH 所有設定恢復為預設值嗎？此動作無法復原。',
+        resetAll: '恢復預設', resetAllD: '把 HSC 全部設定恢復為預設值。', confirmResetAll: '確定要把 HSC 所有設定恢復為預設值嗎？此動作無法復原。',
         hypnoLabel: '催眠值', hypnoD: '收到催眠時累積的催眠值（0~100，每 12 秒 -1）。到 100% 進入強控，低於 15% 解除。',
         hypnoVoiceLabel: '語音催眠值', hypnoVoiceD: '每次語音催眠增加（0~20，0＝停用）。',
         hypnoDepthLabel: '深度催眠值', hypnoDepthD: '每次深度催眠增加（0~10，0＝停用）。',
@@ -133,10 +133,10 @@ import { assetUrl } from './icons.js';
         editPermTitle: '允許編輯對象', editPermTitleD: '誰可在你的角色資料頁增減各類內容。「僅自己」只有你能編輯；「白名單」名單內成員可編輯；「所有人」任何人都可編輯。三類共用下方白名單。',
         on: '開', off: '關',
         seeOthersPant: '看到他人喘氣', seeOthersPantD: '開啟後，當房內其他人被催眠（送出催眠廣播）時，你會在對方角色身上看到喘氣白霧。預設關閉。',
-        remoteEditTitle: '編輯 {name} 的 IVH 文本', remoteEditHint: '每行一句。可用 $me 代表被催眠者、$n 換行；狀態訊息以 $a 開頭會發 Action。儲存後送給對方（對方需仍允許編輯才生效）。',
+        remoteEditTitle: '編輯 {name} 的 HSC 文本', remoteEditHint: '每行一句。可用 $me 代表被催眠者、$n 換行；狀態訊息以 $a 開頭會發 Action。儲存後送給對方（對方需仍允許編輯才生效）。',
         remoteEditSave: '💾 儲存並送出', remoteEditSent: '📤 已送出給 {name}，等待對方套用…',
         remoteEditOk: '✅ {name} 已套用你的編輯', remoteEditDenied: '⚠️ {name} 未套用你的編輯（你不在對方白名單）',
-        profileEditBtn: '編輯對方的 IVH 文本', profileEditOff: '對方未開放編輯文本',
+        profileEditBtn: '編輯對方的 HSC 文本', profileEditOff: '對方未開放編輯文本',
         profileEditNoPerm: '你不在對方白名單，無法編輯', remoteEditNoPerm: '你沒有此項編輯權限',
         whitelistD: '會員編號或代號（$owner＝主人、$lover＝愛人含 AFC、$friend＝好友、$white＝BC白名單），逗號或空白分隔。各類「白名單」編輯權限共用此名單。', whitelistPh: '例：$owner, $lover, $friend, $white, 12345',
         textsResetD: '把催眠文本／狀態訊息／觸發詞重設為「目前語言」的預設值（切換語言後可用來更新翻譯）。',
@@ -199,12 +199,12 @@ import { assetUrl } from './icons.js';
 export {
     I18N_NS,
     LIKO_I18N_ENGINE_URL,
-    LIKO_IVH_STRINGS_URL,
+    LIKO_HSC_STRINGS_URL,
     _i18nLoadScript,
     ensureI18n,
-    IVH_LANGS,
-    IVH_LANG_NAMES,
-    ivhLang,
+    HSC_LANGS,
+    HSC_LANG_NAMES,
+    hscLang,
     ui,
-    IVH_FALLBACK,
+    HSC_FALLBACK,
 };

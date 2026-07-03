@@ -5,11 +5,11 @@ import { wrapDanmakuText } from './effects.js';
 import { BASE_DANMAKU_DURATION, BODY_PANT_DY, DEPTH_PANT_EXTRA, _cachedScaleX, bcToScreen, getPlayerHeadScreenPos, getPlayerMouthScreenPos, playerDrawPos } from './geometry.js';
 import { playSoundCategory } from './sound.js';
 import { effectScale, getBCXReminderList, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: effects2.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: effects2.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -143,7 +143,7 @@ import { IVH_Z } from './zlayers.js';
             span.textContent = ch;
             span.style.cssText = `
                 display:inline-block;
-                animation: ivhWaveChar 1.8s ease-in-out ${i * 80}ms infinite;
+                animation: hscWaveChar 1.8s ease-in-out ${i * 80}ms infinite;
                 opacity:0;
                 transition: opacity 0.3s ease ${i * 40}ms;
             `;
@@ -215,9 +215,9 @@ import { IVH_Z } from './zlayers.js';
                 background:   `radial-gradient(circle at 50% 50%, rgba(255,255,255,${a0}) 0%, rgba(255,255,255,${(a0 * 0.5).toFixed(3)}) 45%, rgba(255,255,255,0) 72%)`,
                 filter:       `blur(${(3 + Math.random() * 2).toFixed(1)}px)`,
                 transform:    'translate(-50%,-50%) scale(0.35)',
-                animation:    `ivhPant ${PUFF_DUR}ms ease-out forwards`,
+                animation:    `hscPant ${PUFF_DUR}ms ease-out forwards`,
                 willChange:   'transform, opacity',
-                zIndex:       IVH_Z.particle,
+                zIndex:       HSC_Z.particle,
             });
             p.style.setProperty('--dx', `${dx.toFixed(1)}px`);
             p.style.setProperty('--dy', `${dy.toFixed(1)}px`);
@@ -274,7 +274,7 @@ import { IVH_Z } from './zlayers.js';
             position:      'fixed',
             inset:         '0',
             background:    'black',
-            zIndex:        IVH_Z.climaxBg,   // 在碎片下面，確保碎片飛散後看到黑
+            zIndex:        HSC_Z.climaxBg,   // 在碎片下面，確保碎片飛散後看到黑
             opacity:       '1',
             pointerEvents: 'none',
             transition:    'none',
@@ -286,10 +286,10 @@ import { IVH_Z } from './zlayers.js';
         Object.assign(flash.style, {
             position:      'fixed',
             inset:         '0',
-            zIndex:        IVH_Z.climaxFlash,
+            zIndex:        HSC_Z.climaxFlash,
             opacity:       '0',
             pointerEvents: 'none',
-            animation:     `ivhClimaxFlash ${Math.round(700 / scale)}ms ease-out forwards`,
+            animation:     `hscClimaxFlash ${Math.round(700 / scale)}ms ease-out forwards`,
         });
         overlay.appendChild(flash);
         setTimeout(() => flash.remove(), 800);
@@ -362,7 +362,7 @@ import { IVH_Z } from './zlayers.js';
                 width:           `${SW}px`,
                 height:          `${SH}px`,
                 pointerEvents:   'none',
-                zIndex:          IVH_Z.climaxShards,
+                zIndex:          HSC_Z.climaxShards,
                 transformOrigin: `${seed.x}px ${seed.y}px`,
                 // transition 帶入 delay，飛散前靜止
                 transition:      `transform ${dur}ms cubic-bezier(0.15,0,0.9,1) ${scatter}ms,
@@ -386,8 +386,8 @@ import { IVH_Z } from './zlayers.js';
             position:      'fixed',
             inset:         '0',
             pointerEvents: 'none',
-            zIndex:        IVH_Z.climaxFlash,
-            animation:     `ivhClimaxShake ${Math.round(500 / scale)}ms ease-out forwards`,
+            zIndex:        HSC_Z.climaxFlash,
+            animation:     `hscClimaxShake ${Math.round(500 / scale)}ms ease-out forwards`,
         });
         overlay.appendChild(shakeEl);
         setTimeout(() => shakeEl.remove(), 600);

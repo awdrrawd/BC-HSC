@@ -11,12 +11,12 @@ import { saveSettings } from './storage.js';
 import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: panel.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: panel.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
-    //  IVH 控制面板
+    //  HSC 控制面板
     // ════════════════════════════════════════
     let _panel = null;
 
@@ -32,7 +32,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
         if (_panel) return; // 已存在
 
         _panel = document.createElement('div');
-        _panel.id = 'ivh-panel';
+        _panel.id = 'hsc-panel';
         // 面板作為普通 DOM 節點塞進 TextAreaChatLog
         // 行為跟一般聊天訊息完全相同：
         // - 新訊息進來會往上推（正常）
@@ -59,7 +59,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
         });
 
         const title = document.createElement('span');
-        title.innerHTML = '🌀 <b style="color:#ff99dd">IVH</b> <span style="color:#cc88bb;font-size:10px">v' + MOD_VER + '</span>';
+        title.innerHTML = '🌀 <b style="color:#ff99dd">HSC</b> <span style="color:#cc88bb;font-size:10px">v' + MOD_VER + '</span>';
         title.style.color = '#ffddee';
 
         // ⚙ 齒輪 → 開啟偏好設定頁
@@ -138,7 +138,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
 
         // ── 開關格子 ──
         const grid = document.createElement('div');
-        grid.id = 'ivh-panel-grid';
+        grid.id = 'hsc-panel-grid';
         Object.assign(grid.style, {
             display:             'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
@@ -148,7 +148,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
 
         getPanelToggles().forEach(({ key, label, icon }) => {
             const btn = document.createElement('button');
-            btn.dataset.ivhKey = key;
+            btn.dataset.hscKey = key;
             _styleToggleBtn(btn, key, icon, label);
             btn.addEventListener('click', () => {
                 CONFIG[key] = !CONFIG[key];
@@ -213,11 +213,11 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    // 重新刷新所有 toggle 按鈕外觀（/ivh on/off 後呼叫）
+    // 重新刷新所有 toggle 按鈕外觀（/hsc on/off 後呼叫）
     function _refreshToggles() {
         if (!_panel) return;
         getPanelToggles().forEach(({ key, icon, label }) => {
-            const btn = _panel.querySelector(`[data-ivh-key="${key}"]`);
+            const btn = _panel.querySelector(`[data-hsc-key="${key}"]`);
             if (btn) _styleToggleBtn(btn, key, icon, label);
         });
     }
@@ -331,8 +331,8 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from './util.js
         const msgEl = node.classList?.contains('ChatMessage')
                       ? node
                       : node.querySelector?.('.ChatMessage') || node;
-        if (msgEl._ivhHandled) return;        // 同一訊息只處理一次
-        msgEl._ivhHandled = true;
+        if (msgEl._hscHandled) return;        // 同一訊息只處理一次
+        msgEl._hscHandled = true;
 
         const text = msgEl.textContent || '';
 

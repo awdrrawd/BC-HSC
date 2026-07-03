@@ -1,5 +1,5 @@
 // ── auto-wired cross-module imports ──
-import { ivhBlurLevel, ivhTintColor } from './atmosphere.js';
+import { hscBlurLevel, hscTintColor } from './atmosphere.js';
 import { CONFIG, modApi } from './config.js';
 import { triggerPinkFlash } from './effects.js';
 import { triggerClimaxEffect } from './effects2.js';
@@ -8,8 +8,8 @@ import { getHypnoValue, isForced } from './hypno.js';
 import { effectScale } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: hooks.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: hooks.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -63,7 +63,7 @@ import { effectScale } from './util.js';
                 return result;
             });
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] ⚠️ ChatRoomCharacterViewDrawOverlay hook 失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] ⚠️ ChatRoomCharacterViewDrawOverlay hook 失敗:', e.message);
         }
     }
 
@@ -78,19 +78,19 @@ import { effectScale } from './util.js';
         try {
             modApi.hookFunction('Player.GetBlurLevel', 4, (args, next) => {
                 const base = next(args) || 0;
-                const add = ivhBlurLevel();
+                const add = hscBlurLevel();
                 return add > base ? add : base;
             });
             modApi.hookFunction('Player.HasTints', 4, (args, next) => {
-                return ivhTintColor() ? true : next(args);
+                return hscTintColor() ? true : next(args);
             });
             modApi.hookFunction('Player.GetTints', 4, (args, next) => {
                 const base = next(args) || [];
-                const t = ivhTintColor();
+                const t = hscTintColor();
                 return t ? base.concat([t]) : base;
             });
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] 氛圍 hook 失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] 氛圍 hook 失敗:', e.message);
         }
     }
 

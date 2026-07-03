@@ -1,12 +1,12 @@
 // ════════════════════════════════════════
-//  IVH module: config.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: config.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
 import { ui } from './i18n.js';
 
     // 版本號由 package.json 經 vite define 注入（見 vite.config.js）
-    const MOD_VER = (typeof __IVH_VERSION__ !== 'undefined' && __IVH_VERSION__) || "2.1.1";
+    const MOD_VER = (typeof __HSC_VERSION__ !== 'undefined' && __HSC_VERSION__) || "2.1.1";
     // 共用可變狀態：bcModSdk 的 mod api（由 core-init 於註冊後 setModApi 設定）
     let modApi = null;
     function setModApi(v) { modApi = v; }
@@ -23,13 +23,13 @@ import { ui } from './i18n.js';
     // 內建催眠文本／狀態 emote 改由 i18n 提供（ui('defaultTexts') / ui('defaultEmotes')）
 
     // ════════════════════════════════════════
-    //  設定模型（持久化於 Player.ExtensionSettings.IVH）
+    //  設定模型（持久化於 Player.ExtensionSettings.HSC）
     //  CONFIG 為執行期物件，由 loadSettings() 從 ES 還原
     // ════════════════════════════════════════
     function makeDefaultConfig() {
         return {
             // ── 主開關 ──
-            enabled:        true,  // IVH 總開關
+            enabled:        true,  // HSC 總開關
 
             // ── VOICE 八大效果開關 ──
             pinkFlash:      true,  // 粉紅暈染
@@ -58,7 +58,7 @@ import { ui } from './i18n.js';
             whitelist:      ['$owner'],
             triggerWords:   [],    // 自訂觸發詞（除了 [Voice]）
             seeOthersPant:  false, // 收到他人催眠廣播時，是否在其角色上顯示喘氣（預設關閉）
-            showProfileButton: true, // 是否在別人 profile 顯示 IVH 文本編輯按鈕
+            showProfileButton: true, // 是否在別人 profile 顯示 HSC 文本編輯按鈕
 
             // ── 三大系統開關（總開關為 enabled）──
             voiceEnabled:   true,  // 語音催眠（[Voice]/觸發詞 → 效果）
@@ -74,7 +74,7 @@ import { ui } from './i18n.js';
             autoWake:        true,  // 自動清醒（催眠值 <15% 時解除強控）
             forcedGrowthDiv: 1,     // 強控中催眠值成長 = 原值 × N/10（預設 1 → 1/10）
             hypnoAnimEnabled: false, // 催眠動畫（符咒動畫等；預留）
-            hypnoAnimStyle:   1,     // 符咒樣式 1~12（IVH-Status-Code1.png 的 2×6 格）
+            hypnoAnimStyle:   1,     // 符咒樣式 1~12（HSC-Status-Code1.png 的 2×6 格）
             hypnoAnimColor:   '#f500b4', // 符咒染色（mask 染色，顏色 100% 準）
             headTalisman:     false, // 頭上貼符咒（強控中額頭常駐符咒且持續震動）
             faceCensor:       false, // 面部識別障礙（強控中看不清他人的臉）
@@ -104,7 +104,7 @@ import { ui } from './i18n.js';
             lang: 'auto',
 
             // ── 允許他人編輯各類內容：每類 off（僅自己）/ whitelist（白名單）/ any（所有人）──
-            //    共用同一份 whitelist。透過角色資料頁的 IVH 按鈕遠端編輯。預設白名單（含 $owner）。
+            //    共用同一份 whitelist。透過角色資料頁的 HSC 按鈕遠端編輯。預設白名單（含 $owner）。
             editModes: { catalyst: 'whitelist', status: 'whitelist', trigger: 'whitelist', wake: 'whitelist', response: 'whitelist', allowed: 'whitelist' },
 
             // ── 音效（URL 清單；本機上傳另存 IndexedDB，此處放 id 參照）──
@@ -126,8 +126,8 @@ import { ui } from './i18n.js';
     // 相容舊程式碼：EXPRESSION_SETS 指向目前設定的表情組
     let EXPRESSION_SETS = CONFIG.expressionSets;
     function setExpressionSets(v) { EXPRESSION_SETS = v; }
-    const ES_KEY = "IVH";                       // ExtensionSettings / OnlineSharedSettings 儲存鍵
-    const PREF_ID = "Liko_IVH_Settings";        // 偏好設定頁註冊 Identifier
+    const ES_KEY = "HSC";                       // ExtensionSettings / OnlineSharedSettings 儲存鍵
+    const PREF_ID = "Liko_HSC_Settings";        // 偏好設定頁註冊 Identifier
     const ES_BUDGET = 5120; // 5KB 警戒線
 
 export {

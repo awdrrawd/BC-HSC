@@ -3,11 +3,11 @@ import { printChat } from './commands.js';
 import { CONFIG } from './config.js';
 import { BASE_PINK_DURATION, BASE_WAVE_DURATION, HEAD_OFFSET, SPIRAL_DURATION, VIGNETTE_DURATION, bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from './geometry.js';
 import { effectScale, getOverlay, randInt } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: effects.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: effects.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -25,7 +25,7 @@ import { IVH_Z } from './zlayers.js';
             position:   'absolute',
             inset:      '0',
             background: `radial-gradient(ellipse at center, transparent 20%, rgba(255,105,180,${alpha1}) 60%, rgba(255,60,150,${alpha2}) 100%)`,
-            animation:  `ivhPinkPulse ${dur}ms ease-in-out forwards`,
+            animation:  `hscPinkPulse ${dur}ms ease-in-out forwards`,
         });
         overlay.appendChild(el);
         setTimeout(() => el.remove(), dur + 200);
@@ -44,7 +44,7 @@ import { IVH_Z } from './zlayers.js';
             position:   'absolute',
             inset:      '0',
             background: `radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0,0,0,${alpha}) 100%)`,
-            animation:  `ivhVignette ${VIGNETTE_DURATION}ms ease-in-out forwards`,
+            animation:  `hscVignette ${VIGNETTE_DURATION}ms ease-in-out forwards`,
         });
         overlay.appendChild(el);
         setTimeout(() => el.remove(), VIGNETTE_DURATION + 200);
@@ -71,7 +71,7 @@ import { IVH_Z } from './zlayers.js';
             pointerEvents: 'none',
             opacity:       '0',
             transition:    'opacity 0.4s ease',
-            zIndex:        IVH_Z.spiral,   // 螺旋在頭像之上、煙霧之下
+            zIndex:        HSC_Z.spiral,   // 螺旋在頭像之上、煙霧之下
         });
 
         // SVG 螺旋（阿基米德螺旋線，用多圈弧段組成）
@@ -80,11 +80,11 @@ import { IVH_Z } from './zlayers.js';
         svg.setAttribute('viewBox', '-100 -100 200 200');
         svg.setAttribute('width',  `${size}`);
         svg.setAttribute('height', `${size}`);
-        svg.style.animation = `ivhSpiralSpin 1800ms linear infinite`;  // 轉速固定，不隨強度變快
+        svg.style.animation = `hscSpiralSpin 1800ms linear infinite`;  // 轉速固定，不隨強度變快
 
         const defs  = document.createElementNS(ns, 'defs');
         const grad  = document.createElementNS(ns, 'radialGradient');
-        grad.id = 'ivhSpiralGrad';
+        grad.id = 'hscSpiralGrad';
         const stops = [
             { offset: '0%',   color: 'rgba(255,200,230,0.95)' },
             { offset: '50%',  color: 'rgba(255,120,180,0.75)' },
@@ -113,7 +113,7 @@ import { IVH_Z } from './zlayers.js';
         const path = document.createElementNS(ns, 'path');
         path.setAttribute('d', d);
         path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', 'url(#ivhSpiralGrad)');
+        path.setAttribute('stroke', 'url(#hscSpiralGrad)');
         path.setAttribute('stroke-width', '3.5');
         path.setAttribute('stroke-linecap', 'round');
         svg.appendChild(path);
@@ -190,7 +190,7 @@ import { IVH_Z } from './zlayers.js';
                     borderRadius: '50%',
                     border:       `2px solid hsla(${hue},100%,78%,0.88)`,
                     transform:    'translate(-50%, -50%)',
-                    animation:    `ivhWaveExpand ${dur}ms ease-out ${groupDelay + i * 300}ms forwards`,
+                    animation:    `hscWaveExpand ${dur}ms ease-out ${groupDelay + i * 300}ms forwards`,
                     boxShadow:    `0 0 8px hsla(${hue},100%,75%,0.5)`,
                 });
                 wrap.appendChild(ring);
@@ -225,7 +225,7 @@ import { IVH_Z } from './zlayers.js';
             width:           `${rect.width}px`,
             height:          `${rect.height}px`,
             pointerEvents:   'none',
-            zIndex:          IVH_Z.distortSnap,  // canvas 上，但在 overlay 文字效果下
+            zIndex:          HSC_Z.distortSnap,  // canvas 上，但在 overlay 文字效果下
             transformOrigin: '50% 50%',
             willChange:      'transform, filter, opacity',
         });
@@ -283,7 +283,7 @@ import { IVH_Z } from './zlayers.js';
             borderRadius: '50%',
             background:   'rgba(255,0,0,0.8)',
             border:       '2px solid white',
-            zIndex:       IVH_Z.tool,
+            zIndex:       HSC_Z.tool,
             pointerEvents:'none',
         });
         document.body.appendChild(dot);
@@ -291,7 +291,7 @@ import { IVH_Z } from './zlayers.js';
     }
 
     // ════════════════════════════════════════
-    //  座標校正 UI（/ivh calibrate 開啟）
+    //  座標校正 UI（/hsc calibrate 開啟）
     //  浮動面板 + 即時紅點，直接拖拉校正
     // ════════════════════════════════════════
     let _calibratePanel = null;
@@ -311,7 +311,7 @@ import { IVH_Z } from './zlayers.js';
             border:      '1px solid rgba(255,100,200,0.4)',
             borderRadius:'10px',
             padding:     '12px',
-            zIndex:      IVH_Z.tool,
+            zIndex:      HSC_Z.tool,
             fontFamily:  'monospace',
             fontSize:    '12px',
             color:       '#ffccee',
@@ -319,7 +319,7 @@ import { IVH_Z } from './zlayers.js';
         });
 
         const title = document.createElement('div');
-        title.textContent = '🌀 IVH 頭部座標校正';
+        title.textContent = '🌀 HSC 頭部座標校正';
         title.style.cssText = 'font-weight:bold;margin-bottom:10px;color:#ff99dd;font-size:13px';
         panel.appendChild(title);
 
@@ -341,7 +341,7 @@ import { IVH_Z } from './zlayers.js';
             const lspan = document.createElement('span'); lspan.textContent = label;
             const vspan = document.createElement('span');
             vspan.textContent = HEAD_OFFSET[key];
-            vspan.id = `ivh-cal-val-${key}`;
+            vspan.id = `hsc-cal-val-${key}`;
             labelEl.appendChild(lspan); labelEl.appendChild(vspan);
 
             const slider = document.createElement('input');
@@ -375,7 +375,7 @@ import { IVH_Z } from './zlayers.js';
                 borderRadius: '50%',
                 background:   'rgba(255,0,80,0.85)',
                 border:       '2px solid white',
-                zIndex:       IVH_Z.tool,
+                zIndex:       HSC_Z.tool,
                 pointerEvents:'none',
                 boxShadow:    '0 0 10px rgba(255,0,80,0.6)',
             });

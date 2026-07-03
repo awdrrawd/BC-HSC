@@ -9,12 +9,12 @@ import { _panel, buildPanel, removePanel } from './panel.js';
 import { T, triggerVoiceEffect } from './util.js';
 
 // ════════════════════════════════════════
-//  IVH module: commands.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: commands.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
-    //  /ivh 指令系統
+    //  /hsc 指令系統
     // ════════════════════════════════════════
     // timeoutMs: 若 > 0，訊息在 N 毫秒後自動淡出移除
     function printChat(text, timeoutMs = 0) {
@@ -34,7 +34,7 @@ import { T, triggerVoiceEffect } from './util.js';
                 whiteSpace:   'pre-wrap',
                 transition:   'opacity 0.5s ease',
             });
-            el.innerHTML = '<span style="opacity:0.6;font-size:0.85em">🌀 IVH</span>　' + text.split('\n').join('<br>');
+            el.innerHTML = '<span style="opacity:0.6;font-size:0.85em">🌀 HSC</span>　' + text.split('\n').join('<br>');
             log.appendChild(el);
             log.scrollTop = log.scrollHeight;
             if (timeoutMs > 0) {
@@ -50,16 +50,16 @@ import { T, triggerVoiceEffect } from './util.js';
                 ChatRoomMessage({
                     Type:    'LocalMessage',
                     Sender:  Player.MemberNumber,
-                    Content: `<font color="#ffb3d9">🌀 [IVH] ${text}</font>`,
+                    Content: `<font color="#ffb3d9">🌀 [HSC] ${text}</font>`,
                 });
                 return;
             }
         } catch(e2) {}
     }
 
-    function handleIVHCommand(input) {
+    function handleHSCCommand(input) {
         const parts = input.trim().split(/\s+/);
-        if (parts[0].toLowerCase() !== '/ivh') return false;
+        if (parts[0].toLowerCase() !== '/hsc') return false;
 
         const sub = (parts[1] ?? '').toLowerCase();
 
@@ -71,7 +71,7 @@ import { T, triggerVoiceEffect } from './util.js';
         if (sub === 'test') {
             const testText = parts.slice(2).join(' ') || '你的意識正在沉睡…放鬆，放鬆…';
             triggerVoiceEffect(testText, true);
-            printChat(`🌀 [IVH] 觸發測試效果：「${testText}」`);
+            printChat(`🌀 [HSC] 觸發測試效果：「${testText}」`);
             return true;
         }
 
@@ -90,7 +90,7 @@ import { T, triggerVoiceEffect } from './util.js';
 
         if (sub === 'climax') {
             triggerClimaxEffect(CONFIG.intensity);
-            printChat('💥 [IVH] 高潮特效測試觸發');
+            printChat('💥 [HSC] 高潮特效測試觸發');
             return true;
         }
 
@@ -98,7 +98,7 @@ import { T, triggerVoiceEffect } from './util.js';
             const lv = Math.max(1, Math.min(3, parseInt(parts[2], 10) || currentDepthLevel() || 1));
             refreshCanvasCache();
             runDepthEffect(lv);
-            printChat(`🌀 [IVH] 深度效果測試（等級 ${lv}）— 目前為最小版，完整幽靈低語等效果尚未實作`);
+            printChat(`🌀 [HSC] 深度效果測試（等級 ${lv}）— 目前為最小版，完整幽靈低語等效果尚未實作`);
             return true;
         }
 
@@ -135,17 +135,17 @@ import { T, triggerVoiceEffect } from './util.js';
         try {
             if (typeof CommandCombine === 'function') {
                 CommandCombine([{
-                    Tag: 'ivh',
-                    Description: '[IVH] 沉浸式催眠效果指令（/ivh help 查看說明）',
+                    Tag: 'hsc',
+                    Description: '[HSC] 沉浸式催眠效果指令（/hsc help 查看說明）',
                     Action: (text) => {
-                        // CommandCombine 傳入的是去掉 /ivh 後的部分
-                        handleIVHCommand('/ivh ' + (text ?? ''));
+                        // CommandCombine 傳入的是去掉 /hsc 後的部分
+                        handleHSCCommand('/hsc ' + (text ?? ''));
                     },
                 }]);
                 return true;
             }
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] CommandCombine 註冊失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] CommandCombine 註冊失敗:', e.message);
         }
         return false;
     }
@@ -156,8 +156,8 @@ import { T, triggerVoiceEffect } from './util.js';
         window.ChatRoomSendChat = function () {
             try {
                 const val = ElementValue('InputChat');
-                if (typeof val === 'string' && val.trim().startsWith('/ivh')) {
-                    handleIVHCommand(val.trim());
+                if (typeof val === 'string' && val.trim().startsWith('/hsc')) {
+                    handleHSCCommand(val.trim());
                     ElementValue('InputChat', '');
                     return;
                 }
@@ -172,8 +172,8 @@ import { T, triggerVoiceEffect } from './util.js';
             const input = document.getElementById('InputChat') || document.querySelector('textarea[id*="Chat"]');
             if (!input) return;
             const val = input.value.trim();
-            if (!val.startsWith('/ivh')) return;
-            handleIVHCommand(val);
+            if (!val.startsWith('/hsc')) return;
+            handleHSCCommand(val);
             e.preventDefault();
             e.stopPropagation();
             input.value = '';
@@ -206,7 +206,7 @@ import { T, triggerVoiceEffect } from './util.js';
 
 export {
     printChat,
-    handleIVHCommand,
+    handleHSCCommand,
     tryRegisterCommand,
     setupSendChatFallback,
     setupKeydownFallback,

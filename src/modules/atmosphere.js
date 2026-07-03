@@ -2,7 +2,7 @@
 import { isForced } from './hypno.js';
 
 // ════════════════════════════════════════
-//  IVH module: atmosphere.js
+//  HSC module: atmosphere.js
 //  催眠氛圍：模糊 + 淡紫染色。改用 BC 原生繪圖管線（hook Player.GetBlurLevel /
 //  GetTints，見 hooks.js），BC 會在它自己的繪製 pass 幫我們把「其他角色＋房間背景」
 //  模糊/染色，玩家自己(IsPlayer)不受影響；我們自己畫的背後人影是畫到暫存 context
@@ -44,7 +44,7 @@ function _factor() {
 }
 
 // 給 hook Player.GetBlurLevel 用：回傳目前該疊加的模糊 px（0 = 不模糊）
-export function ivhBlurLevel() {
+export function hscBlurLevel() {
     if (!CONFIG.enabled || !_allowBlur()) return 0;
     if (isForced()) return 3;            // 催眠值強控中：持續模糊
     if (_blurMax <= 0) return 0;
@@ -53,7 +53,7 @@ export function ivhBlurLevel() {
 }
 
 // 給 hook Player.GetTints 用：回傳目前的淡紫染色（null = 不染）
-export function ivhTintColor() {
+export function hscTintColor() {
     if (!CONFIG.enabled || !_allowTints()) return null;
     if (isForced()) return { r: 150, g: 40, b: 200, a: 0.14 };   // 強控中：持續淡紫
     if (!_tintOn) return null;

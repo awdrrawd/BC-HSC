@@ -1,5 +1,5 @@
 // ════════════════════════════════════════
-//  IVH module: hypno-anim.js  （催眠符咒動畫 — 中央自繪人物 + 圖層穿透）
+//  HSC module: hypno-anim.js  （催眠符咒動畫 — 中央自繪人物 + 圖層穿透）
 //  v1.1 修正版：
 //   ★ 修正1：符咒（含閃光）DOM 建立時的 margin 置中 與 _place() 的 translate(-50%,-50%)
 //            疊加造成「雙重置中偏移」，導致符咒/閃光實際顯示位置往左上角偏移。
@@ -24,11 +24,11 @@
 import { CONFIG } from './config.js';
 import { assetUrl } from './icons.js';
 import { getOverlay } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 import { bcToScreen, playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from './geometry.js';
 import { isForced } from './hypno.js';
 
-const SPRITE = assetUrl('IVH-Status-Code1.png');
+const SPRITE = assetUrl('HSC-Status-Code1.png');
 const COLS = 6, ROWS = 2, CELL_AR = 0.5, BASE_W = 320;
 const CHAR_AR_FALLBACK = 0.5; // 快照失敗時的人物寬高比後備值（500:1000）
 
@@ -176,7 +176,7 @@ export function playHypnoAnim(done) {
     const wOf = h => h * CELL_AR;   // 符咒寬 = 高 × 長寬比
 
     const wrap = document.createElement('div');
-    Object.assign(wrap.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: IVH_Z.spiral });
+    Object.assign(wrap.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: HSC_Z.spiral });
     // 佈景模糊（z0）
     const blur = document.createElement('div');
     Object.assign(blur.style, { position: 'fixed', left: `${rect.left + rect.width * A.blurXpct / 100}px`, top: `${rect.top}px`, width: `${rect.width * A.blurWpct / 100}px`, height: `${rect.height}px`, zIndex: '0', opacity: '0', transition: 'opacity 0.5s ease', backdropFilter: `blur(${A.blurPx}px)`, webkitBackdropFilter: `blur(${A.blurPx}px)`, background: 'radial-gradient(ellipse at 50% 45%, rgba(80,20,110,0.15) 30%, rgba(0,0,0,0.6) 100%)' });
@@ -272,7 +272,7 @@ export function updateHeadTalisman() {
     if (want) {
         if (_headEl) return;
         const color = CONFIG.hypnoAnimColor || '#f500b4';
-        const el = _makeTalisman(color); el.style.opacity = '1'; el.style.zIndex = IVH_Z.spiral;
+        const el = _makeTalisman(color); el.style.opacity = '1'; el.style.zIndex = HSC_Z.spiral;
         el.style.left = '0'; el.style.top = '0'; el.style.marginLeft = '0'; el.style.marginTop = '0';
         getOverlay().appendChild(el); _headEl = el;
         const loop = () => {

@@ -1,11 +1,11 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG } from './config.js';
 import { runEffect } from './run.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: util.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: util.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -44,7 +44,7 @@ import { IVH_Z } from './zlayers.js';
             _bcxReminderCache = rule?.data?.customData?.reminderText ?? [];
             return _bcxReminderCache;
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] BCX 清單讀取失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] BCX 清單讀取失敗:', e.message);
             return (_bcxReminderCache = []);
         }
     }
@@ -107,7 +107,7 @@ import { IVH_Z } from './zlayers.js';
         try {
             await runEffect(item.text, item.isTest ?? false);
         } catch (e) {
-            console.error('🐈‍⬛ [IVH] 效果執行錯誤:', e.message);
+            console.error('🐈‍⬛ [HSC] 效果執行錯誤:', e.message);
         } finally {
             isEffectPlaying = false;
             if (effectQueue.length > 0) setTimeout(processQueue, 300);
@@ -162,10 +162,10 @@ import { IVH_Z } from './zlayers.js';
     };
 
     function getOverlay() {
-        let overlay = document.getElementById('ivh-overlay');
+        let overlay = document.getElementById('hsc-overlay');
         if (!overlay) {
             overlay = document.createElement('div');
-            overlay.id = 'ivh-overlay';
+            overlay.id = 'hsc-overlay';
             Object.assign(overlay.style, {
                 position:      'fixed',
                 top:           '0',
@@ -173,7 +173,7 @@ import { IVH_Z } from './zlayers.js';
                 width:         '100%',
                 height:        '100%',
                 pointerEvents: 'none',
-                zIndex:        IVH_Z.overlay,
+                zIndex:        HSC_Z.overlay,
                 overflow:      'hidden',
             });
             document.body.appendChild(overlay);

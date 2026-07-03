@@ -1,15 +1,15 @@
 // ════════════════════════════════════════
-//  IVH module: crowd.js  （催眠狀態效果：顯示人群）
-//  強控（isForced）中且開啟「顯示人群」時，畫面下緣淡入一排圍觀人群（IVH-crowd1.png），
+//  HSC module: crowd.js  （催眠狀態效果：顯示人群）
+//  強控（isForced）中且開啟「顯示人群」時，畫面下緣淡入一排圍觀人群（HSC-crowd1.png），
 //  營造「被眾人注視/包圍」的催眠情境。解除強控時淡出移除。
 // ════════════════════════════════════════
 
 import { CONFIG } from './config.js';
 import { assetUrl } from './icons.js';
 import { getOverlay } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
-const CROWD_URL = assetUrl('IVH-crowd1.png');
+const CROWD_URL = assetUrl('HSC-crowd1.png');
 let _crowdEl = null;
 
 // 依 MainCanvas 位置，把人群定位在「左側人物區」＝BC 畫布 (0,0)~(1000,1000)。
@@ -28,7 +28,7 @@ function _placeCrowd(el) {
 
 // show=true 且 CONFIG.crowd → 顯示；否則淡出移除。可安全重複呼叫（永不丟例外）。
 export function updateCrowd(show) {
-    try { _updateCrowd(show); } catch (e) { console.warn('🐈‍⬛ [IVH] 人群更新失敗:', e.message); }
+    try { _updateCrowd(show); } catch (e) { console.warn('🐈‍⬛ [HSC] 人群更新失敗:', e.message); }
 }
 function _updateCrowd(show) {
     if (show && CONFIG.crowd) {
@@ -39,7 +39,7 @@ function _updateCrowd(show) {
             position: 'fixed',
             objectFit: 'cover', objectPosition: 'bottom',
             pointerEvents: 'none', opacity: '0', transition: 'opacity 1s ease',
-            zIndex: IVH_Z.base,   // 頭像層（在場景效果之下、背景之上）
+            zIndex: HSC_Z.base,   // 頭像層（在場景效果之下、背景之上）
             filter: 'brightness(0.7) saturate(0.9)',
         });
         _placeCrowd(el);

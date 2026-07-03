@@ -1,5 +1,5 @@
 // ════════════════════════════════════════
-//  IVH module: censor.js  （面部識別障礙 / 名稱識別障礙）
+//  HSC module: censor.js  （面部識別障礙 / 名稱識別障礙）
 //  催眠狀態效果：玩家進入強控（isForced）時，看不清「他人」的臉與名字。
 //   - 面部：在對方臉上蓋一團會蠕動的塗鴉（circle 圓圈 / line 線條，二選一）。
 //   - 名稱：聊天室名牌 + profile 的名字/暱稱/ID 用黑塊遮住。
@@ -162,6 +162,6 @@ export function hookCensor() {
             return r;
         });
     } catch (e) {
-        console.warn('🐈‍⬛ [IVH] 識別障礙 hook 失敗:', e.message);
+        console.warn('🐈‍⬛ [HSC] 識別障礙 hook 失敗:', e.message);
     }
 }

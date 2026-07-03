@@ -3,20 +3,20 @@ import { startOtherPant } from './character-fx.js';
 import { printChat } from './commands.js';
 import { CONFIG, ES_KEY, PREF_ID, modApi } from './config.js';
 import { ui } from './i18n.js';
-import { IVH_ICON_B, IVH_ICON_W, ivhIconForTheme, ivhThemeIsDark } from './icons.js';
+import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark } from './icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
 import { EXT, waitForPreference } from './preference.js';
 import { publishSharedSettings, saveSettings } from './storage.js';
 import { isZh } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: profile.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: profile.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
-    //  Profile 按鈕：對方未裝 IVH → 不顯示；裝了但不允許編輯 → 灰色；允許 → 可點開編輯其文本，編輯透過隱藏訊息送到對方，對方驗證 allowOthersEdit 後套用
+    //  Profile 按鈕：對方未裝 HSC → 不顯示；裝了但不允許編輯 → 灰色；允許 → 可點開編輯其文本，編輯透過隱藏訊息送到對方，對方驗證 allowOthersEdit 後套用
     // ════════════════════════════════════════
     function _sheetChar() {
         try { return (typeof InformationSheetSelection !== 'undefined') ? InformationSheetSelection : null; }
@@ -54,8 +54,8 @@ import { IVH_Z } from './zlayers.js';
         _permQueryTs[num] = now;
         try {
             if (typeof ServerSend === 'function')
-                ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'IVH_PermQuery',
-                    Dictionary: [{ Tag: 'IVH_PermQuery', Target: Number(num) }] });
+                ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'HSC_PermQuery',
+                    Dictionary: [{ Tag: 'HSC_PermQuery', Target: Number(num) }] });
         } catch (e) {}
     }
     // 我對 C 各類是否可編輯：優先用對方即時回覆，60 秒內有效；否則退回公告快照
@@ -104,9 +104,9 @@ import { IVH_Z } from './zlayers.js';
                     const tip = canEdit ? ui('profileEditBtn')
                         : (info.edit ? ui('profileEditNoPerm') : ui('profileEditOff'));
                     // 依當前 UI 主題深淺自動切換：暗底用深色鈕+白線稿(B)，亮底用白鈕+深線稿(W)
-                    const darkBg = ivhThemeIsDark();
+                    const darkBg = hscThemeIsDark();
                     DrawButton(1700, 75, 90, 90, '', "White", '', tip, !canEdit);
-                    DrawImageResize(darkBg ? IVH_ICON_B : IVH_ICON_W, 1702, 77, 86, 86);
+                    DrawImageResize(darkBg ? HSC_ICON_B : HSC_ICON_W, 1702, 77, 86, 86);
                 }
                 return r;
             });
@@ -132,7 +132,7 @@ import { IVH_Z } from './zlayers.js';
                 return next(args);
             });
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] profile 按鈕 hook 失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] profile 按鈕 hook 失敗:', e.message);
         }
     }
 
@@ -143,17 +143,17 @@ import { IVH_Z } from './zlayers.js';
             modApi.hookFunction('ChatRoomMessage', 1, (args, next) => {
                 const data = args[0];
                 // 有人問「我能否編輯你的內容」→ 即時依目前白名單回覆（只回給詢問者本人）
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_PermQuery') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_PermQuery') {
                     try {
-                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'IVH_PermQuery');
+                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_PermQuery');
                         if (d && Number(d.Target) === Player?.MemberNumber) {
                             const sender = Number(data.Sender), em = CONFIG.editModes || {};
                             const wl = resolveWhitelistNumbers();
                             const can = m => m === 'any' || (m === 'whitelist' && wl.has(sender));
                             const cc = can(em.catalyst), cs = can(em.status), ct = can(em.trigger), cw = can(em.wake), cr = can(em.response), ca = can(em.allowed);
                             if (typeof ServerSend === 'function')
-                                ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'IVH_PermReply', Dictionary: [{
-                                    Tag: 'IVH_PermReply', Target: sender, cc, cs, ct, cw, cr, ca,
+                                ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'HSC_PermReply', Dictionary: [{
+                                    Tag: 'HSC_PermReply', Target: sender, cc, cs, ct, cw, cr, ca,
                                     texts:    cc ? (CONFIG.customTexts || [])  : [],
                                     emotes:   cs ? (CONFIG.emoteList || [])    : [],
                                     triggers: ct ? (CONFIG.triggerWords || []) : [],
@@ -166,9 +166,9 @@ import { IVH_Z } from './zlayers.js';
                     return;  // 不顯示
                 }
                 // 有人打開了我的文本編輯器 → 顯示訪問通知
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_Access') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_Access') {
                     try {
-                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'IVH_Access');
+                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Access');
                         if (d && Number(d.Target) === Player?.MemberNumber) {
                             const who = d.Name
                                 || (ChatRoomCharacter?.find(c => c.MemberNumber === Number(data.Sender))?.Nickname)
@@ -179,9 +179,9 @@ import { IVH_Z } from './zlayers.js';
                     return;  // 不顯示
                 }
                 // 對方回覆我的權限查詢 → 快取，供按鈕與編輯面板即時使用
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_PermReply') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_PermReply') {
                     try {
-                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'IVH_PermReply');
+                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_PermReply');
                         if (d && Number(d.Target) === Player?.MemberNumber) {
                             _permCache[Number(data.Sender)] = {
                                 can: { catalyst: !!d.cc, status: !!d.cs, trigger: !!d.ct, wake: !!d.cw, response: !!d.cr, allowed: !!d.ca },
@@ -198,19 +198,19 @@ import { IVH_Z } from './zlayers.js';
                     return;  // 不顯示
                 }
                 // 他人催眠廣播 → 若開啟「看到他人喘氣」，在其角色顯示喘氣
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_Hypnotized') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_Hypnotized') {
                     try {
                         const sender = Number(data.Sender);
                         if (sender && sender !== Player?.MemberNumber && CONFIG.seeOthersPant) {
-                            const d = (data.Dictionary || []).find(x => x && x.Tag === 'IVH_Hypnotized');
+                            const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Hypnotized');
                             startOtherPant(sender, (d && d.Duration) || 10000, (d && d.Intensity) || 1);
                         }
                     } catch (e) {}
                     return;  // 不顯示此隱藏訊息
                 }
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_SetTexts') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_SetTexts') {
                     try {
-                        const dict = (data.Dictionary || []).find(d => d && d.Tag === 'IVH_SetTexts');
+                        const dict = (data.Dictionary || []).find(d => d && d.Tag === 'HSC_SetTexts');
                         const em = CONFIG.editModes || {};
                         const wl = resolveWhitelistNumbers();   // 含 $owner/$lover/$friend/$white 展開
                         const okFor = m => m === 'any' ||
@@ -238,8 +238,8 @@ import { IVH_Z } from './zlayers.js';
                             try {
                                 if (typeof ServerSend === 'function')
                                     ServerSend('ChatRoomChat', {
-                                        Type: 'Hidden', Content: 'IVH_SetTextsAck',
-                                        Dictionary: [{ Tag: 'IVH_SetTextsAck', Target: Number(data.Sender), Ok: changed, Tried: tried }],
+                                        Type: 'Hidden', Content: 'HSC_SetTextsAck',
+                                        Dictionary: [{ Tag: 'HSC_SetTextsAck', Target: Number(data.Sender), Ok: changed, Tried: tried }],
                                     });
                             } catch {}
                         }
@@ -247,9 +247,9 @@ import { IVH_Z } from './zlayers.js';
                     return;  // 不顯示此隱藏訊息
                 }
                 // 收到對方對「我的編輯提交」的回報 → 顯示是否套用
-                if (data && data.Type === 'Hidden' && data.Content === 'IVH_SetTextsAck') {
+                if (data && data.Type === 'Hidden' && data.Content === 'HSC_SetTextsAck') {
                     try {
-                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'IVH_SetTextsAck');
+                        const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_SetTextsAck');
                         if (d && Number(d.Target) === Player?.MemberNumber) {
                             const who = (typeof CharacterNickname === 'function' && data.Sender)
                                 ? (ChatRoomCharacter?.find(c => c.MemberNumber === data.Sender)?.Nickname || data.Sender)
@@ -262,7 +262,7 @@ import { IVH_Z } from './zlayers.js';
                 return next(args);
             });
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] 遠端編輯 hook 失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] 遠端編輯 hook 失敗:', e.message);
         }
     }
 
@@ -276,8 +276,8 @@ import { IVH_Z } from './zlayers.js';
                 _accessNotifyTs[num] = now;
                 const myName = (typeof CharacterNickname === 'function' ? CharacterNickname(Player) : '') || Player?.Name || Player?.MemberNumber;
                 if (typeof ServerSend === 'function')
-                    ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'IVH_Access',
-                        Dictionary: [{ Tag: 'IVH_Access', Target: Number(num), Name: String(myName) }] });
+                    ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'HSC_Access',
+                        Dictionary: [{ Tag: 'HSC_Access', Target: Number(num), Name: String(myName) }] });
             }
         } catch (e) {}
         const info  = (C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY]) || {};
@@ -303,13 +303,13 @@ import { IVH_Z } from './zlayers.js';
         EXT.openRemote({
             C, name, cats,
             onSave: (savedCats) => {
-                const dict = { Tag: 'IVH_SetTexts', Target: C.MemberNumber };
+                const dict = { Tag: 'HSC_SetTexts', Target: C.MemberNumber };
                 savedCats.forEach(c => {
                     if (!c.editable) return;   // 無權限類別不送
                     dict[c.dictKey] = (c.data || []).map(s => String(s).trim()).filter(Boolean).slice(0, 200);
                 });
                 try {
-                    ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'IVH_SetTexts', Dictionary: [dict] });
+                    ServerSend('ChatRoomChat', { Type: 'Hidden', Content: 'HSC_SetTexts', Dictionary: [dict] });
                     printChat(ui('remoteEditSent', { name }), 6000);
                 } catch (e) {}
             },
@@ -318,7 +318,7 @@ import { IVH_Z } from './zlayers.js';
 
     // 自繪二次確認框（不用瀏覽器 confirm，避免部分平台彈不出來）
     let _confirmBox = null;
-    function ivhConfirm(message, onYes) {
+    function hscConfirm(message, onYes) {
         if (_confirmBox) { _confirmBox.remove(); _confirmBox = null; }
         const panel = document.createElement('div');
         _confirmBox = panel;
@@ -326,7 +326,7 @@ import { IVH_Z } from './zlayers.js';
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
             width: '400px', background: 'linear-gradient(135deg,rgba(30,10,40,0.98),rgba(50,15,60,0.98))',
             border: '1px solid rgba(255,120,200,0.45)', borderRadius: '12px', padding: '22px',
-            zIndex: IVH_Z.dialog, fontFamily: '"Noto Sans TC","Microsoft JhengHei",sans-serif', color: '#ffddee',
+            zIndex: HSC_Z.dialog, fontFamily: '"Noto Sans TC","Microsoft JhengHei",sans-serif', color: '#ffddee',
             boxShadow: '0 8px 40px rgba(180,60,160,0.4)', textAlign: 'center',
         });
         const msg = document.createElement('div');
@@ -351,9 +351,9 @@ import { IVH_Z } from './zlayers.js';
             try {
                 PreferenceRegisterExtensionSetting({
                     Identifier: PREF_ID,
-                    ButtonText: isZh() ? 'IVH 催眠設定' : 'IVH Settings',
+                    ButtonText: isZh() ? 'HSC 催眠設定' : 'HSC Settings',
                     // 依當前主題深淺自動選圖（BC 開啟擴充設定選單時呼叫一次）
-                    Image: () => ivhIconForTheme(),
+                    Image: () => hscIconForTheme(),
                     load:   () => EXT.load(),
                     run:    () => EXT.run(),
                     click:  () => EXT.click(),
@@ -361,7 +361,7 @@ import { IVH_Z } from './zlayers.js';
                     exit:   () => EXT.exit(),
                 });
             } catch (e) {
-                console.warn('🐈‍⬛ [IVH] 設定頁註冊失敗:', e.message);
+                console.warn('🐈‍⬛ [HSC] 設定頁註冊失敗:', e.message);
             }
         });
     }
@@ -378,6 +378,6 @@ export {
     hookProfileButton,
     hookRemoteEdit,
     openRemoteSettings,
-    ivhConfirm,
+    hscConfirm,
     registerPreferenceScreen,
 };

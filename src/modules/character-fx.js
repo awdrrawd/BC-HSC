@@ -3,11 +3,11 @@ import { CONFIG } from './config.js';
 import { _emitBreathPuff, breathIntervalMs } from './effects2.js';
 import { BODY_PANT_DY, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, otherCharMouthScreenPos, refreshCanvasCache } from './geometry.js';
 import { getOverlay } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: character-fx.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: character-fx.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
@@ -164,7 +164,7 @@ function addArousal(kind) {
         if (newVal > current) triggerArousalMeterVibe();   // 興奮成長 → 興奮條震動（BC 原生 VibratorLevel）
         return step;
     } catch (e) {
-        console.error("[IVH] addArousal 錯誤:", e);
+        console.error("[HSC] addArousal 錯誤:", e);
         return 1;
     }
 }
@@ -217,11 +217,11 @@ function addArousal(kind) {
         try {
             const el = node.classList?.contains('ChatMessage')
                        ? node : node.querySelector?.('.ChatMessage');
-            if (!el || el._ivhFaded) return;
-            el._ivhFaded = true;
-            el.classList.add('ivh-chat-emerge');
+            if (!el || el._hscFaded) return;
+            el._hscFaded = true;
+            el.classList.add('hsc-chat-emerge');
             // 動畫結束後移除 class，避免殘留影響後續樣式
-            setTimeout(() => { try { el.classList.remove('ivh-chat-emerge'); } catch {} }, 2600);
+            setTimeout(() => { try { el.classList.remove('hsc-chat-emerge'); } catch {} }, 2600);
         } catch (e) {}
     }
 
@@ -236,9 +236,9 @@ function addArousal(kind) {
         try {
             if (typeof ServerSend === 'function')
                 ServerSend('ChatRoomChat', {
-                    Type: 'Hidden', Content: 'IVH_Hypnotized',
+                    Type: 'Hidden', Content: 'HSC_Hypnotized',
                     // Intensity = 催眠等級，決定對方看到的喘氣強度（頻率／大小）
-                    Dictionary: [{ Tag: 'IVH_Hypnotized', Duration: 10000, Intensity: CONFIG.intensity }],
+                    Dictionary: [{ Tag: 'HSC_Hypnotized', Duration: 10000, Intensity: CONFIG.intensity }],
                 });
         } catch (e) {}
     }
@@ -304,7 +304,7 @@ function addArousal(kind) {
                 objectFit:     'cover',
                 pointerEvents: 'none',
                 transformOrigin: 'center',
-                zIndex:        IVH_Z.base, // 頭像層：煙霧 > 螺旋 > 頭像 > 其它特效(auto)
+                zIndex:        HSC_Z.base, // 頭像層：煙霧 > 螺旋 > 頭像 > 其它特效(auto)
                 boxShadow:     '0 0 40px rgba(255,80,160,0.5)',
                 opacity:       '0',
                 transition:    'opacity 1.5s ease',

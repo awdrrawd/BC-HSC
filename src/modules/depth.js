@@ -8,18 +8,18 @@ import { _cachedRect, _cachedScaleX, _cachedScaleY, bcToScreen, getPlayerHeadScr
 import { addHypno } from './hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
 import { getCatalystTexts, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from './util.js';
-import { IVH_Z } from './zlayers.js';
+import { HSC_Z } from './zlayers.js';
 
 // ════════════════════════════════════════
-//  IVH module: depth.js
-//  (auto-split from Liko - IVH.main.user.js; imports added below)
+//  HSC module: depth.js
+//  (auto-split from Liko - HSC.main.user.js; imports added below)
 // ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  背景催眠深度循環（與 VOICE 觸發分離）
     //  深度等級 = 由強度推算，受「深度上限」限制
     // ════════════════════════════════════════
-    // 相容：0/1（供 window.Liko.IVH.runDepth 用）
+    // 相容：0/1（供 window.Liko.HSC.runDepth 用）
     function currentDepthLevel() { return (CONFIG.enabled && CONFIG.depthEnabled) ? 1 : 0; }
 
     let _depthTimer = null;
@@ -56,7 +56,7 @@ import { IVH_Z } from './zlayers.js';
             // 催眠值：開催眠動畫 → 先播特效、第 5 秒才漲（破百時清場播符咒）；否則即時漲
             if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('depth'); } catch (e) {} }, 5000); else addHypno('depth');
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] 深度效果錯誤:', e.message);
+            console.warn('🐈‍⬛ [HSC] 深度效果錯誤:', e.message);
         }
     }
 
@@ -73,7 +73,7 @@ import { IVH_Z } from './zlayers.js';
             textShadow: '0 0 10px rgba(255,105,180,0.7)',
             whiteSpace: 'pre-line', opacity: '0', pointerEvents: 'none',
             transform:  'translateY(8px)', transition: 'opacity .5s ease, transform .5s ease',
-            zIndex:     IVH_Z.sceneText,   // 在模糊遮罩、煙霧之上，避免被蓋住
+            zIndex:     HSC_Z.sceneText,   // 在模糊遮罩、煙霧之上，避免被蓋住
         });
         el.textContent = wrapDanmakuText(text, 12);
         overlay.appendChild(el);
@@ -168,7 +168,7 @@ import { IVH_Z } from './zlayers.js';
             transform: 'translateX(-50%)', fontSize: '20px', fontWeight: '600',
             fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif', textAlign: 'center',
             color: 'rgba(255,220,240,0.92)', textShadow: '0 0 10px rgba(180,80,200,0.85)',
-            whiteSpace: 'pre-line', opacity: '0', transition: 'opacity 0.8s ease', pointerEvents: 'none', zIndex: IVH_Z.sceneText,
+            whiteSpace: 'pre-line', opacity: '0', transition: 'opacity 0.8s ease', pointerEvents: 'none', zIndex: HSC_Z.sceneText,
         });
         txt.textContent = wrapDanmakuText(line, 12);
         getOverlay().appendChild(txt);
@@ -213,7 +213,7 @@ import { IVH_Z } from './zlayers.js';
                 return next(args);
             });
         } catch (e) {
-            console.warn('🐈‍⬛ [IVH] DrawCharacter hook 失敗:', e.message);
+            console.warn('🐈‍⬛ [HSC] DrawCharacter hook 失敗:', e.message);
         }
     }
 
