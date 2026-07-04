@@ -92,14 +92,14 @@ function spawnWhisperDanmaku(text) {
     text = text.length > 60 ? text.slice(0, 60) + '…' : text;
     const overlay = getOverlay();
     refreshCanvasCache();
-    const head = getPlayerHeadScreenPos();
+    const head = getPlayerHeadScreenPos(true);   // 永遠貼在角色身上（催眠狀態沒有中央頭像功能）
     const slot = _nextWhisperSlot();
     const fs = _randInt(22, 26);
     const el = document.createElement('div');
     Object.assign(el.style, {
         position: 'fixed',
         left: `${head.x + 60}px`,
-        top: `${head.y - 10 + slot * 46}px`,          // 依槽位往下錯開，避免重疊
+        top: `${head.y - 80 + slot * 46}px`,          // 往上 70 避免遮眼；依槽位往下錯開，避免重疊
         transform: 'translate(-50%,-50%)',
         fontSize: `${fs}px`, fontWeight: '600', fontStyle: 'italic', fontFamily: _FONT,
         color: 'rgba(215,160,255,0.98)', textShadow: _outline('rgba(150,60,220,0.9)'),

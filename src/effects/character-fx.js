@@ -257,7 +257,7 @@ function addArousal(kind) {
                 ServerSend('ChatRoomChat', {
                     Type: 'Hidden', Content: 'HSC_Hypnotized',
                     // Intensity = 催眠等級，決定對方看到的喘氣強度（頻率／大小）
-                    Dictionary: [{ Tag: 'HSC_Hypnotized', Duration: 10000, Intensity: CONFIG.intensity }],
+                    Dictionary: [{ Tag: 'HSC_Hypnotized', Duration: 7000, Intensity: CONFIG.intensity }],
                 });
         } catch (e) {}
     }
@@ -268,7 +268,7 @@ function addArousal(kind) {
     const _otherPantUntil  = {};
     const _otherPantActive = {};
     const _otherPantInten  = {};
-    function startOtherPant(memberNum, durationMs = 10000, intensity = 1) {
+    function startOtherPant(memberNum, durationMs = 7000, intensity = 1) {
         if (!CONFIG.seeOthersPant || memberNum == null) return;
         _otherPantUntil[memberNum] = Date.now() + durationMs;
         _otherPantInten[memberNum] = intensity;

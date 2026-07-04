@@ -2,11 +2,15 @@
 //  HSC effect: 快照扭曲（截取 canvas → img → CSS transform → 刪除）
 // ════════════════════════════════════════
 import { CONFIG } from '../core/config.js';
+import { isForced } from '../hypno/hypno.js';
 import { effectScale, getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 
 export function triggerScreenDistort() {
     if (!CONFIG.screenDistort) return;
+    // 強控中：世界已持續模糊＋淡紫（催眠狀態基礎濾鏡）。扭曲快照結尾會「回正成清晰無染色」，
+    //  疊在其上會讓基礎濾鏡看起來被移除一瞬 → 強控中直接略過扭曲，保持濾鏡不被打斷。
+    if (isForced()) return;
     const scale  = effectScale();
     const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
     if (!canvas) return;

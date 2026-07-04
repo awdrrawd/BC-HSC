@@ -73,6 +73,54 @@ import { resolveWhitelistNumbers } from '../ui/panel.js';
 
     // 音效設定改存 localStorage（同瀏覽器跨帳號共用），不跟著帳號走
     const SND_LS_KEY = 'HSC_sounds';
+    // ★ 本機備份鍵：每次成功存檔都同步寫一份到 localStorage（比照 BCX 的 backup）。
+    //   伺服器端 ExtensionSettings 若被清空 / 登入時尚未載入，讀取端會從這裡還原並補回伺服器。
+    const SETTINGS_BACKUP_KEY = 'HSC_settings_backup';
+    // ★ 載入完成前禁止存檔：避免「設定還沒讀到就先存出預設值」把帳號上的資料蓋掉（BCX 用 firstTimeInit 擋）。
+    let _settingsLoaded = false;
+    // 把目前 CONFIG 壓縮存到本機備份
+    function _backupSettings() {
+        try { localStorage.setItem(SETTINGS_BACKUP_KEY, LZString.compressToBase64(JSON.stringify(serializeConfig()))); } catch (e) {}
+    }
+    // 解析一份壓縮字串為 saved 物件（失敗回 null）
+    function _decodeSaved(raw) {
+        try { if (!raw) return null; const json = LZString.decompressFromBase64(raw); return json ? JSON.parse(json) : null; } catch (e) { return null; }
+    }
+    // 套用一份 saved 設定（含各種舊版欄位遷移）
+    function _applySaved(saved) {
+        setConfig(mergeDefaults(makeDefaultConfig(), saved));
+        // 舊版編輯權限遷移 → editModes.catalyst（催眠文本）
+        if (saved.editModes === undefined) {
+            let m = 'off';
+            if (saved.allowEditMode === 'any' || saved.allowEditMode === 'whitelist') m = saved.allowEditMode;
+            else if (saved.allowOthersEdit) m = 'any';
+            CONFIG.editModes = { catalyst: m, status: 'off', trigger: 'off' };
+        }
+        // 舊版深度（分層強度）→ 新版（開/關 + 扁平效果）遷移
+        if (saved.depthMax !== undefined && saved.depthEnabled === undefined) {
+            CONFIG.depthEnabled = saved.depthMax > 0;
+        }
+        if ((saved.depthLight || saved.depthMed || saved.depthHeavy) && saved.depthEffects === undefined) {
+            const L = saved.depthLight || {}, M = saved.depthMed || {}, H = saved.depthHeavy || {};
+            CONFIG.depthEffects = {
+                smoke: !!L.smoke, chatDanmaku: !!L.chatDanmaku, ghost: !!L.ghost,
+                figureBlur: !!M.figureBlur, sfx: !!M.sfx, fade: !!M.fade,
+                chatlogBlur: !!H.chatlogBlur, pant: !!(L.pant || M.pant || H.pant),
+            };
+        }
+        // 舊版 wakeWord(單字串) → wakeWords(清單)
+        if (typeof saved.wakeWord === 'string' && saved.wakeWords === undefined) {
+            CONFIG.wakeWords = saved.wakeWord.trim() ? [saved.wakeWord.trim()] : [];
+        }
+        // 舊版 arousal(布林)/arousalStep(單值) → 語音/日常 兩個興奮值
+        if (saved.arousalStep !== undefined && saved.arousalStepVoice === undefined) {
+            CONFIG.arousalStepVoice = saved.arousalStep;
+            CONFIG.arousalStepDepth = saved.arousalStep;
+        } else if (saved.arousal !== undefined && saved.arousalStepVoice === undefined) {
+            const v = saved.arousal ? 5 : 0;
+            CONFIG.arousalStepVoice = v; CONFIG.arousalStepDepth = v;
+        }
+    }
     function loadSounds() {
         try {
             const raw = localStorage.getItem(SND_LS_KEY);   // 舊 IVH_sounds 已由 migrateFromIVH() 搬移
@@ -144,65 +192,45 @@ import { resolveWhitelistNumbers } from '../ui/panel.js';
 
     function loadSettings() {
         migrateFromIVH();   // 先把舊 IVH 資料搬到 HSC（並清除舊鍵）
-        try {
-            const raw = Player?.ExtensionSettings?.[ES_KEY];
-            if (raw) {
-                const json = LZString.decompressFromBase64(raw);
-                const saved = json ? JSON.parse(json) : null;
-                if (saved) {
-                    setConfig(mergeDefaults(makeDefaultConfig(), saved));
-                    // 舊版編輯權限遷移 → editModes.catalyst（催眠文本）
-                    if (saved.editModes === undefined) {
-                        let m = 'off';
-                        if (saved.allowEditMode === 'any' || saved.allowEditMode === 'whitelist') m = saved.allowEditMode;
-                        else if (saved.allowOthersEdit) m = 'any';
-                        CONFIG.editModes = { catalyst: m, status: 'off', trigger: 'off' };
-                    }
-                    // 舊版深度（分層強度）→ 新版（開/關 + 扁平效果）遷移
-                    if (saved.depthMax !== undefined && saved.depthEnabled === undefined) {
-                        CONFIG.depthEnabled = saved.depthMax > 0;
-                    }
-                    if ((saved.depthLight || saved.depthMed || saved.depthHeavy) && saved.depthEffects === undefined) {
-                        const L = saved.depthLight || {}, M = saved.depthMed || {}, H = saved.depthHeavy || {};
-                        CONFIG.depthEffects = {
-                            smoke: !!L.smoke, chatDanmaku: !!L.chatDanmaku, ghost: !!L.ghost,
-                            figureBlur: !!M.figureBlur, sfx: !!M.sfx, fade: !!M.fade,
-                            chatlogBlur: !!H.chatlogBlur, pant: !!(L.pant || M.pant || H.pant),
-                        };
-                    }
-                    // 舊版 wakeWord(單字串) → wakeWords(清單)
-                    if (typeof saved.wakeWord === 'string' && saved.wakeWords === undefined) {
-                        CONFIG.wakeWords = saved.wakeWord.trim() ? [saved.wakeWord.trim()] : [];
-                    }
-                    // 舊版 arousal(布林)/arousalStep(單值) → 語音/日常 兩個興奮值
-                    if (saved.arousalStep !== undefined && saved.arousalStepVoice === undefined) {
-                        CONFIG.arousalStepVoice = saved.arousalStep;
-                        CONFIG.arousalStepDepth = saved.arousalStep;
-                    } else if (saved.arousal !== undefined && saved.arousalStepVoice === undefined) {
-                        const v = saved.arousal ? 5 : 0;
-                        CONFIG.arousalStepVoice = v; CONFIG.arousalStepDepth = v;
-                    }
-                }
+        let loaded = false;
+        // ① 主來源：ExtensionSettings（跟帳號同步）
+        const esSaved = _decodeSaved(Player?.ExtensionSettings?.[ES_KEY]);
+        if (esSaved) { try { _applySaved(esSaved); loaded = true; } catch (e) { console.warn('🐈‍⬛ [HSC] 主設定套用失敗:', e.message); } }
+        // ② 主來源沒讀到（伺服器端被清空 / 登入時尚未載入 / 解析失敗）→ 退回本機備份
+        let fromBackup = false;
+        if (!loaded) {
+            const bkSaved = _decodeSaved(localStorage.getItem(SETTINGS_BACKUP_KEY));
+            if (bkSaved) {
+                try { _applySaved(bkSaved); loaded = true; fromBackup = true; console.log('🐈‍⬛ [HSC] ⚠️ 帳號設定為空/讀取失敗，已從本機備份還原'); } catch (e) {}
             }
-        } catch (e) {
-            console.warn('🐈‍⬛ [HSC] 設定讀取失敗，使用預設:', e.message);
-            setConfig(makeDefaultConfig());
         }
+        if (!loaded) setConfig(makeDefaultConfig());   // 全新帳號：用預設
+        _settingsLoaded = true;                        // ← 之後才允許存檔
         loadSounds();   // 音效改從 localStorage（跨帳號共用）
         setExpressionSets(CONFIG.expressionSets);
+        _backupSettings();   // 讀成功即刷新本機備份
+        // 從備份還原（代表帳號上沒有）→ 立即補回伺服器 ExtensionSettings，避免下次又是空的
+        if (fromBackup) { try { saveSettings(true); } catch (e) {} }
     }
 
     let _saveTimer = null;
     function saveSettings(immediate = false) {
+        // 尚未完成載入前，一律不存 —— 防止用「還沒讀到的預設值」覆蓋帳號上的真實資料（資料遺失主因）
+        if (!_settingsLoaded) return;
         const doSave = () => {
             try {
-                if (!Player) return;
+                if (!_settingsLoaded || !Player) return;
                 if (!Player.ExtensionSettings) Player.ExtensionSettings = {}; // 從未有設定的帳號需自建
                 const raw = JSON.stringify(serializeConfig());
-                Player.ExtensionSettings[ES_KEY] = LZString.compressToBase64(raw);
+                const compressed = LZString.compressToBase64(raw);
+                // 存前驗證：壓縮→解壓→比對，壞了就不寫（不覆蓋帳號上的好資料）
+                const check = _decodeSaved(compressed);
+                if (!check || typeof check !== 'object') { console.warn('🐈‍⬛ [HSC] 存檔資料驗證失敗，略過本次寫入'); return; }
+                Player.ExtensionSettings[ES_KEY] = compressed;
                 if (typeof ServerPlayerExtensionSettingsSync === 'function') {
                     ServerPlayerExtensionSettingsSync(ES_KEY);
                 }
+                try { localStorage.setItem(SETTINGS_BACKUP_KEY, compressed); } catch (e) {}   // 同步本機備份
                 saveSounds();   // 音效另存 localStorage（跨帳號共用）
                 setExpressionSets(CONFIG.expressionSets);
             } catch (e) {
@@ -226,19 +254,16 @@ import { resolveWhitelistNumbers } from '../ui/panel.js';
             const needWl = cats.some(k => em[k] === 'whitelist');
             // 保留目前的催眠進度公告（本函式會整包覆寫 HSC，別把 hypno 洗掉；由 publishHypnoState 維護）
             const prevHypno = Player.OnlineSharedSettings[ES_KEY]?.hypno;
+            // ★ 只公告「分享需要的狀態」：版本、催眠進度、是否允許編輯、各類權限模式、白名單編號。
+            //   文本『內容』一律不進 OnlineSharedSettings（公開可讀）——內容只留在 ExtensionSettings，
+            //   有人要編輯時才由 HSC_PermQuery → HSC_PermReply 傳「密本」給他（本端驗證權限），
+            //   不合權限者拿不到內容（比照 BCX 的做法）。
             Player.OnlineSharedSettings[ES_KEY] = {
                 v: MOD_VER,
                 hypno: prevHypno || { v: 0, f: false, c: '#f500b4', s: 1 },
                 edit: anyEditable,                       // profile 按鈕是否亮起
                 editModes: { catalyst: em.catalyst || 'off', status: em.status || 'off', trigger: em.trigger || 'off', wake: em.wake || 'off', response: em.response || 'off', allowed: em.allowed || 'off' },
                 wl: needWl ? Array.from(resolveWhitelistNumbers()) : [],
-                // 各類允許編輯時才公告內容，讓他人在 profile 看到並編輯（白名單模式仍由本端驗證）
-                texts:    on(em.catalyst) ? (CONFIG.customTexts || [])  : [],
-                emotes:   on(em.status)   ? (CONFIG.emoteList || [])    : [],
-                triggers: on(em.trigger)  ? (CONFIG.triggerWords || []) : [],
-                wake:     on(em.wake)     ? (CONFIG.wakeWords || [])    : [],
-                response: on(em.response) ? (CONFIG.responseList || []) : [],
-                allowed:  on(em.allowed)  ? (CONFIG.allowedPhrases || []) : [],
             };
             if (typeof ServerAccountUpdate?.QueueData === 'function') {
                 ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings }, true);

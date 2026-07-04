@@ -12,19 +12,22 @@ export function _breathSizeScale() {
     return Math.max(0.4, Math.min(2.2, (playerDrawPos.zoom || 1) * (_cachedScaleX || 0.3) * 2.4));
 }
 
-// 喘氣節奏：強度越高間隔越短（頻率較先前降低 50%：強度 1 → 2 秒；強度 3 → 0.6 秒）
+// 喘氣節奏：強度越高間隔越短。喘氣速度改為原本的 70%（間隔 ÷0.7 → 喘得較慢）。
 export function breathIntervalMs(intensity) {
     const it = (typeof intensity === 'number' && intensity > 0) ? intensity : CONFIG.intensity;
-    return Math.max(600, Math.min(2400, Math.round(2000 - (it - 1) * 700)));
+    const base = Math.max(600, Math.min(2400, Math.round(2000 - (it - 1) * 700)));
+    return Math.round(base / 0.7);
 }
 
 // 取得本次呼吸要噴氣的嘴部位置（中軸 X 與螺旋同在頭部，高度在嘴巴）
-//  ignoreHeadshot=true → 一律用人物身上座標（深度喘氣用，不判斷中央頭像）
+//  ignoreHeadshot=true → 一律用人物身上座標（日常干擾／看他人喘氣用，不判斷中央頭像）
+//  ignoreHeadshot=false + 開啟中央頭像 → 從「中央頭像」的嘴部噴氣（讓頭像會喘氣）
 export function getBreathMouths(ignoreHeadshot) {
-    // 一律用人物身上座標（催眠與干擾位置一致）：中軸 X 在頭部、Y 在嘴巴 + 共用偏移
-    const head  = getPlayerHeadScreenPos(true);
-    const mouth = getPlayerMouthScreenPos(true);
-    const dy = BODY_PANT_DY + DEPTH_PANT_EXTRA;
+    const useHead = !ignoreHeadshot && CONFIG.centerHeadshot;   // 從中央頭像噴氣
+    const head  = getPlayerHeadScreenPos(ignoreHeadshot);
+    const mouth = getPlayerMouthScreenPos(ignoreHeadshot);
+    // 頭像：頭像嘴部 +120（往下對準嘴）；身上：身體偏移 +5
+    const dy = useHead ? 70 : (BODY_PANT_DY + DEPTH_PANT_EXTRA + 5);
     return [{ x: head.x, y: mouth.y + dy, ss: _breathSizeScale() }];
 }
 
@@ -33,15 +36,15 @@ export function _emitBreathPuff(overlay, mouth) {
     // 只在聊天室內顯示喘氣；離開聊天室（profile／更衣室等）一律不再冒白霧
     if (typeof CurrentScreen === 'undefined' || CurrentScreen !== 'ChatRoom') return;
     const ss = mouth.ss || 1;
-    const n  = 3 + Math.floor(Math.random() * 2);   // 3~4 團組成倒三角扇形
+    const n  = 5 + Math.floor(Math.random() * 2);   // 3~4 團組成倒三角扇形
     for (let i = 0; i < n; i++) {
-        const size = (14 + Math.random() * 12) * ss;
+        const size = (15 + Math.random() * 12) * ss;
         // 均勻展開 -1~1 + 微抖動 → 對稱三角（嘴部窄），中軸對齊螺旋
         const spread = (n > 1 ? (i / (n - 1)) * 2 - 1 : 0) + (Math.random() - 0.5) * 0.3;
         const dx   = spread * (26 + Math.random() * 18) * ss;
         const dy   = (38 + Math.random() * 34) * ss;            // 旋轉 180°：改為往下飄
         const sc   = 2.0 + Math.random() * 1.0;                 // 由小變大
-        const a0   = Math.min(0.62, 0.42 + Math.random() * 0.18); // 比原本亮約 15%
+        const a0   = Math.min(0.70, 0.50 + Math.random() * 0.18); // 比原本亮約 15%
         const PUFF_DUR = 3450;   // 約原本 15% 速度（飛得慢很多）
         const p = document.createElement('div');
         Object.assign(p.style, {
@@ -75,7 +78,7 @@ export function triggerSteamParticles(force = false, ignoreHeadshot = false) {
     _breathIgnoreHead = ignoreHeadshot;
     // 延長本次呼吸的結束時間（重複觸發時不疊加多個迴圈，只延長）
     const FRESH = _breathLoopUntil < Date.now();
-    _breathLoopUntil = Date.now() + 10000;   // 約 10 秒
+    _breathLoopUntil = Date.now() + 6000;   // 約 7 秒（原 10 秒縮短 3 秒）
     if (!FRESH) return;                      // 已有迴圈在跑 → 只延長時間
 
     const breathe = () => {

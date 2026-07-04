@@ -206,7 +206,7 @@ import { HSC_Z } from '../util/zlayers.js';
                         const sender = Number(data.Sender);
                         if (sender && sender !== Player?.MemberNumber && CONFIG.seeOthersPant) {
                             const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Hypnotized');
-                            startOtherPant(sender, (d && d.Duration) || 10000, (d && d.Intensity) || 1);
+                            startOtherPant(sender, (d && d.Duration) || 7000, (d && d.Intensity) || 1);
                         }
                     } catch (e) {}
                     return;  // 不顯示此隱藏訊息

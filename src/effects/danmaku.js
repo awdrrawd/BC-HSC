@@ -7,6 +7,7 @@ import { CONFIG } from '../core/config.js';
 import { wrapDanmakuText } from '../util/text.js';
 import { BASE_DANMAKU_DURATION, bcToScreen, getPlayerHeadScreenPos, playerDrawPos } from '../util/geometry.js';
 import { effectScale, getBCXReminderList, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from '../util/util.js';
+import { HSC_Z } from '../util/zlayers.js';
 
 // 彈幕：主台詞在頭上波浪，其餘散落左側
 //  - 旁白句：4~9 句，依 3 等份分配字體大小（第一份最小，第三份最大，疊加感）
@@ -83,6 +84,7 @@ export function triggerDanmakuMulti(triggerText, _count) {
             opacity:       '0',
             pointerEvents: 'none',
             transform:     'translateY(10px)',
+            zIndex:        HSC_Z.sceneText,   // 與其他場景文字同層，並在中央頭像之上（不被頭像蓋住）
         });
         overlay.appendChild(wrap);
 
@@ -130,7 +132,7 @@ export function _showMainDanmaku(overlay, text, headPos, scale) {
     Object.assign(wrap.style, {
         position:      'fixed',
         left:          `${headPos.x}px`,
-        top:           `${headPos.y - fontSize * 2.2}px`,  // 頭頂上方
+        top:           `${headPos.y - fontSize * 2.2 - 70}px`,  // 頭頂上方，再往上 70 避免遮到眼睛
         fontSize:      `${fontSize}px`,
         fontWeight:    '700',
         fontFamily:    '"Noto Sans TC", "Microsoft JhengHei", sans-serif',
@@ -141,6 +143,7 @@ export function _showMainDanmaku(overlay, text, headPos, scale) {
         opacity:       '0',
         pointerEvents: 'none',
         transform:     'translateX(-50%)',  // 水平置中對齊頭部
+        zIndex:        HSC_Z.sceneText,      // 與其他場景文字同層，並在中央頭像之上（不被頭像蓋住）
     });
 
     // 主觸發詞超過 10 字元自動換行（10 全形 / 20 半形）；逐字波浪

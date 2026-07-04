@@ -141,7 +141,8 @@ export function hookCensor() {
             try {
                 const C = args[0], X = args[1], Y = args[2], Zoom = args[3];
                 const ctx = args[5] || MainCanvas;
-                if (C && _active() && !(typeof C.IsPlayer === 'function' && C.IsPlayer())) {
+                // 略過背後陰影（人影 clone，MemberNumber=-99999）——它已整個黑化，不需再蓋臉部塗鴉。
+                if (C && _active() && C.MemberNumber !== -99999 && !(typeof C.IsPlayer === 'function' && C.IsPlayer())) {
                     const inChat = typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom';
                     const inProfile = typeof CurrentScreen !== 'undefined' && (CurrentScreen === 'InformationSheet' || CurrentScreen === 'OnlineProfile');
                     if (CONFIG.faceCensor && (inChat || inProfile)) _drawFaceCensor(C, X, Y, Zoom, ctx);

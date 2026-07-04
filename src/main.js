@@ -1,7 +1,7 @@
 // ════════════════════════════════════════
 //  HSC entry (bundled by vite → assets/main.js)
 //  Loader (loader.user.js / loader.local.user.js) dynamically imports this file.
-//  Modules are grouped by area under ./modules/<category>/:
+//  Modules are grouped by area under ./<category>/:
 //    core/    — config, storage, hooks, lifecycle (core-init), commands
 //    i18n/    — i18n, l10n
 //    util/    — util, text, geometry, icons, zlayers, calibrate (shared helpers/tools)
@@ -12,16 +12,16 @@
 //               character-fx, state-fx, sound, run (orchestration)
 // ════════════════════════════════════════
 
-import { MOD_VER, CONFIG } from './modules/core/config.js';
-import { triggerVoiceEffect } from './modules/util/util.js';
-import { loadSettings, saveSettings, exportSettings, importSettings } from './modules/core/storage.js';
-import { handleHSCCommand } from './modules/core/commands.js';
-import { currentDepthLevel, runDepthEffect } from './modules/effects/depth.js';
-import { getHypnoValue, isForced, wake } from './modules/hypno/hypno.js';
-import { playHypnoAnim } from './modules/hypno/hypno-anim.js';
-import { EXT } from './modules/ui/preference.js';
-import { l10nTest } from './modules/i18n/l10n.js';
-import { initialize } from './modules/core/core-init.js';
+import { MOD_VER, CONFIG } from './core/config.js';
+import { triggerVoiceEffect } from './util/util.js';
+import { loadSettings, saveSettings, exportSettings, importSettings } from './core/storage.js';
+import { handleHSCCommand } from './core/commands.js';
+import { currentDepthLevel, runDepthEffect } from './effects/depth.js';
+import { getHypnoValue, isForced, wake } from './hypno/hypno.js';
+import { playHypnoAnim } from './hypno/hypno-anim.js';
+import { EXT } from './ui/preference.js';
+import { l10nTest } from './i18n/l10n.js';
+import { initialize } from './core/core-init.js';
 
 // 對外唯一入口：window.Liko.HSC（版本 + API 合併為同一物件；loader 先設 'loading'）
 //  相容：仍可用 window.Liko.HSC 判斷是否載入（物件為 truthy）、用 .version 取版本。

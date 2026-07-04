@@ -162,11 +162,12 @@ import { HSC_Z } from '../util/zlayers.js';
         };
         requestAnimationFrame(fade);
 
-        // 文字位置：就在人影（陰影）頭部旁，像在耳邊低語
-        const headS = getPlayerHeadScreenPos();
+        // 文字位置：就在人影（陰影）頭部旁，像在耳邊低語。
+        //  ignoreHeadshot=true → 永遠貼在角色身上（日常干擾沒有中央頭像功能）；再往上 70 避免遮眼。
+        const headS = getPlayerHeadScreenPos(true);
         const txt = document.createElement('div');
         Object.assign(txt.style, {
-            position: 'fixed', left: `${headS.x + offXpx}px`, top: `${headS.y + offYpx - 18}px`,
+            position: 'fixed', left: `${headS.x + offXpx}px`, top: `${headS.y + offYpx - 18 - 70}px`,
             transform: 'translateX(-50%)', fontSize: '26px', fontWeight: '600',
             fontFamily: '"Noto Sans TC", "Microsoft JhengHei", sans-serif', textAlign: 'center',
             color: 'rgba(255,220,240,0.92)', textShadow: '0 0 10px rgba(180,80,200,0.85)',
