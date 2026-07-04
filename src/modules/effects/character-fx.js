@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
-import { _emitBreathPuff, breathIntervalMs } from './effects2.js';
+import { _emitBreathPuff, breathIntervalMs } from './breath.js';
 import { BODY_PANT_DY, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, otherCharMouthScreenPos, refreshCanvasCache } from '../util/geometry.js';
 import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';

@@ -1,8 +1,8 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG, MOD_VER, PREF_ID } from './config.js';
 import { currentDepthLevel, runDepthEffect } from '../effects/depth.js';
-import { openCalibratePanel } from '../effects/effects.js';
-import { triggerClimaxEffect } from '../effects/effects2.js';
+import { openCalibratePanel } from '../util/calibrate.js';
+import { triggerClimaxEffect } from '../effects/climax.js';
 import { refreshCanvasCache } from '../util/geometry.js';
 import { ui } from '../i18n/i18n.js';
 import { _panel, buildPanel, removePanel } from '../ui/panel.js';

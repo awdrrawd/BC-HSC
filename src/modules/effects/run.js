@@ -1,8 +1,14 @@
 // ── auto-wired cross-module imports ──
 import { addArousal, broadcastHypnotized, popExprEffect, pushExprEffect, sendStatusEmote, showCenterHeadshot, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
-import { triggerHypnoSpiral, triggerHypnoWaves, triggerPinkFlash, triggerScreenDistort, triggerVignette } from './effects.js';
-import { triggerClimaxEffect, triggerDanmakuMulti, triggerSteamParticles } from './effects2.js';
+import { triggerHypnoSpiral } from './spiral.js';
+import { triggerHypnoWaves } from './waves.js';
+import { triggerPinkFlash } from './pink-flash.js';
+import { triggerScreenDistort } from './distort.js';
+import { triggerVignette } from './vignette.js';
+import { triggerClimaxEffect } from './climax.js';
+import { triggerDanmakuMulti } from './danmaku.js';
+import { triggerSteamParticles } from './breath.js';
 import { BASE_EFFECT_DURATION, refreshCanvasCache } from '../util/geometry.js';
 import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';

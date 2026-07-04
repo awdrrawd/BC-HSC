@@ -1,8 +1,8 @@
 // ── auto-wired cross-module imports ──
 import { hscBlurLevel, hscTintColor } from '../effects/atmosphere.js';
 import { CONFIG, modApi } from './config.js';
-import { triggerPinkFlash } from '../effects/effects.js';
-import { triggerClimaxEffect } from '../effects/effects2.js';
+import { triggerPinkFlash } from '../effects/pink-flash.js';
+import { triggerClimaxEffect } from '../effects/climax.js';
 import { _charDrawPos, playerDrawPos } from '../util/geometry.js';
 import { drawHypnoStatusForChar } from '../hypno/hypno-orb.js';
 import { effectScale } from '../util/util.js';

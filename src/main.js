@@ -4,10 +4,12 @@
 //  Modules are grouped by area under ./modules/<category>/:
 //    core/    — config, storage, hooks, lifecycle (core-init), commands
 //    i18n/    — i18n, l10n
-//    util/    — util, geometry, icons, zlayers (shared helpers)
+//    util/    — util, text, geometry, icons, zlayers, calibrate (shared helpers/tools)
 //    ui/      — panel, preference, profile, styles
 //    hypno/   — hypno (state), hypno-speech, hypno-anim, hypno-orb
-//    effects/ — effects, effects2, character-fx, atmosphere, crowd, censor, depth, state-fx, sound, run
+//    effects/ — one effect per file: pink-flash, vignette, spiral, waves, distort,
+//               danmaku, breath, climax; plus atmosphere, crowd, censor, depth,
+//               character-fx, state-fx, sound, run (orchestration)
 // ════════════════════════════════════════
 
 import { MOD_VER, CONFIG } from './modules/core/config.js';
