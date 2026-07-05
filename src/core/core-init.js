@@ -16,6 +16,7 @@ import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from '../
 import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
 import { injectStyles } from '../ui/styles.js';
 import { clearBCXCache } from '../util/util.js';
+import { ensureColorAPI } from '../util/icons.js';
 
 // ════════════════════════════════════════
 //  HSC module: core-init.js
@@ -124,6 +125,7 @@ import { clearBCXCache } from '../util/util.js';
 
         // 先載入 i18n（讓預設文本等依語言產生），再等 ExtensionSettings
         await ensureI18n();
+        ensureColorAPI();   // 非阻塞：載入共用 ColorAPI，供註冊/資料頁按鈕依實際背景色挑深/淺圖示
         await waitForExtensionSettings();
         // ★ 先把伺服器公告的上次催眠狀態存起來（要在 publishSharedSettings 覆寫前先讀）
         let _savedHypno = null;

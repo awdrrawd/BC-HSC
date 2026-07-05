@@ -80,19 +80,42 @@ export function hscIconForButton(x, y, w, h) {
     return sampleCanvasIsDark(x, y, w, h) ? HSC_ICON_B : HSC_ICON_W;
 }
 
+// ── 載入共用 ColorAPI（BC_ThemeColorCheck）──
+// 與引擎同機制：PCM 或同作者其他插件已載入則自動略過（防重載旗標 __Sys_ColorAPI__）。
+// 非阻塞；載入完成前 hscThemeIsDark() 會先用內建 fallback，之後改用 ColorAPI。
+let _colorApiLoading = null;
+export function ensureColorAPI() {
+    if (typeof window !== 'undefined' && window.Liko?.__Sys_ColorAPI__) return Promise.resolve();
+    if (_colorApiLoading) return _colorApiLoading;
+    const url = assetUrl('Translation/BC_ThemeColorCheck.js') + '?t=' + Date.now();
+    _colorApiLoading = fetch(url)
+        .then(r => { if (!r.ok) throw new Error(`[HSC] ColorAPI ${r.status}`); return r.text(); })
+        .then(code => { new Function(code)(); })
+        .catch(e => { _colorApiLoading = null; console.warn('🐈‍⬛ [HSC] ColorAPI 載入失敗，改用內建判斷:', e.message); });
+    return _colorApiLoading;
+}
+
 // ── 判定「當前 UI 主題色」是否過深 ──
-// 主題染色的原因很多；優先讀主題插件設的 CSS 變數（BC 官方推薦的 Themed-BC 會設
-// --tmd-element = 當前按鈕色），讀不到再退而取樣畫布上方選單帶。都失敗則預設亮底。
+// 交給共用 ColorAPI（BC_ThemeColorCheck）判斷實際畫布背景色；ColorAPI 未就緒時才退回
+// 內建邏輯（讀主題插件 CSS 變數 → 取樣畫布上方選單帶）。都失敗則預設亮底。
 export function hscThemeIsDark() {
+    // 1) 優先由 BC_ThemeColorCheck 判斷（讀畫布上方選單帶實際顏色 → isDark）
+    const ColorAPI = (typeof window !== 'undefined') ? window.Liko?.__Sys_ColorAPI__ : null;
+    if (ColorAPI) {
+        try {
+            const color = ColorAPI.getCanvasColor({ x: 1000, y: 110, size: 8 });
+            if (color) { const d = ColorAPI.isDark(color); if (d !== null) return d; }
+        } catch { /* 落到下方 fallback */ }
+    }
+    // 2) fallback：主題插件 CSS 變數
     try {
         const cs = getComputedStyle(document.documentElement);
-        // Themed-BC 主色 + 幾個常見的變數名（各主題插件命名不一，盡量涵蓋）
         for (const v of ['--tmd-element', '--tmd-elementHover', '--element', '--button-color', '--bce-color']) {
             const c = cs.getPropertyValue(v).trim();
             if (c) return !isLightColor(c);
         }
     } catch { /* 無法讀 CSS 變數 */ }
-    // 退而取樣畫布上方中央選單帶（BC 會用 crossOrigin=anonymous，Pages 有 CORS，通常可讀）
+    // 3) fallback：自行取樣畫布上方中央選單帶
     try { return sampleCanvasIsDark(760, 60, 480, 120); } catch { return false; }
 }
 
