@@ -1,11 +1,11 @@
 // Liko - HSC i18n 字庫
 // 此檔案由 HSC 插件動態載入，不需手動安裝
-// 載入後自動呼叫 register('HSC', {...})，將字串注入共用引擎 Liko-i18n
+// 載入後自動呼叫 register('HSC', {...})，將字串注入共用引擎 BC_i18n（window.Liko.__Sys_i18n__）
 // 佔位符以 {name} 表示，由引擎 t('HSC', key, vars) 代入
 // 語言：TW 繁中 / CN 簡中 / EN 英 / JP 日 / KR 韓 / DE 德 / FR 法 / RU 俄 / UA 烏
 
 (function () {
-    if (!window.Liko?.i18n?.register) {
+    if (!window.Liko?.__Sys_i18n__?.register) {
         console.error('[Liko HSC strings] i18n 引擎尚未載入');
         return;
     }
@@ -397,7 +397,5 @@
         },
     };
 
-    window.Liko.i18n.register('HSC', HSC_STRINGS);
-    window.Liko._HSC_strings = HSC_STRINGS;   // 供 HSC 自行依使用者選的語言查表
-    if (window.Liko?.i18n) window.Liko.i18n._hscStringsLoaded = true;
+    window.Liko.__Sys_i18n__.register('HSC', HSC_STRINGS);
 })();

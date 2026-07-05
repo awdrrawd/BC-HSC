@@ -13,10 +13,11 @@ import { assetUrl } from '../util/icons.js';
     // ════════════════════════════════════════
     const I18N_NS = 'HSC';
     // 翻譯自我裝載：與 bundle 同源（正式站 = BC-HSC Pages，本地 = vite preview）。
-    //  Liko-i18n.js 是共用引擎（有防重複載入），HSC-i18n.js 是本插件字庫；
+    //  BC_i18n.js 是共用引擎（有防重複載入），HSC-i18n.js 是本插件字庫；
     //  兩者放 Translation/，build 前由 copy-assets 複製到 public/Translation/ 一併部署。
-    const LIKO_I18N_ENGINE_URL = assetUrl('Translation/Liko-i18n.js');
+    const LIKO_I18N_ENGINE_URL = assetUrl('Translation/BC_i18n.js');
     const LIKO_HSC_STRINGS_URL = assetUrl('Translation/HSC-i18n.js');
+    const LIKO_HSC_L10N_URL    = assetUrl('Translation/HSC-l10n.js');
 
     // 加時間戳避免 CDN 快取到舊字庫（翻譯會經常修改）
     function _i18nLoadScript(url) {
@@ -27,10 +28,12 @@ import { assetUrl } from '../util/icons.js';
     }
     async function ensureI18n() {
         try {
-            if (!window.Liko?.i18n?.version) await _i18nLoadScript(LIKO_I18N_ENGINE_URL);
-            if (!window.Liko?.i18n?._hscStringsLoaded) {
-                await _i18nLoadScript(LIKO_HSC_STRINGS_URL);
-                if (window.Liko?.i18n) window.Liko.i18n._hscStringsLoaded = true;
+            // 能力偵測：新引擎 BC_i18n 暴露 __Sys_i18n__.ensure；舊 v1 只有 version 會被誤判，故用 ensure
+            if (typeof window.Liko?.__Sys_i18n__?.ensure !== 'function') await _i18nLoadScript(LIKO_I18N_ENGINE_URL);
+            const eng = window.Liko?.__Sys_i18n__;
+            if (eng?.ensure) {
+                await eng.ensure(I18N_NS, LIKO_HSC_STRINGS_URL);                     // UI 字庫（依 URL 去重）
+                await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, LIKO_HSC_L10N_URL); // 聊天在地化字庫
             }
         } catch (e) { console.warn('🐈‍⬛ [HSC] i18n 載入失敗，改用中文原文:', e.message); }
     }
@@ -49,22 +52,13 @@ import { assetUrl } from '../util/icons.js';
         } catch { return 'EN'; }
     }
 
-    // 取翻譯：優先用 _HSC_strings（支援手動語言覆蓋）；
-    //   其次用引擎 t()（舊版線上字庫只 register、未 expose _HSC_strings 時仍可譯，但只跟遊戲語系）；
-    //   最後才退中文 HSC_FALLBACK。
+    // 取翻譯：引擎（__Sys_i18n__）有此 key 就用引擎 t()，並把 HSC 自己算好的語言（含手動選擇）
+    //   以第 4 參 forceLang 傳入（引擎不自作主張決定語言）；引擎未載入才退中文 HSC_FALLBACK。
     function ui(key, vars, forceLang) {
         const lang = forceLang || hscLang();
-        let s;
-        const store = window.Liko?._HSC_strings;
-        const e = store && store[key];
-        if (e) {
-            s = e[lang] ?? e[lang === 'CN' ? 'TW' : 'XX'] ?? e['EN'];
-        }
-        if (s == null) {
-            const fn = window.Liko?.i18n;
-            if (fn?.t && fn.has?.(I18N_NS, key)) return fn.t(I18N_NS, key, vars);
-        }
-        if (s == null) s = HSC_FALLBACK[key] ?? key;
+        const eng = window.Liko?.__Sys_i18n__;
+        if (eng?.has?.(I18N_NS, key)) return eng.t(I18N_NS, key, vars, lang);
+        let s = HSC_FALLBACK[key] ?? key;
         if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
         return s;
     }
