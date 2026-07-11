@@ -1,7 +1,7 @@
 // ── auto-wired cross-module imports ──
 import { startOtherPant } from '../effects/character-fx.js';
 import { printChat } from '../core/commands.js';
-import { CONFIG, ES_KEY, PREF_ID, modApi } from '../core/config.js';
+import { CONFIG, ES_KEY, HSC_SCREEN, PREF_ID, modApi } from '../core/config.js';
 import { ui } from '../i18n/i18n.js';
 import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark } from '../util/icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
@@ -75,12 +75,35 @@ import { HSC_Z } from '../util/zlayers.js';
         return false;
     }
 
+    // 遠端訪問設定頁的獨立畫面：註冊 BC 畫面系統認得的幾個東西。
+    //  這不是真正在伺服器上存在的畫面，所以要補兩件事：
+    //   1) <Screen>Background：不補的話背景不會套用，會透出聊天室背景
+    //   2) 略過 TextLoad 對這個假畫面名稱抓 Text_*.csv（伺服器上沒有這檔案，
+    //      404 後 CommonFetch 會退避重試，卡 2-3 分鐘——LSCG 自己的小遊戲畫面
+    //      也是用同一招（CurrentScreen.startsWith('LSCG_') 時直接跳過 TextLoad））
+    function _registerHscScreen() {
+        try {
+            window[HSC_SCREEN + 'Background'] = 'Sheet';   // 沿用 InformationSheet 的羊皮紙背景
+            window[HSC_SCREEN + 'Run']    = () => { try { EXT.run(); } catch (e) {} };
+            window[HSC_SCREEN + 'Click']  = () => { try { EXT.click(); } catch (e) {} };
+            window[HSC_SCREEN + 'Load']   = () => {};
+            window[HSC_SCREEN + 'Unload'] = () => {};
+            window[HSC_SCREEN + 'Exit']   = () => { try { EXT.closeRemote(); } catch (e) {} };
+            window[HSC_SCREEN + 'Resize'] = () => {};
+        } catch (e) {}
+    }
+
     function hookProfileButton() {
         if (!modApi) return;
         try {
-            // 優先權拉高（>LSCG 的 11、UBC 的 4）：remote 頁開啟時 return 不呼叫 next，
-            // 讓其它插件的按鈕/子頁完全不繪製，避免蓋在我們的設定頁上。
-            const SHEET_PRIO = 15;
+            _registerHscScreen();
+            // 假畫面沒有對應的 Screens/<Module>/HSC_ProfileEdit/Text_HSC_ProfileEdit.csv，
+            // 讓 TextLoad 遇到我們的畫面時直接不呼叫 next()，跳過那次一定會 404 的抓取。
+            modApi.hookFunction('TextLoad', 1, (args, next) => {
+                if (typeof CurrentScreen !== 'undefined' && CurrentScreen === HSC_SCREEN) return true;
+                return next(args);
+            });
+
             modApi.hookFunction('InformationSheetRun', 5, (args, next) => {
                 // remote 設定頁開啟 → 就地接管整個畫面（不繪製 profile 本體、也不跑其它 hook）
                 if (EXT.ctx === 'remote' && EXT.remote) {
@@ -111,7 +134,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 }
                 return r;
             });
-            modApi.hookFunction('InformationSheetClick', SHEET_PRIO, (args, next) => {
+            modApi.hookFunction('InformationSheetClick', 5, (args, next) => {
                 // remote 設定頁開啟 → 點擊交給 EXT（分頁/離開/存檔）
                 if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.click(); } catch (e) {} return; }
                 if (_otherModSubscreenOpen()) return next(args);   // 讓路給別的插件
@@ -128,7 +151,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 return next(args);
             });
             // 離開 profile（Esc / BC 離開流程）→ 若 remote 設定頁開著，先關掉它、留在 profile
-            modApi.hookFunction('InformationSheetExit', SHEET_PRIO, (args, next) => {
+            modApi.hookFunction('InformationSheetExit', 5, (args, next) => {
                 if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.closeRemote(); } catch (e) {} return; }
                 return next(args);
             });
@@ -303,6 +326,14 @@ import { HSC_Z } from '../util/zlayers.js';
          .map(c => ({ ...c, editable: canCat(c.key), data: dataCat(c.key, c.field) }));
 
         // 就地開啟 EXT「文本」分頁（remote 模式）；存檔即送出隱藏訊息給對方
+        //  先用 CommonSetScreen 真正切到 HSC_SCREEN（此時 EXT.ctx 還是 'self'，
+        //  所以會正常觸發原本的 InformationSheetExit，不會被我們自己的 remote 分支攔截），
+        //  等畫面確定切過去了，才呼叫 EXT.openRemote() 進入 remote 狀態開始繪製。
+        try {
+            if (typeof CommonSetScreen === 'function') {
+                CommonSetScreen((typeof CurrentModule !== 'undefined' ? CurrentModule : 'Character'), HSC_SCREEN);
+            }
+        } catch (e) {}
         EXT.openRemote({
             C, name, cats,
             onSave: (savedCats) => {

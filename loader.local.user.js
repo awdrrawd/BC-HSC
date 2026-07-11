@@ -2,7 +2,7 @@
 // @name         HSC - Hypnotic Slave Club - 本地版
 // @name:zh      沉浸式聲音催眠效果 - 本地開發
 // @namespace    https://likulisu.dev/
-// @version     1.0
+// @version     1.0.1
 // @description  HSC 本地開發載入器（從 vite preview 讀取，npm run dev，port 5174）
 // @author       莉柯莉絲(Likolisu)
 // @supportURL   https://github.com/awdrrawd/BC-HSC
@@ -13,9 +13,6 @@
 // @require      https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Plugins/expand/bcmodsdk.js
 // ==/UserScript==
 
-// Local dev loader: reads the bundle from the local vite preview server.
-// Run `npm run dev` (builds in watch mode + serves on port 5174), then reload BC.
-// The ?v= timestamp busts the cache so every reload picks up the latest build.
 window.Liko = window.Liko ?? {};
 if (window.Liko.HSC) {
     console.warn('🐈‍⬛ [HSC] ⚠️ 已載入，略過重複匯入。');
@@ -24,4 +21,7 @@ if (window.Liko.HSC) {
     import(`http://localhost:5174/assets/main.js?v=${Date.now()}`)
         .catch(e => console.error('🐈‍⬛ [HSC] 本地載入失敗（vite preview 有開嗎？）:', e));
 }
-//在檔案目錄下開兩個命令字元 	1. npm run dev     2. npx vite preview --port 5174
+
+// Local dev loader: reads the bundle from the local vite preview server.
+// The ?v= timestamp busts the cache so every reload picks up the latest build.
+// Run ` npm run dev ` , then reload BC.
