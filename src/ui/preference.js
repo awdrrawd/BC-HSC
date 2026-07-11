@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '../effects/character-fx.js';
-import { CONFIG, DEFAULT_EXPRESSIONS, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from '../core/config.js';
+import { CONFIG, DEFAULT_EXPRESSIONS, HSC_SCREEN, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from '../core/config.js';
 import { applyDepthLoop } from '../effects/depth.js';
 import { assetUrl } from '../util/icons.js';
 import { updateHeadTalisman } from '../hypno/hypno-anim.js';
@@ -90,6 +90,14 @@ import { HSC_Z } from '../util/zlayers.js';
             this.remote = null;
             this.activeTab = 'basic';
             this.scroll = 0;
+            // 若目前正站在我們自己獨立的畫面上 → 切回 InformationSheet（會自動重新
+            // 觸發它的 Load；不需要手動還原 InformationSheetSelection，因為我們從沒清空過它）
+            try {
+                if (typeof CurrentScreen !== 'undefined' && CurrentScreen === HSC_SCREEN &&
+                    typeof CommonSetScreen === 'function') {
+                    CommonSetScreen((typeof CurrentModule !== 'undefined' ? CurrentModule : 'Character'), 'InformationSheet');
+                }
+            } catch (e) {}
         },
 
         // ── 生命週期 ──

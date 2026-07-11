@@ -141,6 +141,13 @@ import { ui } from '../i18n/i18n.js';
     const ES_KEY = "HSC";                       // ExtensionSettings / OnlineSharedSettings 儲存鍵
     const PREF_ID = "Liko_HSC_Settings";        // 偏好設定頁註冊 Identifier
     const ES_BUDGET = 5120; // 5KB 警戒線
+    // 遠端訪問設定頁的獨立畫面名稱：CurrentScreen 換成這個名字時，
+    // BC 主迴圈只會呼叫 window[HSC_SCREEN+'Run'/'Click'/...]，
+    // LSCG / BCX / MPA 等掛在 InformationSheetRun/Click/Exit 上的 hook 完全不會被呼叫到。
+    // 注意：這不是 BC 認得的「真正畫面」，所以還要另外處理兩件事（見 profile.js / preference.js）：
+    //  1) 背景：宣告 window[HSC_SCREEN+'Background'] = 'Sheet'（否則背景透出聊天室）
+    //  2) 翻譯檔：hook TextLoad 略過對這個假畫面名稱的 CSV 抓取（否則 404 重試會卡 2-3 分鐘）
+    const HSC_SCREEN = "HSC_ProfileEdit";
 
 export {
     MOD_VER,
@@ -152,4 +159,5 @@ export {
     ES_KEY,
     PREF_ID,
     ES_BUDGET,
+    HSC_SCREEN,
 };
