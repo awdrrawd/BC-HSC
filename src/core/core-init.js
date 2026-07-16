@@ -131,7 +131,7 @@ import { ensureColorAPI } from '../util/icons.js';
     //  初始化
     // ════════════════════════════════════════
     async function initialize() {
-        console.log(`🐈‍⬛ [HSC] ⌛ 初始化 v${MOD_VER}...`);
+        console.log(`🐈‍⬛ [HSC] ✅ v${MOD_VER} loaded...`);
         injectStyles();
 
         const sdkReady  = await waitForBcModSdk();
