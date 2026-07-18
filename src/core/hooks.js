@@ -29,7 +29,10 @@ import { effectScale } from '../util/util.js';
                     _charDrawPos[character.MemberNumber] = { x: charX, y: charY, zoom, t: Date.now() };
                 }
                 // 催眠進度球：自己讀執行期值、他人讀 OnlineSharedSettings（畫在 LSCG 狀態上方）
-                try { drawHypnoStatusForChar(character, charX, charY, zoom); } catch (e) {}
+                //  跟隨 BC 的隱藏圖示狀態：ChatRoomHideIconState >= 2 時一併隱藏（與原生 icon 一致）
+                if (typeof ChatRoomHideIconState === 'undefined' || ChatRoomHideIconState < 2) {
+                    try { drawHypnoStatusForChar(character, charX, charY, zoom); } catch (e) {}
+                }
                 // 用 MemberNumber 比對，比 IsPlayer() 更可靠
                 const isMe = character?.MemberNumber != null &&
                       Player?.MemberNumber != null &&
