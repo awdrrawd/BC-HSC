@@ -1,7 +1,7 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { _emitBreathPuff, breathIntervalMs } from './breath.js';
-import { BODY_PANT_DY, DEPTH_PANT_EXTRA, HEAD_OFFSET, _cachedRect, _cachedScaleX, _charDrawPos, bcToScreen, getBodyAnchorScreen, otherCharMouthScreenPos, refreshCanvasCache } from '../util/geometry.js';
+import { BODY_PANT_DY, DEPTH_PANT_EXTRA, HEAD_OFFSET, _cachedRect, _cachedScaleX, _charDrawPos, getBodyAnchorScreen, getCenterHeadshotGeom, otherCharMouthScreenPos, refreshCanvasCache } from '../util/geometry.js';
 import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 import { hscServerSend } from '../core/net.js';
@@ -305,9 +305,11 @@ function addArousal(kind) {
             const SZ  = 300;
             const cv  = document.createElement('canvas'); cv.width = cv.height = SZ;
             const ctx = cv.getContext('2d');
-            // 圓心固定在「左邊 Canvas 的 (500,500)」＝左側人物區中心（不隨分頁/人數飄移）
-            const pos = bcToScreen(500, 500);
-            const dispSZ  = Math.max(340, SZ * (_cachedScaleX || 0.35) * 1.7);   // 還原原本較大的圓
+            // 圓心 + 直徑改用共用工具 getCenterHeadshotGeom（與喘氣共用同一份幾何，
+            //  不同畫面縮放下頭像與吐氣一致；圓心固定在左側人物區中心 (500,500)，不隨分頁/人數飄移）
+            const geom = getCenterHeadshotGeom();
+            const pos = { x: geom.cx, y: geom.cy };
+            const dispSZ = geom.size;
 
             const el = document.createElement('img');
             Object.assign(el.style, {

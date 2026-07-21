@@ -2,7 +2,7 @@
 import { printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from '../effects/depth.js';
-import { ui } from '../i18n/i18n.js';
+import { ui } from '../expansion/i18n.js';
 import { resolveWhitelistNumbers } from '../ui/panel.js';
 import { hscServerSend } from './net.js';
 

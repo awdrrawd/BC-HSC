@@ -1,10 +1,7 @@
 // ── auto-wired cross-module imports ──
 import { CONFIG, MOD_VER, PREF_ID } from './config.js';
-import { currentDepthLevel, runDepthEffect } from '../effects/depth.js';
-import { openCalibratePanel } from '../util/calibrate.js';
 import { triggerClimaxEffect } from '../effects/climax.js';
-import { refreshCanvasCache } from '../util/geometry.js';
-import { ui } from '../i18n/i18n.js';
+import { ui } from '../expansion/i18n.js';
 import { _panel, buildPanel, removePanel } from '../ui/panel.js';
 import { T, triggerVoiceEffect } from '../util/util.js';
 
@@ -93,21 +90,6 @@ import { T, triggerVoiceEffect } from '../util/util.js';
             printChat('💥 [HSC] 高潮特效測試觸發');
             return true;
         }
-
-        if (sub === 'depth') {
-            const lv = Math.max(1, Math.min(3, parseInt(parts[2], 10) || currentDepthLevel() || 1));
-            refreshCanvasCache();
-            runDepthEffect(lv);
-            printChat(`🌀 [HSC] 深度效果測試（等級 ${lv}）— 目前為最小版，完整幽靈低語等效果尚未實作`);
-            return true;
-        }
-
-        if (sub === 'calibrate') {
-            openCalibratePanel();
-            return true;
-        }
-
-
 
         if (sub === 'show') {
             const chatContainer = document.getElementById('TextAreaChatLog') ||

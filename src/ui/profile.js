@@ -2,7 +2,7 @@
 import { startOtherPant } from '../effects/character-fx.js';
 import { printChat } from '../core/commands.js';
 import { CONFIG, ES_KEY, HSC_SCREEN, PREF_ID, modApi } from '../core/config.js';
-import { ui } from '../i18n/i18n.js';
+import { ui } from '../expansion/i18n.js';
 import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark, refreshThemeIsDark } from '../util/icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
 import { EXT, waitForPreference } from './preference.js';

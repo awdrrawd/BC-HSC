@@ -20,7 +20,7 @@ import { currentDepthLevel, runDepthEffect } from './effects/depth.js';
 import { getHypnoValue, isForced, wake } from './hypno/hypno.js';
 import { playHypnoAnim } from './hypno/hypno-anim.js';
 import { EXT } from './ui/preference.js';
-import { l10nTest } from './i18n/l10n.js';
+import { l10nTest } from './expansion/l10n.js';
 import { initialize } from './core/core-init.js';
 
 // 對外唯一入口：window.Liko.HSC（版本 + API 合併為同一物件；loader 先設 'loading'）

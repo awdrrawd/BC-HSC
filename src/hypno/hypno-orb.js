@@ -16,7 +16,7 @@ import { CONFIG, ES_KEY } from '../core/config.js';
 import { loadHscImage } from '../util/icons.js';
 import { _charAnchor, getBodyAnchorBc } from '../util/geometry.js';
 import { getHypnoValue, isForced, getWakeRemainingMs } from './hypno.js';
-import { ui } from '../i18n/i18n.js';
+import { ui } from '../expansion/i18n.js';
 
 // 把秒數格式化為 m:ss（分可超過 60，例如 125:30）；<0 視為 0
 function _fmtTime(sec) {

@@ -25,6 +25,8 @@ const CDN_ROOT = 'https://cdn.jsdelivr.net/gh/awdrrawd/BC-HSC@main/';
 //  （對照：Pages 由 copy-assets 把 Images/* 攤平到根目錄，故 assetUrl 用裸檔名即 Pages 圖。）
 export function cdnUrl(logical) {
     const p = String(logical).replace(/^\//, '');
+    // 共用引擎源碼（BC_i18n / BC_ThemeColorCheck）在 repo 的 src/expansion/；邏輯路徑用 expansion/ 對外一致。
+    if (/^expansion\//i.test(p)) return CDN_ROOT + 'src/' + p;
     if (/^(Sound|Translation)\//i.test(p)) return CDN_ROOT + p;
     return CDN_ROOT + 'Images/' + p;
 }
@@ -37,7 +39,7 @@ export function soundUrl(name) { return cdnUrl('Sound/' + String(name).replace(/
 export function toPagesUrl(url) {
     const s = String(url);
     if (!s.startsWith(CDN_ROOT)) return s;
-    const rel = s.slice(CDN_ROOT.length).replace(/^Images\//, '');   // 圖片在 Pages 根目錄
+    const rel = s.slice(CDN_ROOT.length).replace(/^Images\//, '').replace(/^src\/expansion\//, 'expansion/');   // 圖片在 Pages 根目錄；引擎在 Pages 的 expansion/
     return assetUrl(rel);
 }
 
@@ -166,7 +168,7 @@ let _colorApiLoading = null;
 export function ensureColorAPI() {
     if (typeof window !== 'undefined' && window.Liko?.__Sys_ColorAPI__) return Promise.resolve();
     if (_colorApiLoading) return _colorApiLoading;
-    const url = assetUrl('Translation/BC_ThemeColorCheck.js') + '?t=' + Date.now();
+    const url = assetUrl('expansion/BC_ThemeColorCheck.js') + '?t=' + Date.now();
     _colorApiLoading = fetch(url)
         .then(r => { if (!r.ok) throw new Error(`[HSC] ColorAPI ${r.status}`); return r.text(); })
         .then(code => { new Function(code)(); })
@@ -206,11 +208,15 @@ function _computeThemeIsDark() {
             if (typeof main === 'string' && main.trim()) return !isLightColor(main);
         }
     } catch { /* 落到下方 sys color */ }
-    // 1) sys color：共用 __Sys_ColorAPI__（BC_ThemeColorCheck，讀畫布上方選單帶實際顏色 → isDark）
+    // 1) sys color：共用 __Sys_ColorAPI__（BC_ThemeColorCheck v2.1）。
+    //    優先用 getThemeColor()——它會 hook DrawRect/DrawButton 讀「宣告色」（精確、不受抗鋸齒影響），
+    //    拿不到才退像素取樣；舊版沒有 getThemeColor 時退回 getCanvasColor。
     const ColorAPI = (typeof window !== 'undefined') ? window.Liko?.__Sys_ColorAPI__ : null;
     if (ColorAPI) {
         try {
-            const color = ColorAPI.getCanvasColor({ x: 1000, y: 110, size: 8 });
+            const color = (typeof ColorAPI.getThemeColor === 'function')
+                ? ColorAPI.getThemeColor()
+                : ColorAPI.getCanvasColor({ x: 1000, y: 110, size: 8 });
             if (color) { const d = ColorAPI.isDark(color); if (d !== null) return d; }
         } catch { /* 落到下方 fallback */ }
     }

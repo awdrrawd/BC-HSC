@@ -1,8 +1,9 @@
 // Stage self-hosted assets into public/ (which vite deploys to Pages):
-//   Images/HSC-icon*.png -> public/          (icons; edit art in Images/)
-//   Sound/*              -> public/Sound/     (音源)
-//   Translation/*.js     -> public/Translation/ (i18n 引擎 + HSC 字庫)
-// Edit the sources in Images/ Sound/ Translation/; build refreshes public/.
+//   Images/HSC-icon*.png     -> public/            (icons; edit art in Images/)
+//   Sound/*                  -> public/Sound/       (音源)
+//   Translation/*.js         -> public/Translation/ (HSC 字庫，一國一檔)
+//   src/expansion/BC_*.js    -> public/expansion/   (共用引擎：BC_i18n / BC_ThemeColorCheck，執行期 fetch)
+// Edit the sources in Images/ Sound/ Translation/ src/expansion/; build refreshes public/.
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 
@@ -27,3 +28,5 @@ copyInto('Images/', 'public/', n => /^HSC-.*\.png$/i.test(n));
 
 copyInto('Sound/', 'public/Sound/', n => /\.(mp3|ogg|wav|m4a)$/i.test(n));
 copyInto('Translation/', 'public/Translation/', n => n.endsWith('.js'));
+// 共用引擎：只複製 BC_*.js（IIFE，執行期 fetch）；同資料夾的 i18n.js/l10n.js 是 ES module，由 vite bundle，不複製。
+copyInto('src/expansion/', 'public/expansion/', n => /^BC_.*\.js$/i.test(n));

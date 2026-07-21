@@ -12,14 +12,19 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
     //  引擎未就緒時，ui() 回傳 fallbacks[key]（中文原文），不丟例外
     // ════════════════════════════════════════
     const I18N_NS = 'HSC';
-    // 翻譯：Pages 優先。翻譯字庫更新頻繁，而 jsDelivr @main 邊緣快取約 12h，CDN 會餵到舊字庫，
-    //  故字庫（STRINGS/L10N）一律走 Pages（?t= 時間戳破快取）；CDN 僅在 Pages 掛掉時當引擎腳本的保底。
+    // 共用引擎腳本：源碼在 src/expansion/BC_i18n.js，build 前由 copy-assets 複製到 public/expansion/。
+    //  Pages 優先、加時間戳破快取；Pages 失敗才回退 CDN（cdnUrl 會對映到 repo 的 src/expansion/）。
+    const T_ENGINE = 'expansion/BC_i18n.js';
+
+    // 字庫改為「一國一檔」：Translation/<LANG>.js，每支同時註冊 UI(i18n) 與聊天(L10N) 兩套。
+    //  交給引擎 loadLangs：只抓「目前語言 + EN 後備」（CN 再加 TW），比舊的單一 165KB 合併檔省很多流量。
     //  檔案放 Translation/，build 前由 copy-assets 複製到 public/Translation/ 一併部署。
-    const T_ENGINE  = 'Translation/BC_i18n.js';
-    const T_STRINGS = 'Translation/HSC-i18n.js';
-    const T_L10N    = 'Translation/HSC-l10n.js';
-    const LIKO_HSC_STRINGS_URL = assetUrl(T_STRINGS);   // 交給引擎 ensure() 抓（Pages）
-    const LIKO_HSC_L10N_URL    = assetUrl(T_L10N);
+    const T_LANGS = ['TW', 'CN', 'EN', 'JP', 'KR', 'DE', 'FR', 'RU', 'UA'];
+    function _stringsUrlMap() {
+        const m = {};
+        for (const c of T_LANGS) m[c] = assetUrl('Translation/' + c + '.js');   // Pages 位址；引擎失敗時自行處理
+        return m;
+    }
 
     // 載入共用引擎腳本：Pages 優先、加時間戳破快取；Pages 失敗才回退 CDN（可能較舊但能用）。
     function _i18nLoadScript(logical) {
@@ -36,10 +41,26 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
             if (typeof window.Liko?.__Sys_i18n__?.ensure !== 'function') await _i18nLoadScript(T_ENGINE);
             const eng = window.Liko?.__Sys_i18n__;
             if (eng?.ensure) {
-                await eng.ensure(I18N_NS, LIKO_HSC_STRINGS_URL);                     // UI 字庫（依 URL 去重）
-                await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, LIKO_HSC_L10N_URL); // 聊天在地化字庫
+                const urlMap = _stringsUrlMap();
+                const lang = hscLang();   // 用 HSC 自己算好的語言，讓引擎只抓需要的那幾支
+                // 語言檔同時註冊 UI 與 L10N；一次 ensure 兩套都進來。對 L10N 再 ensure 一次
+                //  （同 URL，引擎依 _loadedUrls 去重不會重抓）確保 msg realm 已就緒。
+                await eng.ensure(I18N_NS, urlMap, lang);
+                await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, urlMap, lang);
             }
         } catch (e) { console.warn('🐈‍⬛ [HSC] i18n 載入失敗，改用中文原文:', e.message); }
+    }
+    // 玩家在設定頁「切換語言」時呼叫：按需抓「新語言」的字庫檔（初始化只載了當時語言＋EN，
+    //  沒抓的語言原本會退回英文——這裡補抓後，畫面下一幀就會顯示該語言）。URL 去重不會重抓已載入的。
+    async function ensureLang(sel) {
+        try {
+            const eng = window.Liko?.__Sys_i18n__;
+            if (!eng?.ensure) return;
+            const lang = (sel && sel !== 'auto') ? sel : hscLang();
+            const urlMap = _stringsUrlMap();
+            await eng.ensure(I18N_NS, urlMap, lang);
+            await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, urlMap, lang);
+        } catch (e) { console.warn('🐈‍⬛ [HSC] 切換語言載入失敗:', e.message); }
     }
     // 可選語言（auto = 依遊戲語系）
     const HSC_LANGS = ['auto', 'TW', 'CN', 'EN', 'JP', 'KR', 'DE', 'FR', 'RU', 'UA'];
@@ -71,7 +92,7 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
     const HSC_FALLBACK = {
         prefButton: 'HSC 催眠設定',
         loaded: 'HSC v{v} 已載入 ✅\n/hsc help 說明 | /hsc setting 設定頁',
-        help: '🌀 HSC v{v} 指令列表：\n  /hsc setting       — 開啟偏好設定頁\n  /hsc show          — 顯示控制面板\n  /hsc test [文字]   — 立即觸發效果\n  /hsc climax        — 測試高潮特效\n  /hsc depth [1~3]   — 測試催眠深度效果\n  /hsc calibrate     — 頭部座標校正面板\n  /hsc help          — 顯示此說明',
+        help: '🌀 HSC v{v} 指令列表：\n  /hsc setting       — 開啟偏好設定頁\n  /hsc show          — 顯示控制面板\n  /hsc test [文字]   — 立即觸發效果\n  /hsc climax        — 測試高潮特效',
         cmdUnknown: '⚠️ [HSC] 未知指令「{sub}」，輸入 /hsc help 查看說明',
         cantOpenSettings: '⚠️ 無法開啟設定頁（偏好系統未就緒）',
         exportDone: '📤 HSC 設定已匯出 (HSC-settings.json)',
@@ -213,9 +234,9 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
 
 export {
     I18N_NS,
-    LIKO_HSC_STRINGS_URL,
     _i18nLoadScript,
     ensureI18n,
+    ensureLang,
     HSC_LANGS,
     HSC_LANG_NAMES,
     hscLang,

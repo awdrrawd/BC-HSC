@@ -11,7 +11,7 @@
 
 import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
 import { pushExprEffect, popExprEffect, hypnoOrgasm } from '../effects/character-fx.js';
-import { sendLocalizedAction } from '../i18n/l10n.js';
+import { sendLocalizedAction } from '../expansion/l10n.js';
 import { updateCrowd } from '../effects/crowd.js';
 import { updateHeadTalisman, playHypnoAnim, stopHypnoAnim } from './hypno-anim.js';
 import { publishHypnoState } from '../core/storage.js';

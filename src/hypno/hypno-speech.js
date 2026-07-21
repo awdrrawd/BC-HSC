@@ -9,7 +9,7 @@
 
 import { CONFIG, modApi } from '../core/config.js';
 import { isForced } from './hypno.js';
-import { sendLocalizedAction } from '../i18n/l10n.js';
+import { sendLocalizedAction } from '../expansion/l10n.js';
 import { resolveMe, pickRandom } from '../util/util.js';
 
 let _busy = false;

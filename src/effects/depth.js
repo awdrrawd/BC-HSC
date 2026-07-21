@@ -6,7 +6,7 @@ import { triggerPinkFlash } from './pink-flash.js';
 import { wrapDanmakuText } from '../util/text.js';
 import { triggerSteamParticles } from './breath.js';
 import { fillWaveText } from './danmaku.js';
-import { _cachedRect, _cachedScaleX, _cachedScaleY, bcToScreen, getPlayerHeadScreenPos, playerDrawPos, refreshCanvasCache } from '../util/geometry.js';
+import { HEAD_OFFSET, _cachedRect, _cachedScaleX, _cachedScaleY, _charAnchor, bcToScreen, getBodyAnchorScreen, getPlayerHeadScreenPos, playerDrawPos, refreshCanvasCache } from '../util/geometry.js';
 import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
 import { getCatalystTexts, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from '../util/util.js';
@@ -143,8 +143,9 @@ import { HSC_Z } from '../util/zlayers.js';
         ghostChar.ArousalSettings = Object.assign({}, srcChar.ArousalSettings || {},
             { Visible: 'None', Progress: 0, VibratorLevel: 0, OrgasmCount: undefined, OrgasmTimer: 0 });
 
-        // 相對玩家的螢幕像素偏移
-        const offXpx = 35, offYpx = -10;
+        // 相對玩家的螢幕像素偏移：X 隨機出現在「右後(+)」或「左後(-)」，Y 維持原本（只調整 X）
+        const side = Math.random() < 0.5 ? 1 : -1;
+        const offXpx = 35 * side, offYpx = -10;
         _ghost = { char: ghostChar, canvas: fc, offXpx, offYpx, alpha: 0 };
 
         // 淡入 / 維持 / 淡出（DrawCharacter hook 每幀讀 alpha）
@@ -163,8 +164,9 @@ import { HSC_Z } from '../util/zlayers.js';
         requestAnimationFrame(fade);
 
         // 文字位置：就在人影（陰影）頭部旁，像在耳邊低語。
-        //  ignoreHeadshot=true → 永遠貼在角色身上（日常干擾沒有中央頭像功能）；再往上 70 避免遮眼。
-        const headS = getPlayerHeadScreenPos(true);
+        //  改用共用錨點 getBodyAnchorScreen（含 ECHO 貼貼等活動 X 位移補正），與人影本體同一套座標；
+        //  拿不到錨點才退回舊的 getPlayerHeadScreenPos。再往上 70 避免遮眼。
+        const headS = getBodyAnchorScreen(Player, 250 + HEAD_OFFSET.x, HEAD_OFFSET.headAY) || getPlayerHeadScreenPos(true);
         const txt = document.createElement('div');
         Object.assign(txt.style, {
             position: 'fixed', left: `${headS.x + offXpx}px`, top: `${headS.y + offYpx - 18 - 70}px`,
@@ -206,7 +208,13 @@ import { HSC_Z } from '../util/zlayers.js';
                             _ghostTemp.width  = (cvEl && cvEl.width)  || 2000;   // 設尺寸同時清空
                             _ghostTemp.height = (cvEl && cvEl.height) || 1000;
                             const tctx = _ghostTemp.getContext('2d');
-                            DrawCharacter(_ghost.char, X + offXbc, Y + offYbc, Zoom, undefined, tctx);
+                            // 基準座標用 ECHO 補正後的錨點（_charAnchor 含貼貼等活動 X 位移，與面部識別障礙同一來源）；
+                            //  本 hook 的 X/Y 在某些貼貼情境可能還沒帶到位移，故優先用錨點，拿不到才退回 X/Y。
+                            const a = _charAnchor[Player.MemberNumber];
+                            const useA = a && (Date.now() - a.t < 800) && typeof a.x === 'number';
+                            const baseX = useA ? a.x : X;
+                            const baseY = useA ? a.y : Y;
+                            DrawCharacter(_ghost.char, baseX + offXbc, baseY + offYbc, Zoom, undefined, tctx);
                             const prevA = ctx.globalAlpha;
                             ctx.globalAlpha = _ghost.alpha;
                             ctx.drawImage(_ghostTemp, 0, 0);

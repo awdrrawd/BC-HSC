@@ -30,7 +30,7 @@ const bcGlobals = [
 ];
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'legacy/**', 'loader.user.js', 'loader.local.user.js', 'scripts/**'] },
+  { ignores: ['dist/**', 'public/**', 'node_modules/**', 'legacy/**', 'loader.user.js', 'loader.local.user.js', 'scripts/**'] },
   js.configs.recommended,
   {
     files: ['src/**/*.js'],
@@ -48,5 +48,19 @@ export default [
       'no-empty': 'off',
       'no-cond-assign': 'off',
     },
+  },
+  {
+    // 字庫資料檔（一國一檔）：執行期 fetch 後 new Function 執行的 IIFE，非 ES module。
+    files: ['Translation/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: { ...globals.browser },
+    },
+  },
+  {
+    // 建置設定檔跑在 Node（URL / process 等 Node 全域）。
+    files: ['*.config.js'],
+    languageOptions: { globals: { ...globals.node } },
   },
 ];

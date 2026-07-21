@@ -14,7 +14,7 @@ import { getOverlay } from '../util/util.js';
 import { extractChatText } from '../util/util.js';
 import { bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from '../util/geometry.js';
 import { HSC_Z } from '../util/zlayers.js';
-import { ui } from '../i18n/i18n.js';
+import { ui } from '../expansion/i18n.js';
 
 const _randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const _FONT = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';

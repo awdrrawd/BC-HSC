@@ -174,6 +174,31 @@ import { CONFIG } from '../core/config.js';
         return s;
     }
 
+    // ════════════════════════════════════════
+    //  臉部定位（共用工具）
+    //  臉部中心 asset 座標：x 中軸 250、y 130。面部識別障礙、需要「貼在臉上」的效果共用。
+    // ════════════════════════════════════════
+    const FACE_ASSET = { x: 250, y: 130 };
+    // 臉部中心的 BC 畫布座標——給「在 DrawCharacter hook 內、已有 X/Y/Zoom」的效果用（面部識別障礙等）。
+    //  與 getBodyAnchorBc/喘氣同一套 bodyAssetToBc 公式（含 CharacterAppearanceXY Offset），
+    //  任何身高／姿勢／翻頁／活動位移都對得準——這就是「座標＋臉部定位」的單一計算來源。
+    function faceAssetToBc(C, X, Y, Zoom, offX = 0, offY = 0) {
+        const p = bodyAssetToBc(FACE_ASSET.x, FACE_ASSET.y, C, { x: X, y: Y, zoom: Zoom });
+        return { x: p.x + offX, y: p.y + offY, zoom: Zoom };
+    }
+
+    // ════════════════════════════════════════
+    //  中央頭像的螢幕幾何（圓心 + 直徑）
+    //  單一來源：頭像本體（showCenterHeadshot）與其喘氣（getBreathMouths）共用，
+    //  確保不同畫面縮放下位置/尺寸一致（直徑隨 _cachedScaleX 縮放，不再用固定像素）。
+    // ════════════════════════════════════════
+    const CENTER_HEAD_BASE = 300;   // 頭像離屏畫布邊長（裁切用）
+    function getCenterHeadshotGeom() {
+        const c = bcToScreen(500, 500);   // 左側人物區中心（不隨分頁/人數飄移）
+        const size = Math.max(340, CENTER_HEAD_BASE * (_cachedScaleX || 0.35) * 1.7);
+        return { cx: c.x, cy: c.y, size };
+    }
+
 export {
     BASE_EFFECT_DURATION,
     BASE_PINK_DURATION,
@@ -207,4 +232,8 @@ export {
     isPlayerOnCurrentPage,
     getPlayerHeadScreenPos,
     getPlayerMouthScreenPos,
+    FACE_ASSET,
+    faceAssetToBc,
+    CENTER_HEAD_BASE,
+    getCenterHeadshotGeom,
 };

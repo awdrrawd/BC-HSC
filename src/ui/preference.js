@@ -5,7 +5,7 @@ import { applyDepthLoop } from '../effects/depth.js';
 import { assetUrl, imageUrl } from '../util/icons.js';
 import { updateHeadTalisman } from '../hypno/hypno-anim.js';
 import { disableHypno } from '../hypno/hypno.js';
-import { HSC_LANGS, HSC_LANG_NAMES, ui } from '../i18n/i18n.js';
+import { HSC_LANGS, HSC_LANG_NAMES, ensureLang, ui } from '../expansion/i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { hscConfirm } from './profile.js';
 import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from '../effects/sound.js';
@@ -755,7 +755,7 @@ import { HSC_Z } from '../util/zlayers.js';
             this.title(cy, ui('language'), ui('languageD'));
             this.select('hsc-lang', CTRL_X, cy - H_ROW / 2, 240, H_ROW, CONFIG.lang || 'auto',
                 HSC_LANGS.map(l => [l, HSC_LANG_NAMES[l] || l]),
-                v => { CONFIG.lang = v; saveSettings(); });
+                v => { CONFIG.lang = v; saveSettings(); ensureLang(v); });
             const BH = 45;
             cy = next(cy, H_ROW, BH, SEC_GAP);
 

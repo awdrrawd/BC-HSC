@@ -2,7 +2,7 @@
 //  HSC module: l10n.js — 聊天訊息在地化（改用共用引擎 window.Liko.__Sys_L10N__）
 //  送出時 Text 放英文底本（沒裝插件者看到英文），Dictionary 夾帶 { Tag:'Liko_L10N', ns, key, data }；
 //  裝了引擎的「接收端」hook ChatRoomMessage，偵測標記就用「自己的語言」重寫顯示（含自己發的）。
-//  L10N 字庫在 Translation/HSC-l10n.js（由 i18n.js 的 ensureI18n 載入、註冊到 __Sys_L10N__）。
+//  L10N 字庫在 Translation/<LANG>.js（一國一檔，同時含 UI 與 L10N；由 i18n.js 的 ensureI18n 載入、註冊到 __Sys_L10N__）。
 //  {0} = 觸發者名稱（原本的 $me）。
 // ════════════════════════════════════════
 

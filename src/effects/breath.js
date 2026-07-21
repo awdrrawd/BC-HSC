@@ -4,7 +4,7 @@
 //   _emitBreathPuff / breathIntervalMs 也給「看到他人喘氣」等重複調用。
 // ════════════════════════════════════════
 import { CONFIG } from '../core/config.js';
-import { BODY_PANT_DY, DEPTH_PANT_EXTRA, HEAD_OFFSET, _cachedScaleX, getBodyAnchorScreen, getPlayerHeadScreenPos, getPlayerMouthScreenPos, playerDrawPos } from '../util/geometry.js';
+import { BODY_PANT_DY, DEPTH_PANT_EXTRA, HEAD_OFFSET, _cachedScaleX, getBodyAnchorScreen, getCenterHeadshotGeom, getPlayerHeadScreenPos, getPlayerMouthScreenPos, playerDrawPos } from '../util/geometry.js';
 import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 
@@ -25,10 +25,13 @@ export function breathIntervalMs(intensity) {
 export function getBreathMouths(ignoreHeadshot) {
     const useHead = !ignoreHeadshot && CONFIG.centerHeadshot;   // 從中央頭像噴氣
     if (useHead) {
-        // 中央頭像：用頭像嘴部（固定中央，不需活動位移）+70
-        const head  = getPlayerHeadScreenPos(false);
-        const mouth = getPlayerMouthScreenPos(false);
-        return [{ x: head.x, y: mouth.y + 70, ss: _breathSizeScale() }];
+        // 中央頭像喘氣：位置與尺寸都依頭像實際幾何（圓心＋直徑，getCenterHeadshotGeom）換算，
+        //  與頭像本體共用同一份幾何 → 各畫面縮放下都對齊頭像、且氣團隨頭像放大。
+        //  （修正舊版：ss 用人物 zoom 導致過小、嘴部用固定 +70px 在不同縮放下錯位。）
+        const g = getCenterHeadshotGeom();
+        const mouthY = g.cy + g.size * 0.18;         // 嘴部約在圓心下方 18% 直徑處
+        const ss = Math.max(1.0, g.size / 240);      // 氣團尺寸依頭像直徑縮放（明顯大於舊版）
+        return [{ x: g.cx, y: mouthY, ss }];
     }
     // 身上喘氣：用共用定位 getBodyAnchorScreen（含 ECHO 貼貼等 X 位移）＋身體偏移
     const m = getBodyAnchorScreen(Player, 250 + HEAD_OFFSET.x, HEAD_OFFSET.mouthAY, 0, BODY_PANT_DY + DEPTH_PANT_EXTRA + 5);

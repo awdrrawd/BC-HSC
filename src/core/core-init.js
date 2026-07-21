@@ -5,9 +5,9 @@ import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../ef
 import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
 import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
 import { startHypnoDecay, restoreHypnoState } from '../hypno/hypno.js';
-import { ensureI18n, ui } from '../i18n/i18n.js';
+import { ensureI18n, ui } from '../expansion/i18n.js';
 import { hookCensor } from '../effects/censor.js';
-import { hookL10n } from '../i18n/l10n.js';
+import { hookL10n } from '../expansion/l10n.js';
 import { updateCrowd } from '../effects/crowd.js';
 import { isForced } from '../hypno/hypno.js';
 import { stopHypnoAnim, updateHeadTalisman } from '../hypno/hypno-anim.js';

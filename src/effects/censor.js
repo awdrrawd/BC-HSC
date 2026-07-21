@@ -9,6 +9,7 @@
 
 import { CONFIG, modApi } from '../core/config.js';
 import { isForced } from '../hypno/hypno.js';
+import { faceAssetToBc } from '../util/geometry.js';
 
 const CFG = {
     variants: 5, framesPerLoop: 16, loopSeconds: 1.6,
@@ -81,10 +82,9 @@ function _drawFaceCensor(C, X, Y, Zoom, ctx) {
     const style = CONFIG.faceCensorStyle === 'line' ? 'line' : 'circle';
     ensureCache(style);
     const HR = (typeof C.HeightRatio === 'number') ? C.HeightRatio : 1;
-    const yOff = (typeof CharacterAppearanceYOffset === 'function') ? CharacterAppearanceYOffset(C, HR)
-        : 1000 * (1 - HR) * (C.HeightRatioProportion ?? 1) - (C.HeightModifier ?? 0) * HR;
-    const faceX = X + 250 * Zoom;
-    const faceY = Y + (CFG.faceBodyY * HR + yOff) * Zoom;
+    // 臉部座標改用共用工具 faceAssetToBc（與喘氣／符咒同一套 bodyAssetToBc 定位公式，含身高/姿勢/活動位移補正）
+    const f = faceAssetToBc(C, X, Y, Zoom);
+    const faceX = f.x, faceY = f.y;
     const h = Hash(C.MemberNumber || C.ID || 0);
     const period = (CFG.loopSeconds * 1000) / CFG.framesPerLoop;
     const now = (typeof CurrentTime !== 'undefined') ? CurrentTime : Date.now();
