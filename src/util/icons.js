@@ -18,17 +18,20 @@ export function assetUrl(path) {
 //  BC 原生 DrawGetImage 會先用 crossOrigin='anonymous' 載入，但「載入失敗兩次後會拿掉
 //  crossOrigin 重載」（Drawing.js DrawGetImageOnError）→ 一旦失敗過就變成無 CORS 圖，
 //  畫到 MainCanvas 就汙染整張畫布。來源越穩、ACAO 越確定，被汙染的機率越低。
-// public/ 是 build 時由 Images/ Sound/ Translation/ 生成（未提交 repo），jsDelivr 直接指向 repo 來源。
+// public/ 是 build 時由 Assets/ Translation/ 生成（未提交 repo），jsDelivr 直接指向 repo 來源。
 const CDN_ROOT = 'https://cdn.jsdelivr.net/gh/awdrrawd/BC-HSC@main/';
 
-// 邏輯路徑 → CDN 網址。圖片在 repo 的 Images/；Sound/、Translation/ 保留原子目錄。
-//  （對照：Pages 由 copy-assets 把 Images/* 攤平到根目錄，故 assetUrl 用裸檔名即 Pages 圖。）
+// 邏輯路徑 → CDN 網址。repo 來源：icon 在 Assets/Icon/、其餘圖在 Assets/Images/、
+//  音源在 Assets/Sound/；字庫（Translation/）不算素材留在根目錄。
+//  （對照：Pages 由 copy-assets 把圖片攤平到根目錄，故 assetUrl 用裸檔名即 Pages 圖。）
 export function cdnUrl(logical) {
     const p = String(logical).replace(/^\//, '');
     // 共用引擎源碼（BC_i18n / BC_ThemeColorCheck）在 repo 的 src/expansion/；邏輯路徑用 expansion/ 對外一致。
     if (/^expansion\//i.test(p)) return CDN_ROOT + 'src/' + p;
-    if (/^(Sound|Translation)\//i.test(p)) return CDN_ROOT + p;
-    return CDN_ROOT + 'Images/' + p;
+    if (/^Sound\//i.test(p)) return CDN_ROOT + 'Assets/' + p;   // Assets/Sound/
+    if (/^Translation\//i.test(p)) return CDN_ROOT + p;         // 根目錄 Translation/
+    if (/^HSC-icon/i.test(p)) return CDN_ROOT + 'Assets/Icon/' + p;
+    return CDN_ROOT + 'Assets/Images/' + p;
 }
 // 圖片 CDN 網址（傳檔名，例：'HSC-iconW.png'）
 export function imageUrl(name) { return cdnUrl(String(name).replace(/^\//, '')); }
@@ -39,7 +42,10 @@ export function soundUrl(name) { return cdnUrl('Sound/' + String(name).replace(/
 export function toPagesUrl(url) {
     const s = String(url);
     if (!s.startsWith(CDN_ROOT)) return s;
-    const rel = s.slice(CDN_ROOT.length).replace(/^Images\//, '').replace(/^src\/expansion\//, 'expansion/');   // 圖片在 Pages 根目錄；引擎在 Pages 的 expansion/
+    const rel = s.slice(CDN_ROOT.length)
+        .replace(/^Assets\/(?:Icon|Images)\//, '')      // 圖片在 Pages 根目錄
+        .replace(/^Assets\//, '')                        // Assets/Sound/ → Pages 的 Sound/
+        .replace(/^src\/expansion\//, 'expansion/');     // 引擎在 Pages 的 expansion/
     return assetUrl(rel);
 }
 

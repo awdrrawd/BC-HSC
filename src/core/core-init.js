@@ -178,10 +178,10 @@ import { ensureColorAPI } from '../util/icons.js';
         if (sdkReady) {
             try {
                 setModApi(bcModSdk.registerMod({
-                    name:       'liko - HSC',
-                    fullName:   "liko's Hypnotic Slave Club",
+                    name:       'Liko - HSC',
+                    fullName:   "Hypnotic Slave Club",
                     version:    MOD_VER,
-                    repository: '沉浸式催眠效果 | Hypnotic Slave Club',
+                    repository: 'https://github.com/awdrrawd/BC-HSC',
                 }));
             } catch (e) {
                 console.warn('🐈‍⬛ [HSC] ⚠️ registerMod 失敗，進入相容模式:', e.message);

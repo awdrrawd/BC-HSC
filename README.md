@@ -27,10 +27,12 @@ loader.user.js          # 正式載入器（GitHub Pages）
 loader.local.user.js    # 本地開發載入器（vite preview:5174）
 vite.config.js          # 打包設定（單檔 inlineDynamicImports；__HSC_VERSION__ define）
 # 素材來源（build 前由 scripts/copy-assets.mjs 複製到 public/，自我裝載、隨 Pages 部署）
-Images/                 # 圖源（icon 主檔；build 複製 HSC-icon*.png 到 public/）
-Sound/                  # 音源（.mp3）；執行期由 bundle 同源抓（BC-HSC Pages）
-Translation/            # i18n：Liko-i18n.js（共用引擎，有防重載）+ HSC-i18n.js（本插件字庫）
-public/                 # ← 由上面三者自動產生，已 gitignore；vite 部署到 Pages
+Assets/                 # 集中的素材根目錄
+  Icon/                 # icon（HSC-icon*.png）；幾乎不編輯，不算素材故獨立一夾
+  Images/               # 會編輯的圖（crowd/electric/Hypnosis/Status 等）
+  Sound/                # 音源（.mp3）；執行期由 bundle 同源抓（BC-HSC Pages）
+Translation/            # i18n 字庫（文字資料不算素材，留在根目錄），一國一檔
+public/                 # ← 由上面自動產生，已 gitignore；vite 部署到 Pages
 src/
   main.js               # 進入點：設定 window.Liko.HSCApi、呼叫 initialize()
   modules/
