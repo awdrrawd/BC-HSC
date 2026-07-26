@@ -171,6 +171,7 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
         hscOrbTip: 'HSC 催眠進度為 {n}%',
         remoteEditTitle: '編輯 {name} 的 HSC 文本', remoteEditHint: '每行一句。可用 $me 代表被催眠者、$n 換行；狀態訊息以 $a 開頭會發 Action。儲存後送給對方（對方需仍允許編輯才生效）。',
         remoteEditSave: '💾 儲存並送出', remoteEditSent: '📤 已送出給 {name}，等待對方套用…',
+        remoteEditLoading: '⏳ 讀取 {name} 目前的 HSC 文本中…', remoteEditLoadFail: '⚠️ 無法取得 {name} 目前的文本（對方可能離線或未裝 HSC），請稍後再試',
         remoteEditOk: '✅ {name} 已套用你的編輯', remoteEditDenied: '⚠️ {name} 未套用你的編輯（你不在對方白名單）',
         profileEditBtn: '編輯對方的 HSC 文本', profileEditOff: '對方未開放編輯文本',
         profileEditNoPerm: '你不在對方白名單，無法編輯', remoteEditNoPerm: '你沒有此項編輯權限',

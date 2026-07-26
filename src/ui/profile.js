@@ -151,8 +151,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 if (info && CONFIG.showProfileButton && MouseIn(1715, 75, 90, 90)) {
                     const can = _permFor(C, info);
                     if (can.catalyst || can.status || can.trigger || can.wake || can.response || can.allowed) {
-                        try { if (typeof InformationSheetUnload === 'function') InformationSheetUnload(); } catch (e) {}  // 清掉 profile 的 DOM 元素
-                        openRemoteSettings(C);
+                        openRemoteSettings(C);   // 內部會先確保拿到對方當前文本，再（真正切換時）清 DOM 並開啟
                     }
                     return;   // 吃掉此點擊，避免落到 UBC 的同位置按鈕
                 }
@@ -237,6 +236,17 @@ import { HSC_Z } from '../util/zlayers.js';
                                 allowed: Array.isArray(d.allowed) ? d.allowed : [],
                                 ts: Date.now(),
                             };
+                            // 有等待中的「開啟編輯器」請求且正是此人 → 密本到手，開啟（避免開出空白編輯器）
+                            if (_pendingRemoteOpen && _pendingRemoteOpen.num === Number(data.Sender)) {
+                                const C = _pendingRemoteOpen.C;
+                                _pendingRemoteOpen = null;
+                                if (_pendingRemoteTimer) { clearTimeout(_pendingRemoteTimer); _pendingRemoteTimer = null; }
+                                // 使用者可能已離開該 profile → 僅在仍停留於同一人的資訊頁時才開，其餘只快取備用
+                                const stillThere = (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'InformationSheet')
+                                    && (typeof InformationSheetSelection !== 'undefined' && InformationSheetSelection
+                                        && Number(InformationSheetSelection.MemberNumber) === Number(data.Sender));
+                                if (stillThere) { try { _doOpenRemoteSettings(C); } catch (e) {} }
+                            }
                         }
                     } catch (e) {}
                     return;  // 不顯示
@@ -318,7 +328,37 @@ import { HSC_Z } from '../util/zlayers.js';
 
     // 遠端訪問：就地開啟「文本設定」頁（沿用 EXT 設定頁繪製、就地接管 profile，非 DOM 彈窗）
     const _accessNotifyTs = {};
+    // 等待對方回傳「當前文本」（HSC_PermReply 密本）後才開編輯器：{ num, C }
+    let _pendingRemoteOpen = null;
+    let _pendingRemoteTimer = null;
+
+    // 點按鈕入口：先確保已拿到對方「當前文本」再開編輯器。
+    //  文本內容不在公開的 OnlineSharedSettings（見 storage.js），只由 HSC_PermReply 密本攜帶；
+    //  舊版直接用「點擊當下的 _permCache」開，若回覆還沒到 → 開出空白編輯器：
+    //    · 看不到對方原有文本 → 只能新增、無法刪減；
+    //    · 存檔還會把空白當成新內容覆蓋掉對方原文本。
+    //  改為：沒有密本就先主動索取，等回覆到達（或逾時提示）再開，杜絕空白編輯器。
     function openRemoteSettings(C) {
+        const num = Number(C.MemberNumber);
+        if (_permCache[num]) { _doOpenRemoteSettings(C); return; }   // 已有密本 → 直接開
+        // 沒有密本 → 主動索取（略過 _ensurePerm 的節流），等回覆後再開
+        _pendingRemoteOpen = { num, C };
+        _permQueryTs[num] = Date.now();
+        try { hscServerSend('HSC_PermQuery', [{ Tag: 'HSC_PermQuery', Target: num }], { priority: true }); } catch (e) {}
+        const name = (typeof CharacterNickname === 'function' ? CharacterNickname(C) : '') || C.Name || num;
+        try { printChat(ui('remoteEditLoading', { name }), 4000); } catch (e) {}
+        if (_pendingRemoteTimer) clearTimeout(_pendingRemoteTimer);
+        _pendingRemoteTimer = setTimeout(() => {
+            _pendingRemoteTimer = null;
+            if (_pendingRemoteOpen && _pendingRemoteOpen.num === num) {
+                _pendingRemoteOpen = null;
+                try { printChat(ui('remoteEditLoadFail', { name }), 8000); } catch (e) {}   // 對方沒回（沒裝 HSC/離線）→ 提示重試，不開空白
+            }
+        }, 6000);
+    }
+
+    // 密本到手後真正開啟編輯器（原 openRemoteSettings 內容）
+    function _doOpenRemoteSettings(C) {
         // 訪問通知：通知對方「有人正在查看你的文本」（節流 15 秒）
         try {
             const num = C.MemberNumber, now = Date.now();
@@ -352,6 +392,7 @@ import { HSC_Z } from '../util/zlayers.js';
         //  先用 CommonSetScreen 真正切到 HSC_SCREEN（此時 EXT.ctx 還是 'self'，
         //  所以會正常觸發原本的 InformationSheetExit，不會被我們自己的 remote 分支攔截），
         //  等畫面確定切過去了，才呼叫 EXT.openRemote() 進入 remote 狀態開始繪製。
+        try { if (typeof InformationSheetUnload === 'function') InformationSheetUnload(); } catch (e) {}  // 清掉 profile 的 DOM 元素（真正切換前才做，涵蓋延後開啟）
         try {
             if (typeof CommonSetScreen === 'function') {
                 CommonSetScreen((typeof CurrentModule !== 'undefined' ? CurrentModule : 'Character'), HSC_SCREEN);

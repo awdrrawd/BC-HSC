@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "CN": "📤 已送出给 {name}，等待对方套用…"
     },
+    "remoteEditLoading": {
+        "CN": "⏳ 读取 {name} 当前的 HSC 文本中…"
+    },
+    "remoteEditLoadFail": {
+        "CN": "⚠️ 无法获取 {name} 当前的文本（对方可能离线或未安装 HSC），请稍后再试"
+    },
     "remoteEditOk": {
         "CN": "✅ {name} 已套用你的编辑"
     },

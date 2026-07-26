@@ -111,34 +111,62 @@ function _drawNameCensor(C, X, Y, Zoom, ctx) {
 }
 
 // profile：遮掉名字 / 暱稱 / ID（攔 DrawText / DrawTextFit 後補畫黑塊）
-function _maskProfileToken(Text, X, Y, centered) {
+//  ⚠ DrawTextFit 會為了塞進指定寬度而「縮小字級、甚至從前面裁字」（見 Drawing.js DrawingGetTextSize）。
+//   舊版一律用固定 36px 量測 → 長名字（Name 行超過 450px 很常見）實際被縮小繪製，算出的黑塊卻偏右又偏寬，
+//   蓋不到縮小後的名字；而短的 ID/會員編號行不會縮放，黑塊剛好對上 → 形成「只遮 ID、沒遮 NAME」。
+//   這裡改用 BC 同一套 DrawingGetTextSize 取得「實際繪製的文字與字級」再量測定位，任何長度都對得準。
+function _maskProfileToken(Text, X, Y, Width) {
     if (typeof Text !== 'string' || (CONFIG.nameCensor || 'off') === 'off' || !_active()) return;
     if (!(CurrentScreen === 'InformationSheet' || CurrentScreen === 'OnlineProfile')) return;
     const C = (typeof InformationSheetSelection !== 'undefined') ? InformationSheetSelection : null;
     if (!C || (typeof C.IsPlayer === 'function' && C.IsPlayer())) return;
     const nick = (typeof CharacterNickname === 'function') ? CharacterNickname(C) : null;
     const tokens = [C.Name, nick, C.MemberNumber != null ? String(C.MemberNumber) : null];
-    // 含關係網：主人、戀人的名字/編號也一併遮蔽
+    // 含關係網：主人、戀人的名字/編號也一併遮蔽。
+    //  ⚠ 必須用 profile「實際畫出來」的欄位：主人＝OwnerName()（線上讀 Ownership.Name，非 MemberName）／OwnerNumber()，
+    //    戀人＝lover.Name / lover.MemberNumber（GetLovership 同時涵蓋線上與 NPC）。舊版用 .MemberName → 取到 undefined，
+    //    名字就漏遮，只剩編號被遮（見「關系」欄位）。
     if (CONFIG.nameCensor === 'network') {
-        const own = C.Ownership;
-        if (own) { tokens.push(own.MemberName); if (own.MemberNumber != null) tokens.push(String(own.MemberNumber)); }
-        (Array.isArray(C.Lovership) ? C.Lovership : []).forEach(l => {
-            if (l) { tokens.push(l.MemberName); if (l.MemberNumber != null) tokens.push(String(l.MemberNumber)); }
-        });
+        try {
+            const on = (typeof C.OwnerName === 'function') ? C.OwnerName() : (C.Ownership && C.Ownership.Name);
+            if (on) tokens.push(on);
+            const onum = (typeof C.OwnerNumber === 'function') ? C.OwnerNumber() : (C.Ownership && C.Ownership.MemberNumber);
+            if (onum != null && onum !== -1) tokens.push(String(onum));
+        } catch (e) {}
+        try {
+            const loves = (typeof C.GetLovership === 'function') ? C.GetLovership() : (Array.isArray(C.Lovership) ? C.Lovership : []);
+            (loves || []).forEach(l => {
+                if (!l) return;
+                if (l.Name) tokens.push(l.Name);
+                if (l.MemberNumber != null) tokens.push(String(l.MemberNumber));
+            });
+        } catch (e) {}
     }
-    const toks = tokens.filter(Boolean);
-    let idx = -1, tok = null;
-    for (const t of toks) { const i = Text.indexOf(t); if (i >= 0) { idx = i; tok = t; break; } }
-    if (idx < 0) return;
-    const prev = MainCanvas.font;
-    MainCanvas.font = (typeof CommonGetFont === 'function') ? CommonGetFont(36) : '36px Arial';
-    const prefixW = MainCanvas.measureText(Text.slice(0, idx)).width;
-    const tokW = MainCanvas.measureText(tok).width;
-    const fullW = MainCanvas.measureText(Text).width;
-    const startX = (centered ? X - fullW / 2 : X) + prefixW;
+    // 去重＋濾空。一行可能同時含「名字＋編號」（例："Dating with Cherry (12345)"）→ 需把全部符合的 token 都遮，
+    //  不能只遮第一個（舊版 break 只遮到一個，導致名字或編號其一漏遮）。
+    const toks = [...new Set(tokens.filter(t => t != null && String(t).length > 0).map(String))];
+    // DrawTextFit（有傳 Width）會縮字級/裁字 → 取實際繪製的文字與字級；DrawText 不縮放 → 原文 36px。
+    let drawText = Text, fontSize = 36;
+    if (Width != null && typeof DrawingGetTextSize === 'function') {
+        try { const res = DrawingGetTextSize(Text, Width); if (Array.isArray(res)) { drawText = res[0]; fontSize = Number(res[1]) || 36; } } catch (e) {}
+    }
+    const prev = MainCanvas.font, prevFill = MainCanvas.fillStyle;
+    MainCanvas.font = (typeof CommonGetFont === 'function') ? CommonGetFont(fontSize) : fontSize + 'px Arial';
+    const fullW = MainCanvas.measureText(drawText).width;
+    // 依實際對齊方式定位（讀 textAlign，不再靠呼叫端猜 centered）：left→X、center→X-半寬、right→X-全寬
+    const align = MainCanvas.textAlign || 'left';
+    const baseX = align === 'center' ? X - fullW / 2 : align === 'right' ? X - fullW : X;
     MainCanvas.fillStyle = 'black';
-    MainCanvas.fillRect(startX - 3, Y - 22, tokW + 8, 44);
-    MainCanvas.font = prev;
+    for (const t of toks) {
+        let from = 0, i;
+        while ((i = drawText.indexOf(t, from)) >= 0) {
+            const prefixW = MainCanvas.measureText(drawText.slice(0, i)).width;
+            const tokW = MainCanvas.measureText(t).width;
+            MainCanvas.fillRect(baseX + prefixW - 3, Y - 22, tokW + 8, 44);
+            from = i + t.length;
+        }
+    }
+    MainCanvas.font = prev; MainCanvas.fillStyle = prevFill;
 }
 
 export function hookCensor() {
@@ -163,12 +191,12 @@ export function hookCensor() {
         // profile 名字/暱稱/ID 黑塊
         modApi.hookFunction('DrawText', 0, (args, next) => {
             const r = next(args);
-            try { _maskProfileToken(args[0], args[1], args[2], true); } catch (e) {}
+            try { _maskProfileToken(args[0], args[1], args[2]); } catch (e) {}   // 無 Width：不縮放，整段 36px
             return r;
         });
         modApi.hookFunction('DrawTextFit', 0, (args, next) => {
             const r = next(args);
-            try { _maskProfileToken(args[0], args[1], args[2], false); } catch (e) {}
+            try { _maskProfileToken(args[0], args[1], args[2], args[3]); } catch (e) {}   // args[3]=Width：可能縮字級/裁字
             return r;
         });
     } catch (e) {

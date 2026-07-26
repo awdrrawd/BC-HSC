@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "EN": "📤 Sent to {name}, waiting for them to apply…"
     },
+    "remoteEditLoading": {
+        "EN": "⏳ Reading {name}'s current HSC text…"
+    },
+    "remoteEditLoadFail": {
+        "EN": "⚠️ Couldn't get {name}'s current text (they may be offline or don't have HSC). Please try again."
+    },
     "remoteEditOk": {
         "EN": "✅ {name} applied your edit"
     },

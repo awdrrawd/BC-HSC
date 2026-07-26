@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "TW": "📤 已送出給 {name}，等待對方套用…"
     },
+    "remoteEditLoading": {
+        "TW": "⏳ 讀取 {name} 目前的 HSC 文本中…"
+    },
+    "remoteEditLoadFail": {
+        "TW": "⚠️ 無法取得 {name} 目前的文本（對方可能離線或未裝 HSC），請稍後再試"
+    },
     "remoteEditOk": {
         "TW": "✅ {name} 已套用你的編輯"
     },

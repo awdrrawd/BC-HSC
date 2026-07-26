@@ -8,7 +8,7 @@ const bcGlobals = [
   'Player', 'ChatRoomCharacter', 'ChatRoomCharacterViewOffset', 'CurrentScreen',
   'TranslationLanguage', 'CharacterSetFacialExpression', 'CharacterNickname',
   'CharacterRefresh', 'CharacterLoadCanvas', 'MainCanvas', 'DrawButton', 'DrawText',
-  'DrawTextFit', 'DrawImage', 'DrawImageResize', 'DrawCharacter', 'DrawRect',
+  'DrawTextFit', 'DrawingGetTextSize', 'DrawImage', 'DrawImageResize', 'DrawCharacter', 'DrawRect',
   'DrawEmptyRect', 'DrawCircle', 'DrawBackNextButton', 'MouseIn', 'MouseX', 'MouseY',
   'ServerSend', 'ServerAccountUpdate', 'ServerPlayerExtensionSettingsSync',
   'ChatRoomSendChat', 'ChatRoomSendEmote', 'ChatRoomSendLocal', 'ChatRoomCharacterViewDrawOverlay',

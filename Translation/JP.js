@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "JP": "📤 {name} に送信しました。相手の適用を待っています…"
     },
+    "remoteEditLoading": {
+        "JP": "⏳ {name} の現在のHSCテキストを読み込み中…"
+    },
+    "remoteEditLoadFail": {
+        "JP": "⚠️ {name} の現在のテキストを取得できません（オフラインかHSC未導入の可能性）。後でもう一度お試しください"
+    },
     "remoteEditOk": {
         "JP": "✅ {name} があなたの編集を適用しました"
     },

@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "KR": "📤 {name} 님에게 전송했습니다. 적용을 기다리는 중…"
     },
+    "remoteEditLoading": {
+        "KR": "⏳ {name} 님의 현재 HSC 텍스트를 불러오는 중…"
+    },
+    "remoteEditLoadFail": {
+        "KR": "⚠️ {name} 님의 현재 텍스트를 가져올 수 없습니다 (오프라인이거나 HSC 미설치). 잠시 후 다시 시도하세요"
+    },
     "remoteEditOk": {
         "KR": "✅ {name} 님이 당신의 편집을 적용했습니다"
     },

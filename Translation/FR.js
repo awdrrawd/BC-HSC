@@ -647,6 +647,12 @@
     "remoteEditSent": {
         "FR": "📤 Envoyé à {name}, en attente d'application…"
     },
+    "remoteEditLoading": {
+        "FR": "⏳ Lecture du texte HSC actuel de {name}…"
+    },
+    "remoteEditLoadFail": {
+        "FR": "⚠️ Impossible d'obtenir le texte actuel de {name} (hors ligne ou sans HSC). Réessayez plus tard."
+    },
     "remoteEditOk": {
         "FR": "✅ {name} a appliqué votre modification"
     },
