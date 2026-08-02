@@ -3,7 +3,9 @@
 //   Assets/Images/HSC-*.png   -> public/            (crowd、electric、status 等會編輯的圖)
 //   Assets/Sound/*            -> public/Sound/       (音源)
 //   Translation/*.js         -> public/Translation/ (HSC 字庫，一國一檔；文字資料不算素材，留在根目錄)
-//   src/expansion/BC_*.js    -> public/expansion/   (共用引擎：BC_i18n / BC_ThemeColorCheck，執行期 fetch)
+//   src/expansion/BC_*.js    -> public/expansion/   (共用引擎：BC_i18n，執行期 fetch 的 IIFE；
+//                                                     ColorAPI 已改為 ES module 直接 import，
+//                                                     不再是 BC_ 開頭、不會被這條規則複製)
 // Edit the sources in Assets/ Translation/ src/expansion/; build refreshes public/.
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
@@ -31,5 +33,6 @@ copyInto('Assets/Images/', 'public/', n => /^HSC-.*\.png$/i.test(n));
 
 copyInto('Assets/Sound/', 'public/Sound/', n => /\.(mp3|ogg|wav|m4a)$/i.test(n));
 copyInto('Translation/', 'public/Translation/', n => n.endsWith('.js'));
-// 共用引擎：只複製 BC_*.js（IIFE，執行期 fetch）；同資料夾的 i18n.js/l10n.js 是 ES module，由 vite bundle，不複製。
+// 共用引擎：只複製 BC_*.js（IIFE，執行期 fetch）；同資料夾的 i18n.js/l10n.js/theme-color-api.js
+//  都是 ES module，由 vite bundle 進 main.js，不複製。
 copyInto('src/expansion/', 'public/expansion/', n => /^BC_.*\.js$/i.test(n));

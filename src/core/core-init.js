@@ -1,6 +1,6 @@
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
-import { ES_KEY, MOD_VER, modApi, setModApi } from './config.js';
+import { ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
 import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
 import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
@@ -16,7 +16,7 @@ import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from '../
 import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
 import { injectStyles } from '../ui/styles.js';
 import { clearBCXCache } from '../util/util.js';
-import { ensureColorAPI } from '../util/icons.js';
+import { installColorAPI } from '../expansion/theme-color-api.js';
 
 // ════════════════════════════════════════
 //  HSC module: core-init.js
@@ -144,7 +144,10 @@ import { ensureColorAPI } from '../util/icons.js';
 
         // 先載入 i18n（讓預設文本等依語言產生）
         await ensureI18n();
-        ensureColorAPI();   // 非阻塞：載入共用 ColorAPI，供註冊/資料頁按鈕依實際背景色挑深/淺圖示
+        // 安裝 ColorAPI（供註冊/資料頁按鈕依實際背景色挑深/淺圖示）：直接 import 進來、
+        //  借用 HSC 自己的 modApi（透過 getModApi 存取器延遲讀取，此刻 HSC 可能還沒
+        //  registerMod 完成），不再另外 fetch 一份腳本、也不再讓它自己註冊一個新 mod。
+        installColorAPI(getModApi);
         // ★ 等帳號真正登入後，才讀取／還原設定（否則會讀到登入前的空資料 → 存檔覆蓋真資料 → 掉設定）。不設逾時。
         await waitForLogin();
         await waitForExtensionSettings();

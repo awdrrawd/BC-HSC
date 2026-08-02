@@ -10,6 +10,10 @@ import { ui } from '../expansion/i18n.js';
     // 共用可變狀態：bcModSdk 的 mod api（由 core-init 於註冊後 setModApi 設定）
     let modApi = null;
     function setModApi(v) { modApi = v; }
+    // 存取器（而非直接匯出 modApi 這個值）：給「呼叫當下 modApi 可能還沒註冊好」的模組用
+    // （例如 theme-color-api.js 在 HSC 尚未 registerMod 前就已 import 並掛上 install），
+    // 讓它們晚點（真正要用時）才透過這個函式讀到「當下最新」的 modApi，而不是 import 那一刻的舊值。
+    function getModApi() { return modApi; }
     // ════════════════════════════════════════
     //  預設表情清單（4 組內建，玩家可自訂最多 10 組）
     // ════════════════════════════════════════
@@ -151,7 +155,7 @@ import { ui } from '../expansion/i18n.js';
 
 export {
     MOD_VER,
-    modApi, setModApi,
+    modApi, setModApi, getModApi,
     DEFAULT_EXPRESSIONS,
     makeDefaultConfig,
     CONFIG, setConfig,

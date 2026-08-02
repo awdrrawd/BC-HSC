@@ -26,7 +26,8 @@ const CDN_ROOT = 'https://cdn.jsdelivr.net/gh/awdrrawd/BC-HSC@main/';
 //  （對照：Pages 由 copy-assets 把圖片攤平到根目錄，故 assetUrl 用裸檔名即 Pages 圖。）
 export function cdnUrl(logical) {
     const p = String(logical).replace(/^\//, '');
-    // 共用引擎源碼（BC_i18n / BC_ThemeColorCheck）在 repo 的 src/expansion/；邏輯路徑用 expansion/ 對外一致。
+    // 共用引擎源碼（BC_i18n）在 repo 的 src/expansion/，是執行期 fetch 的 IIFE；
+    //  邏輯路徑用 expansion/ 對外一致。（ColorAPI 已改為 ES module 直接 import，不走這條。）
     if (/^expansion\//i.test(p)) return CDN_ROOT + 'src/' + p;
     if (/^Sound\//i.test(p)) return CDN_ROOT + 'Assets/' + p;   // Assets/Sound/
     if (/^Translation\//i.test(p)) return CDN_ROOT + p;         // 根目錄 Translation/
@@ -96,98 +97,11 @@ export const HSC_ICON_B = imageUrl('HSC-iconB.png');
     } catch (e) { /* 取不到 BC 快取 → 交回 BC 原生載入（多半仍為 crossOrigin） */ }
 })();
 
-// 粗略判斷 DrawButton 背景色是否為淺色（→ 用白底圖 W；深色 → 用黑底圖 B）。
-// 接受 'White' / 'Black' / '#ccc' / '#8E44A1' / 'rgb(...)' 等寫法。
-export function isLightColor(color) {
-    try {
-        const c = String(color || '').trim().toLowerCase();
-        if (!c) return true;
-        const named = { white: 255, black: 0, gray: 128, grey: 128, silver: 192 };
-        if (c in named) return named[c] >= 128;
-        let r, g, b;
-        if (c[0] === '#') {
-            let h = c.slice(1);
-            if (h.length === 3) h = h.split('').map(x => x + x).join('');
-            r = parseInt(h.slice(0, 2), 16); g = parseInt(h.slice(2, 4), 16); b = parseInt(h.slice(4, 6), 16);
-        } else {
-            const m = c.match(/(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
-            if (!m) return true;
-            r = +m[1]; g = +m[2]; b = +m[3];
-        }
-        if ([r, g, b].some(v => Number.isNaN(v))) return true;
-        // 感知亮度（ITU-R BT.601）
-        return (0.299 * r + 0.587 * g + 0.114 * b) >= 140;
-    } catch { return true; }
-}
-
-// 重用的離屏取樣畫布（willReadFrequently）：把要取樣的像素畫進來再讀，
-//  不對 BC 的 MainCanvas 直接 getImageData（那個 context 由 BC 建立、補不上旗標，
-//  頻繁讀取會噴「Multiple readback ... willReadFrequently」）——與 ColorAPI 同一套做法。
-let _sampleCv = null, _sampleCtx = null;
-function _sampleStripCtx(n) {
-    if (!_sampleCv) {
-        _sampleCv = document.createElement('canvas');
-        _sampleCtx = _sampleCv.getContext('2d', { willReadFrequently: true });
-    }
-    if (_sampleCv.width !== n || _sampleCv.height !== 1) { _sampleCv.width = n; _sampleCv.height = 1; }
-    return _sampleCtx;
-}
-
-// ── BC 沒有主題色判定，改由我們自己取樣畫布背景 ──
-// 取樣 MainCanvas 指定矩形（BC 畫布座標 0~2000 × 0~1000）的幾個點，
-// 以感知亮度平均判斷偏暗/偏亮。結果快取 ~800ms，避免頻繁取樣。
-let _bgSampleCache = { key: '', dark: false, ts: 0 };
-export function sampleCanvasIsDark(x, y, w, h) {
-    try {
-        const now = Date.now();
-        const key = `${x | 0},${y | 0},${w | 0},${h | 0}`;
-        if (_bgSampleCache.key === key && now - _bgSampleCache.ts < 800) return _bgSampleCache.dark;
-        // 取 canvas 元素（drawImage 的來源）：MainCanvas 是 2D context，其 .canvas 即元素。
-        const el = (typeof MainCanvas !== 'undefined' && MainCanvas && MainCanvas.canvas)
-            ? MainCanvas.canvas
-            : document.getElementById('MainCanvas');
-        if (!el) return false;
-        const pts = [[x + 3, y + 3], [x + w - 3, y + 3], [x + w / 2, y + h / 2], [x + 3, y + h - 3], [x + w - 3, y + h - 3]];
-        // 把每個取樣點各畫 1px 進離屏的一橫排，再一次讀回（單次 readback、且讀取端具 willReadFrequently）
-        const sctx = _sampleStripCtx(pts.length);
-        sctx.clearRect(0, 0, pts.length, 1);
-        pts.forEach(([px, py], i) => {
-            sctx.drawImage(el, Math.max(0, px | 0), Math.max(0, py | 0), 1, 1, i, 0, 1, 1);
-        });
-        const { data } = sctx.getImageData(0, 0, pts.length, 1);
-        let sum = 0, n = 0;
-        for (let i = 0; i < data.length; i += 4) {
-            if (data[i + 3] < 8) continue; // 略過全透明
-            sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-            n++;
-        }
-        const dark = n ? (sum / n) < 140 : false;
-        _bgSampleCache = { key, dark, ts: now };
-        return dark;
-    } catch { return false; }
-}
-
-// ── 載入共用 ColorAPI（BC_ThemeColorCheck）──
-// 與引擎同機制：PCM 或同作者其他插件已載入則自動略過（防重載旗標 __Sys_ColorAPI__）。
-// 非阻塞；載入完成前 hscThemeIsDark() 會先用內建 fallback，之後改用 ColorAPI。
-let _colorApiLoading = null;
-export function ensureColorAPI() {
-    if (typeof window !== 'undefined' && window.Liko?.__Sys_ColorAPI__) return Promise.resolve();
-    if (_colorApiLoading) return _colorApiLoading;
-    const url = assetUrl('expansion/BC_ThemeColorCheck.js') + '?t=' + Date.now();
-    _colorApiLoading = fetch(url)
-        .then(r => { if (!r.ok) throw new Error(`[HSC] ColorAPI ${r.status}`); return r.text(); })
-        .then(code => { new Function(code)(); })
-        .catch(e => { _colorApiLoading = null; console.warn('🐈‍⬛ [HSC] ColorAPI 載入失敗，改用內建判斷:', e.message); });
-    return _colorApiLoading;
-}
-
 // ── 判定「當前 UI 主題色」是否過深 ──
-// 判定順序：LCE 主題 API → sys color（共用 __Sys_ColorAPI__）→ 自己的（CSS 變數 / 取樣畫布）。
-//  0) 最優先讀 LCE（window.Liko.LCE.Theme）：isDark 布林直接用，否則讀 Main 色碼反推；
-//     LCE 沒安裝或停用主題（無值 / null）就往下退。
-//  1) sys color：共用 ColorAPI（BC_ThemeColorCheck）讀實際畫布背景色。
-//  2~3) 未就緒才退回內建（讀主題插件 CSS 變數 → 取樣畫布上方選單帶）。都失敗則預設亮底。
+// HSC 自己不判斷顏色，只單純問共用 ColorAPI（__Sys_ColorAPI__，由 core-init.js 於
+//  初始化時呼叫 expansion/theme-color-api.js 的 installColorAPI() 掛上）要結果。
+//  有沒有裝 LCE、有沒有 modApi 可用宣告值、要不要退回像素取樣——這些優先序全部
+//  由 ColorAPI 內部處理好，HSC 不重複那套邏輯，架構上只有它一個顏色來源。
 //
 // 不用時間快取：主題不會自己一直變，沒必要每幀或定時重算。
 //  進入資訊頁（profile）時由 refreshThemeIsDark() 重算一次，之後每幀重用同一份結果；
@@ -203,20 +117,9 @@ export function hscThemeIsDark() {
     return _themeDark === null ? refreshThemeIsDark() : _themeDark;
 }
 function _computeThemeIsDark() {
-    // 0) 最優先：LCE 主題 API（window.Liko.LCE.Theme）
-    //    isDark 為布林 → 直接採用；否則讀 Main 色碼反推亮暗。
-    //    LCE 沒安裝（Liko.LCE 無值）或停用主題（Theme / isDark / Main 為 null）→ 落到下方 sys color。
-    try {
-        const theme = (typeof window !== 'undefined') ? window.Liko?.LCE?.Theme : null;
-        if (theme) {
-            if (typeof theme.isDark === 'boolean') return theme.isDark;
-            const main = theme.Main;
-            if (typeof main === 'string' && main.trim()) return !isLightColor(main);
-        }
-    } catch { /* 落到下方 sys color */ }
-    // 1) sys color：共用 __Sys_ColorAPI__（BC_ThemeColorCheck v2.1）。
-    //    優先用 getThemeColor()——它會 hook DrawRect/DrawButton 讀「宣告色」（精確、不受抗鋸齒影響），
-    //    拿不到才退像素取樣；舊版沒有 getThemeColor 時退回 getCanvasColor。
+    // 共用 __Sys_ColorAPI__：優先用 getThemeColor()——它內部已依
+    //  「LCE 暴露 API → 宣告值 → 像素取樣」的優先序處理好，拿不到才退像素取樣；
+    //  舊版沒有 getThemeColor 時退回 getCanvasColor。
     const ColorAPI = (typeof window !== 'undefined') ? window.Liko?.__Sys_ColorAPI__ : null;
     if (ColorAPI) {
         try {
@@ -224,18 +127,13 @@ function _computeThemeIsDark() {
                 ? ColorAPI.getThemeColor()
                 : ColorAPI.getCanvasColor({ x: 1000, y: 110, size: 8 });
             if (color) { const d = ColorAPI.isDark(color); if (d !== null) return d; }
-        } catch { /* 落到下方 fallback */ }
+        } catch { /* ColorAPI 呼叫失敗 → 落到下方保守預設 */ }
     }
-    // 2) fallback（自己的）：主題插件 CSS 變數
-    try {
-        const cs = getComputedStyle(document.documentElement);
-        for (const v of ['--tmd-element', '--tmd-elementHover', '--element', '--button-color', '--bce-color']) {
-            const c = cs.getPropertyValue(v).trim();
-            if (c) return !isLightColor(c);
-        }
-    } catch { /* 無法讀 CSS 變數 */ }
-    // 3) fallback（自己的）：自行取樣畫布上方中央選單帶
-    try { return sampleCanvasIsDark(760, 60, 480, 120); } catch { return false; }
+    // ColorAPI 還沒安裝好（installColorAPI 尚未執行、或 modApi 還沒註冊完成）
+    //  或呼叫不到結果：保守預設回「亮底」，不在 HSC 這邊另外做取色判斷；
+    //  等下次 refreshThemeIsDark()（例如重新進入資訊頁）ColorAPI 應該已經就緒，
+    //  就會拿到真正的顏色。
+    return false;
 }
 
 // 依當前主題深淺選圖（給不易取樣座標的按鈕，如偏好頁註冊鈕）

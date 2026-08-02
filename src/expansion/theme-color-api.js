@@ -1,40 +1,84 @@
 /**
  * =============================================================================
- *  BC Color API (BC_ThemeColorCheck.js)
+ *  BC Color API — HSC 內嵌版 (expansion/theme-color-api.js)
  * =============================================================================
  *
- *  取得 BC 介面顏色，並判斷亮暗。
+ *  取得 BC 介面顏色，並判斷亮暗。邏輯與外部那份 standalone 版 BC_ThemeColorCheck.js
+ *  完全一致（同一套三條取色路線、同一份 window.Liko.__Sys_ColorAPI__ 對外介面），
+ *  差別只在「怎麼掛 hook」：
  *
- *  兩條取色路線，能用哪條就用哪條：
+ *    standalone 版：IIFE，當一般 <script> 用，自己呼叫 bcModSdk.registerMod()
+ *                   拿一份屬於自己的 modApi，方便其他任意插件單獨 @require / CDN 抓來用。
+ *    這份 HSC 版：   ES module，由 HSC 的 main.js 一併 bundle、import 進來。
+ *                   HSC 本身就是一個 MOD（core-init.js 已經 bcModSdk.registerMod
+ *                   註冊過一次），沒必要、也不應該讓這支共用引擎自己再重複註冊
+ *                   一個新 mod、開一條獨立的 hook 鏈——那樣同一支遊戲畫面上會有
+ *                   兩個 mod 各自 hook DrawRect 等函式，徒增一層呼叫與潛在的
+ *                   hook 順序問題。改成呼叫端（HSC）把自己已經註冊好的 modApi
+ *                   傳進來，這支引擎直接借用同一條 hook 鏈掛上去。
  *
- *    A. 讀「宣告值」（準確，v2.0 新增）—— BC 的介面不是圖片，是 DrawRect / DrawButton
- *       這些函式畫出來的，顏色就寫在參數裡。只要 hook 這些函式，就能直接拿到
- *       「#212121」這種精確值，不必猜、不必取樣、不受抗鋸齒與疊圖影響。
- *       需要 bcModSdk；沒有的話這條自動停用。
+ *  對外仍是同一個 window.Liko.__Sys_ColorAPI__、同一套防重複載入旗標：
+ *  不管玩家裝的其他插件用的是 standalone 版還是各自內嵌版，永遠是「誰先掛上誰生效」，
+ *  之後所有呼叫（包含這份 HSC 版的 installColorAPI()）都會偵測到已有實例、直接跳過，
+ *  彼此不衝突，呼叫端也感覺不出用的是哪一份。
  *
- *    B. 讀「像素」（後備）—— 從 canvas 上實際渲染的結果取樣。
- *       v2.0 改用「眾數」而非「平均」：一塊區域裡出現次數最多的顏色就是背景色本身，
- *       平均則會把邊緣的抗鋸齒像素混進來，得到一個既不是背景也不是前景的髒色。
+ *  三條取色路線，由上而下能用哪條就用哪條：
+ *
+ *    0. 讀「LCE 暴露的主題 API」（最準確）—— 如果玩家有裝 Liko Club Extensions（LCE）
+ *       並且開啟了它的染色功能，LCE 本身就是那個在換色的引擎，它 window.Liko.LCE.Theme
+ *       裡的 Main 色碼就是「正在套用」的主題色，比自己 hook 或取樣都直接。
+ *       沒裝 LCE、或裝了但沒開染色（Theme.enabled 為 false）時，這條自動跳過，
+ *       改用下面兩條自力更生的路線。
+ *
+ *    A. 讀「宣告值」（準確）—— BC 的介面不是圖片，是 DrawRect / DrawButton 這些函式
+ *       畫出來的，顏色就寫在參數裡。只要 hook 這些函式，就能直接拿到「#212121」
+ *       這種精確值，不必猜、不必取樣、不受抗鋸齒與疊圖影響。
+ *       需要外部傳入可用的 modApi（見 installColorAPI 的 getModApi 參數）；沒有的話這條自動停用。
+ *
+ *    B. 讀「像素」（後備）—— 從 canvas 上實際渲染的結果取樣，取「眾數」而非「平均」：
+ *       一塊區域裡出現次數最多的顏色就是背景色本身，平均則會把邊緣的抗鋸齒像素
+ *       混進來，得到一個既不是背景也不是前景的髒色。
  *
  *  API（掛在 window.Liko.__Sys_ColorAPI__）：
- *    getThemeColor()            取得目前介面的主題底色（建議用這個）
+ *    getThemeColor()            取得目前介面的主題底色（建議用這個；已自動依上述優先序處理 LCE）
  *    getUIColor({x, y})         讀某座標上那個元件的宣告顏色
  *    getCanvasColor({x,y,size}) 讀某區域實際渲染出來的顏色
  *    isDark(color, threshold)   判斷亮暗
  *    setOverride(color, isDark) 手動覆寫某顏色的亮暗結論
  *    clearOverrides()
  *
- *  用法：當一般 <script> 載入即可。若頁面上有 bcModSdk（大多數插件都會 @require），
- *  精確路線會自動啟用。
+ *  用法：
+ *    import { installColorAPI } from './expansion/theme-color-api.js';
+ *    installColorAPI(getModApi);   // getModApi: () => modApi | null，延遲讀取用
+ *
+ *  getModApi 傳一個「存取器」而不是直接傳 modApi 這個值本身，是因為呼叫
+ *  installColorAPI() 的當下 HSC 自己都還沒 registerMod 完（core-init.js 裡兩者
+ *  時間點不同）。真正用到 modApi 的時機是 _arm()（第一次有人問顏色時）才會發生，
+ *  那時候透過 getModApi() 現讀，多半已經拿得到真正的值；拿不到就等同沒有這條路線，
+ *  自動落到路線 B（像素取樣），不影響呼叫端。
  * =============================================================================
  */
-(function (global) {
-  'use strict';
 
-  // 防重複載入旗標：檔尾把 API 掛到 global.Liko.__Sys_ColorAPI__（系統擴充統一以 __Sys_ 開頭）
+// 防重複安裝：同一頁面只需要一份 window.Liko.__Sys_ColorAPI__；
+// installColorAPI() 內部一開始就會檢查，這裡另外標記一下純粹是避免同一次
+// session 內被重複呼叫時做多餘的事（正常只會呼叫一次）。
+let _installed = false;
+
+/**
+ * 安裝 HSC 內嵌版 ColorAPI。
+ * @param {() => object|null} getModApi 存取器：回傳 HSC 目前的 bcModSdk modApi（尚未註冊好時回 null）
+ */
+export function installColorAPI(getModApi) {
+  if (typeof window === 'undefined') return;
+  const global = window;
+
+  // 防重複載入旗標：與 standalone 版共用同一個位置。已有其他來源
+  // （standalone 版 / 其他插件的內嵌版）搶先掛好，直接沿用，不重複安裝。
   global.Liko = global.Liko ?? {};
-  if (global.Liko.__Sys_ColorAPI__) return;
-  const MOD_VER = "2.1";
+  if (global.Liko.__Sys_ColorAPI__ || _installed) return;
+  _installed = true;
+
+  const MOD_VER = "2.2";
 
   // ---------------------------------------------------------------------------
   // 共用小工具
@@ -109,7 +153,25 @@
   }
 
   // ---------------------------------------------------------------------------
-  // A. 宣告值路線：hook 繪製函式，直接讀顏色參數
+  // 0. LCE 路線：直接讀 LCE 暴露出來的主題 API（window.Liko.LCE.Theme）
+  // ---------------------------------------------------------------------------
+  //  LCE（Liko Club Extensions）自己就是那個在畫面上換色的染色引擎，它算好的
+  //  Theme.Main 就是「當下實際套用」的主題色，比我們自己 hook / 取樣都直接。
+  //  只有「有裝 LCE 且 Theme.enabled 為 true」時才採用；沒裝、還沒載入好、
+  //  或裝了但沒開染色，一律當作沒有這條路線，靜靜落到路線 A / B。
+  function _getLceColor() {
+    try {
+      const theme = global.Liko && global.Liko.LCE && global.Liko.LCE.Theme;
+      if (!theme || !theme.enabled) return null;
+      return normalizeColor(theme.Main);
+    } catch {
+      // LCE 版本不同導致的存取例外也視為「沒有這條路線」，不影響其他路線
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // A. 宣告值路線：借用外部傳入的 modApi hook 繪製函式，直接讀顏色參數
   // ---------------------------------------------------------------------------
 
   // 每幀累積 / 上一幀完整的「有顏色的矩形繪製」清單。
@@ -125,20 +187,12 @@
 
   function _installHooks() {
     if (_hooked) return false;
-    if (!global.bcModSdk || typeof global.DrawRect !== 'function') return false;
-
-    let api;
-    try {
-      api = global.bcModSdk.registerMod({
-        name: 'LikoColorAPI',
-        fullName: 'Liko Color API',
-        version: MOD_VER,
-        repository: 'https://github.com/awdrrawd/liko-Plugin-Repository',
-      });
-    } catch (err) {
-      _warnThrottled('[Liko.__Sys_ColorAPI__] bcModSdk 註冊失敗，改用像素取樣', err);
-      return false;
-    }
+    // 用呼叫端（HSC）自己已經註冊好的 modApi，不再另外呼叫 bcModSdk.registerMod()
+    // 開一個新 mod——HSC 本身就是一個 mod，這裡只是借用同一條 hook 鏈。
+    // getModApi() 在 HSC 尚未 registerMod 完成前會回 null，屆時這條路線自動停用，
+    // 下次 _arm()（例如下次進資訊頁）才會再試一次，屆時多半已經有值了。
+    const api = typeof getModApi === 'function' ? getModApi() : null;
+    if (!api || typeof api.hookFunction !== 'function' || typeof DrawRect !== 'function') return false;
 
     // priority 0 = 最內層，代表其他插件（例如主題插件）改過的顏色我們看到的是最終值
     const rec = (name, colorIdx) => {
@@ -187,7 +241,7 @@
    * 傳進去的那個值，不是螢幕上取樣的結果。
    *
    * @param {{x?: number, y?: number}} [options] canvas 內部座標（2000x1000），預設 1910,60
-   * @returns {string|null} '#rrggbb'；沒有 bcModSdk、或該點沒有帶顏色的元件時回 null。
+   * @returns {string|null} '#rrggbb'；modApi 還沒就緒、或該點沒有帶顏色的元件時回 null。
    *   注意：第一次呼叫時清單還是空的（要等一幀），會回 null，之後才有值。
    */
   function getUIColor(options = {}) {
@@ -203,16 +257,21 @@
   /**
    * 取得目前介面的主題底色。
    *
-   * 作法：找出上一幀「面積最大且蓋住畫面中心」的矩形——主題插件就是靠畫一張滿版
-   * DrawRect 來換底色的，所以那張的顏色就是主題色本身，精確到位。
-   * 拿不到就退回宣告值查詢，再拿不到就退回像素取樣。
+   * 優先序：
+   *   0) LCE 暴露的主題 API —— 有裝且開啟染色就直接採用，最準確。
+   *   1) 找上一幀「面積最大且蓋住畫面中心」的矩形（宣告值路線）——主題插件
+   *      就是靠畫一張滿版 DrawRect 來換底色的，所以那張的顏色就是主題色本身。
+   *      拿不到就退回宣告值查詢（右上角那個元件）。
+   *   2) 再退：像素取樣。
+   *   3) 最後保底：上次成功值 → DOM 背景。
    *
    * @returns {string|null} '#rrggbb'
    */
   function getThemeColor() {
-    let result = null;
+    // 0) LCE：有裝且開啟染色，直接用它算好的主色，其餘路線都不必跑
+    let result = _getLceColor();
 
-    if (_arm()) {
+    if (!result && _arm()) {
       // 1) 找滿版底色矩形（主題插件換底色的手法）
       let best = null;
       for (const r of _last) {
@@ -258,9 +317,9 @@
   /**
    * 讀出 canvas 上某個區域實際渲染出來的顏色。
    *
-   * v2.0 起取的是「眾數」而不是「平均」：一塊 UI 背景區域裡出現次數最多的顏色，
-   * 就是那個背景色本身。舊版取平均會把文字邊緣、圓角的抗鋸齒像素一起平均進去，
-   * 算出一個畫面上根本不存在的顏色——這是舊版判斷不準的主因。
+   * 取的是「眾數」而不是「平均」：一塊 UI 背景區域裡出現次數最多的顏色，
+   * 就是那個背景色本身。取平均會把文字邊緣、圓角的抗鋸齒像素一起平均進去，
+   * 算出一個畫面上根本不存在的顏色。
    *
    * @param {{ x?: number, y?: number, size?: number }} [options]
    *   x, y: 取樣區域左上角座標（canvas 內部座標系，預設 1910,60，也就是畫面右上角）
@@ -377,6 +436,8 @@
   function getMode() {
     return {
       version: MOD_VER,
+      lceAvailable: _getLceColor() !== null,          // LCE 有裝且已開啟染色（getThemeColor 目前是否會走路線 0）
+      modApiAvailable: !!(typeof getModApi === 'function' && getModApi()),  // HSC 自己的 modApi 是否已就緒（路線 A 是否可用）
       hooked: _hooked, armed: _armed, tainted: _tainted,
       lastFrameRects: _last.length,
       lastGoodTheme: _lastGoodTheme, lastGoodCanvas: _lastGoodCanvas,
@@ -389,8 +450,8 @@
 
   const API = {
     version: MOD_VER,
-    getThemeColor,   // v2.0 新增，建議優先使用
-    getUIColor,      // v2.0 新增
+    getThemeColor,   // 建議優先使用
+    getUIColor,
     getCanvasColor,
     isDark,
     setOverride,
@@ -398,7 +459,7 @@
     getMode,
   };
 
-  // 掛上系統擴充命名（下方腳本會改名為 __Sys_ColorAPI__；版本讀 API.version）
+  // 掛上系統擴充命名（與 standalone 版共用同一個位置：__Sys_ColorAPI__）
   global.Liko.__Sys_ColorAPI__ = API;
-  console.log(`🐈‍⬛ [ColorAPI] ✅ v${MOD_VER} loaded`);
-})(typeof window !== 'undefined' ? window : globalThis);
+  console.log(`🐈‍⬛ [ColorAPI] ✅ v${MOD_VER}（HSC 內嵌版）loaded`);
+}
