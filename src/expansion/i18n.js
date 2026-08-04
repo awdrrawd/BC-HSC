@@ -19,7 +19,7 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
     // 字庫改為「一國一檔」：Translation/<LANG>.js，每支同時註冊 UI(i18n) 與聊天(L10N) 兩套。
     //  交給引擎 loadLangs：只抓「目前語言 + EN 後備」（CN 再加 TW），比舊的單一 165KB 合併檔省很多流量。
     //  檔案放 Translation/，build 前由 copy-assets 複製到 public/Translation/ 一併部署。
-    const T_LANGS = ['TW', 'CN', 'EN', 'JP', 'KR', 'DE', 'FR', 'RU', 'UA'];
+    const T_LANGS = ['TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'RU', 'UA'];
     function _stringsUrlMap() {
         const m = {};
         for (const c of T_LANGS) m[c] = assetUrl('Translation/' + c + '.js');   // Pages 位址；引擎失敗時自行處理
@@ -63,17 +63,24 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
         } catch (e) { console.warn('🐈‍⬛ [HSC] 切換語言載入失敗:', e.message); }
     }
     // 可選語言（auto = 依遊戲語系）
-    const HSC_LANGS = ['auto', 'TW', 'CN', 'EN', 'JP', 'KR', 'DE', 'FR', 'RU', 'UA'];
-    const HSC_LANG_NAMES = { auto: 'Auto', TW: '繁體中文', CN: '简体中文', EN: 'English', JP: '日本語', KR: '한국어', DE: 'Deutsch', FR: 'Français', RU: 'Русский', UA: 'Українська' };
+    const HSC_LANGS = ['auto', 'TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'RU', 'UA'];
+    const HSC_LANG_NAMES = { auto: 'Auto', TW: '繁體中文', CN: '简体中文', EN: 'English', JA: '日本語', KO: '한국어', DE: 'Deutsch', FR: 'Français', RU: 'Русский', UA: 'Українська' };
 
-    // 目前語言：玩家手動選 > 遊戲語系
+    // BC 遊戲語系碼 → 檔案碼：中文各寫法歸 TW；BC 的國家碼 JP/KR → ISO 639-1 語言碼 JA/KO
+    function normLang(code) {
+        const c = String(code || '').toUpperCase().trim();
+        if (c === 'ZH') return 'TW';
+        if (c === 'JP') return 'JA';
+        if (c === 'KR') return 'KO';
+        return c;
+    }
+    // 目前語言：玩家手動選（選單值即檔案碼）> 遊戲語系（normLang 正規化）
     function hscLang() {
         try {
             const sel = (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.lang) || 'auto';
             if (sel && sel !== 'auto') return sel;
             const raw = (typeof TranslationLanguage !== 'undefined' ? TranslationLanguage : '') || 'EN';
-            const c = String(raw).toUpperCase().trim();
-            return c === 'ZH' ? 'TW' : (c || 'EN');
+            return normLang(raw) || 'EN';
         } catch { return 'EN'; }
     }
 

@@ -2,9 +2,13 @@
 // @name           Liko - i18n / L10N Engine
 // @name:zh        Liko 共用多語引擎（介面 + 聊天在地化）
 // @namespace      https://github.com/awdrrawd/liko-Plugin-Repository
+// @supportURL     https://github.com/awdrrawd/liko-Plugin-Repository
 // @version        2.0.0
 // @description    Shared translation engine for all Liko plugins — UI strings (Liko.__Sys_i18n__) + chat-message localization (Liko.__Sys_L10N__)
 // @author         Likolisu
+// @include        /^https:\/\/(www\.)?bondage(projects\.elementfx|-(europe|asia))\.com\/.*/
+// @icon           https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Images/PCM_ICON.png
+// @require        https://cdn.jsdelivr.net/gh/awdrrawd/liko-Plugin-Repository@main/Plugins/expand/bcmodsdk.js
 // @grant          none
 // ==/UserScript==
 
@@ -33,7 +37,7 @@
     //  優先讀「已持久化」的 BondageClubLanguage —— BC 啟動時 TranslationLanguage 先是
     //  預設 "EN"，稍後才由 TranslationLoad() 覆寫成真正語系，直接信任它會抓到瞬間的 EN。
     //  故：localStorage → TranslationLanguage → 瀏覽器語系 → EN。
-    const SUPPORTED = ['TW', 'CN', 'EN', 'JP', 'KR', 'DE', 'FR', 'RU', 'UA'];
+    const SUPPORTED = ['TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'RU', 'UA'];
     function detectLang() {
         let raw = '';
         try { raw = (typeof localStorage !== 'undefined' && localStorage.getItem('BondageClubLanguage')) || ''; } catch (e) {}
@@ -50,6 +54,9 @@
         } else if (code.includes('-')) {
             code = code.split('-')[0];
         }
+        // BC 用國家碼 JP/KR；統一成 ISO 639-1 語言碼 JA/KO（字庫檔名與各插件一致）
+        if (code === 'JP') code = 'JA';
+        else if (code === 'KR') code = 'KO';
         return code || 'EN';
     }
 
@@ -237,5 +244,5 @@
         ensure: (ns, spec, lang) => (typeof spec === 'string' ? loadScript(spec) : _loadLangs('msg', ns, spec, lang)),
     };
 
-    console.log(`🐈‍⬛ [BC i18n] ✅ engine v${ENGINE_VER} ready (i18n + L10N)`);
+    console.log(`🐈‍⬛ [BC i18n] ✅ v${ENGINE_VER}  loaded (i18n + L10N)`);
 })();
