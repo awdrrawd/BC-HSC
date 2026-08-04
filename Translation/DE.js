@@ -425,12 +425,6 @@
     "secUnit": {
         "DE": "Sek"
     },
-    "forcedGrowthLabel": {
-        "DE": "Hypnosewert"
-    },
-    "forcedGrowthD": {
-        "DE": "Verhindert ewiges Nicht-Aufwachen: unter tiefer Kontrolle wächst Hypnose um N/10 des Normalwerts (Standard 1/10, z. B. 20 → 2)."
-    },
     "showProfileBtnLabel": {
         "DE": "Text anderer bearbeiten"
     },

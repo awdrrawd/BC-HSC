@@ -425,12 +425,6 @@
     "secUnit": {
         "CN": "秒"
     },
-    "forcedGrowthLabel": {
-        "CN": "催眠值"
-    },
-    "forcedGrowthD": {
-        "CN": "避免永远无法清醒：强控中受到催眠时，催眠值成长为原本的 N/10（默认 1/10，例：原 20 → 2）。"
-    },
     "showProfileBtnLabel": {
         "CN": "编辑他人文本"
     },

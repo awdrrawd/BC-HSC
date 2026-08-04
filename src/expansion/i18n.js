@@ -131,7 +131,6 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
         seeOthersEffect: '看見他人效果',
         autoWakeLabel: '自動清醒', autoWakeD: '開啟：進入催眠狀態時給一段清醒倒數（可拉 15~99 分鐘），倒數到 0 自動清醒。關閉：不自動醒，只能靠清醒詞（頭上顯示 ∞）。',
         hypnoExtendLabel: '催眠延長', hypnoExtendD: '開啟後，催眠狀態中每次再被語音／日常觸發，就把清醒時間延長一段（可拉 10~990 秒，10 秒一格；可超過自動清醒基底）。',
-        forcedGrowthLabel: '催眠值', forcedGrowthD: '避免永遠無法清醒：強控中受到催眠時，催眠值成長為原本的 N/10（預設 1/10，例：原 20 → 2）。',
         minUnit: '分', secUnit: '秒',
         hscOrbTipTime: 'HSC 距離清醒還有 {t}', hscOrbTipInf: 'HSC 催眠狀態持續中（無自動清醒）',
         showProfileBtnLabel: '編輯他人文本', showProfileBtnD: '控制是否在別人的 profile 顯示 HSC 文本編輯按鈕；關閉則不顯示。',

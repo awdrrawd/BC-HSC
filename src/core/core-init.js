@@ -251,8 +251,5 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
 
 
 export {
-    waitForBcModSdk,
-    waitForGame,
-    waitForChatRoom,
     initialize,
 };

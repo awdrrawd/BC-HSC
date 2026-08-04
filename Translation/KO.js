@@ -425,12 +425,6 @@
     "secUnit": {
         "KO": "초"
     },
-    "forcedGrowthLabel": {
-        "KO": "최면치"
-    },
-    "forcedGrowthD": {
-        "KO": "영원히 깨어나지 못하는 것을 방지: 강제 컨트롤 중 최면을 받으면 최면치 증가량이 원래의 N/10이 됩니다(기본값 1/10, 예: 원래 20 → 2)."
-    },
     "showProfileBtnLabel": {
         "KO": "다른 사람의 텍스트 편집"
     },

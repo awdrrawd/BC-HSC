@@ -189,10 +189,6 @@ import { T, triggerVoiceEffect } from '../util/util.js';
 export {
     printChat,
     handleHSCCommand,
-    tryRegisterCommand,
-    setupSendChatFallback,
-    setupKeydownFallback,
     registerCommandOnce,
     hookChatInput,
-    _origChatRoomSendChat,
 };

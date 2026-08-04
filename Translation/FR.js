@@ -425,12 +425,6 @@
     "secUnit": {
         "FR": "s"
     },
-    "forcedGrowthLabel": {
-        "FR": "Valeur d'hypnose"
-    },
-    "forcedGrowthD": {
-        "FR": "Évite de ne jamais se réveiller : sous contrôle profond, l'hypnose croît de N/10 de la normale (défaut 1/10, ex. 20 → 2)."
-    },
     "showProfileBtnLabel": {
         "FR": "Modifier le texte des autres"
     },

@@ -144,7 +144,6 @@ import { HSC_Z } from './zlayers.js';
     // ════════════════════════════════════════
     function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-    function randFloat(min, max) { return Math.random() * (max - min) + min; }
 
     // ── 語言判斷（每次呼叫時才讀，確保 TranslationLanguage 已載入）──
     function isZh() {
@@ -210,7 +209,6 @@ export {
     triggerVoiceEffect,
     wait,
     randInt,
-    randFloat,
     isZh,
     T,
     TOGGLE_LABELS,

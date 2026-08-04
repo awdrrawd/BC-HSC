@@ -425,12 +425,6 @@
     "secUnit": {
         "EN": "s"
     },
-    "forcedGrowthLabel": {
-        "EN": "Hypnosis value"
-    },
-    "forcedGrowthD": {
-        "EN": "Prevents never waking: while under deep control, hypnosis grows by N/10 of normal (default 1/10, e.g. 20 → 2)."
-    },
     "showProfileBtnLabel": {
         "EN": "Edit others' text"
     },

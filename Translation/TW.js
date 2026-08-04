@@ -425,12 +425,6 @@
     "secUnit": {
         "TW": "秒"
     },
-    "forcedGrowthLabel": {
-        "TW": "催眠值"
-    },
-    "forcedGrowthD": {
-        "TW": "避免永遠無法清醒：強控中受到催眠時，催眠值成長為原本的 N/10（預設 1/10，例：原 20 → 2）。"
-    },
     "showProfileBtnLabel": {
         "TW": "編輯他人文本"
     },
