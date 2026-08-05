@@ -66,15 +66,20 @@ import { CONFIG } from '../core/config.js';
     //    YOffset = 1000*(1-HeightRatio)*HeightRatioProportion - HeightModifier*HeightRatio
     //  HeightModifier/HeightRatioProportion 已涵蓋跪/趴等姿勢（pose OverrideHeight）
     // ════════════════════════════════════════
+    // headAY/mouthAY 直接取自 BC Female3DCG 群組定義（同一 asset 500×1000 空間），不再自行猜測。
+    //  bodyAssetToBc 已處理身高/姿勢/縮放 → 任何人、任何 zoom 都對得準，不會因身高差異錯位。
+    //   嘴部：ItemMouth  Zone [[100,130,100,70]] → y 中心 = 130+70/2 = 165
+    //   頭部：Eyes 群組   Top 145                 → 眼線約 155（螺旋對準眼睛）
     const HEAD_OFFSET = {
-        headAY:  160,  // 頭部中心 asset Y（螺旋對準處）
-        mouthAY: 250,  // 嘴部 asset Y（喘氣氣團處）
-        x:       0,    // 水平微調（asset 單位）
-        yExtra:  0,    // 螢幕 Y 微調（像素）
+        headAY:  155,  // 眼線 asset Y（螺旋對準眼睛，Female3DCG Eyes.Top=145）
+        mouthAY: 165,  // 嘴部 asset Y（ItemMouth Zone 垂直中心）
+        x:       0,    // 水平微調（asset 單位；X 仍用中軸 250，與螺旋同軸）
+        yExtra:  0,    // 螢幕 Y 微調（像素）— 需要時的校正旋鈕
     };
-    // 人物身上喘氣的 Y 微調（像素，往上 70）。自身與「看到他人喘氣」共用，確保兩端位置一致。
-    const BODY_PANT_DY = -70;
-    const DEPTH_PANT_EXTRA = 30;   // 深度喘氣再往下 30
+    // 喘氣的額外偏移。改用正確 asset 座標後不再需要像素補償（像素不隨 zoom/身高縮放＝原本錯位主因）。
+    //  保留旋鈕：若要讓深度喘氣更低，請改 mouthAY 或 yExtra（asset/縮放安全），勿再用固定像素。
+    const BODY_PANT_DY = 0;
+    const DEPTH_PANT_EXTRA = 0;
 
     // 把角色 asset 座標 (ax, ay) 轉成 BC 畫布座標（預設玩家；可傳入其他角色與其繪製座標）
     //  身高/姿勢偏移優先用 BC 原生 CharacterAppearance[XY]Offset（含 ForceUpButton 等邊界，
