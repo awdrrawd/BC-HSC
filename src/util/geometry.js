@@ -72,7 +72,7 @@ import { CONFIG } from '../core/config.js';
     //   頭部：Eyes 群組   Top 145                 → 眼線約 155（螺旋對準眼睛）
     const HEAD_OFFSET = {
         headAY:  155,  // 眼線 asset Y（螺旋對準眼睛，Female3DCG Eyes.Top=145）
-        mouthAY: 165,  // 嘴部 asset Y（ItemMouth Zone 垂直中心）
+        mouthAY: 165+30,  // 嘴部 asset Y（ItemMouth Zone 垂直中心）補正30
         x:       0,    // 水平微調（asset 單位；X 仍用中軸 250，與螺旋同軸）
         yExtra:  0,    // 螢幕 Y 微調（像素）— 需要時的校正旋鈕
     };
