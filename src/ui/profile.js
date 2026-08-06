@@ -3,7 +3,7 @@ import { startOtherPant } from '../effects/character-fx.js';
 import { printChat } from '../core/commands.js';
 import { CONFIG, ES_KEY, HSC_SCREEN, PREF_ID, modApi } from '../core/config.js';
 import { ui } from '../expansion/i18n.js';
-import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, hscThemeIsDark, refreshThemeIsDark } from '../util/icons.js';
+import { HSC_ICON_B, HSC_ICON_W, hscIconForTheme, refreshThemeIsDark } from '../util/icons.js';
 import { _mkBtn, resolveWhitelistNumbers } from './panel.js';
 import { EXT, waitForPreference } from './preference.js';
 import { interfereEnterLeave } from '../effects/state-fx.js';
@@ -136,7 +136,11 @@ import { HSC_Z } from '../util/zlayers.js';
                     const tip = canEdit ? ui('profileEditBtn')
                         : (info.edit ? ui('profileEditNoPerm') : ui('profileEditOff'));
                     // 依當前 UI 主題深淺自動切換：暗底用深色鈕+白線稿(B)，亮底用白鈕+深線稿(W)
-                    const darkBg = hscThemeIsDark();
+                    // 這裡（next(args) 之後）本幀畫面已經畫好，才是取色的正確時機——
+                    //  在 InformationSheetLoad 取色會讀到「前一個畫面」的殘留 / 空的宣告值清單，
+                    //  LCE 開著時靠 LCE.Theme 蓋過去看不出來，LCE 一停用就會固定成誤判。
+                    //  每幀重算：沒裝 LCE 時走宣告值(便宜)，需要才退像素取樣 8x8，開銷可忽略。
+                    const darkBg = refreshThemeIsDark();
                     DrawButton(1715, 75, 90, 90, '', "White", '', tip, !canEdit);
                     DrawImageResize(darkBg ? HSC_ICON_B : HSC_ICON_W, 1717, 77, 86, 86);
                 }
@@ -157,12 +161,8 @@ import { HSC_Z } from '../util/zlayers.js';
                 }
                 return next(args);
             });
-            // 進入資訊頁時重算一次主題深淺（之後每幀由 InformationSheetRun 重用同一份結果，不再每幀取樣）
-            modApi.hookFunction('InformationSheetLoad', 5, (args, next) => {
-                const r = next(args);
-                try { refreshThemeIsDark(); } catch (e) {}
-                return r;
-            });
+            // 主題深淺改由 InformationSheetRun 每幀重算（見上）：Load 時畫面還沒畫、
+            //  宣告值清單也還沒集滿，那時取色會讀到前一畫面的殘留而誤判（LCE 一停用就現形）。
             // 離開 profile（Esc / BC 離開流程）→ 若 remote 設定頁開著，先關掉它、留在 profile
             modApi.hookFunction('InformationSheetExit', 5, (args, next) => {
                 if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.closeRemote(); } catch (e) {} return; }

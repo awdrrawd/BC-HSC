@@ -381,7 +381,9 @@ export function installColorAPI(getModApi) {
 
   function _parseHex(color) {
     if (typeof color !== 'string') return null;
-    const match = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    // 先頭 # は任意：getThemeColor 等是必回 # 付き，但外部直接丟裸的
+    //  'FFFFFF' 也接受，免得白色被誤判成 null。
+    const match = color.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
     if (!match) return null;
     let hex = match[1].toLowerCase();
     if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
