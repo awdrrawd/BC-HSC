@@ -659,6 +659,9 @@
     "profileEditOff": {
         "JA": "相手はテキスト編集を許可していません"
     },
+    "profileEditDisabled": {
+        "JA": "相手はHSCを無効にしています"
+    },
     "profileEditNoPerm": {
         "JA": "あなたは相手のホワイトリストに入っていないため編集できません"
     },

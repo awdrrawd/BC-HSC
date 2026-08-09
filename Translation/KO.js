@@ -659,6 +659,9 @@
     "profileEditOff": {
         "KO": "상대가 텍스트 편집을 허용하지 않았습니다"
     },
+    "profileEditDisabled": {
+        "KO": "상대가 HSC를 비활성화했습니다"
+    },
     "profileEditNoPerm": {
         "KO": "상대의 화이트리스트에 없어 편집할 수 없습니다"
     },

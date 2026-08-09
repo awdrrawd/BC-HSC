@@ -659,6 +659,9 @@
     "profileEditOff": {
         "EN": "They don't allow text editing"
     },
+    "profileEditDisabled": {
+        "EN": "They have disabled HSC"
+    },
     "profileEditNoPerm": {
         "EN": "Not on their whitelist — can't edit"
     },

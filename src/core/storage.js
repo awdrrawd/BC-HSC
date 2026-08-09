@@ -234,6 +234,7 @@ import { hscServerSend } from './net.js';
             //   不合權限者拿不到內容（比照 BCX 的做法）。
             Player.OnlineSharedSettings[ES_KEY] = {
                 v: MOD_VER,
+                enabled: !!CONFIG.enabled,               // 總開關狀態 → 他人 profile 按鈕可提示「對方停用 HSC」
                 hypno: prevHypno || { v: 0, f: false, c: '#f500b4', s: 1, r: 0, inf: false, rb: 1 },
                 edit: anyEditable,                       // profile 按鈕是否亮起
                 editModes: { catalyst: em.catalyst || 'off', status: em.status || 'off', trigger: em.trigger || 'off', wake: em.wake || 'off', response: em.response || 'off', allowed: em.allowed || 'off' },

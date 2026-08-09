@@ -133,7 +133,10 @@ import { HSC_Z } from '../util/zlayers.js';
                     if (C.MemberNumber !== _permViewing) _permViewing = C.MemberNumber;
                     _ensurePerm(C.MemberNumber);
                     const can = _permFor(C, info), canEdit = can.catalyst || can.status || can.trigger || can.wake || can.response || can.allowed;
-                    const tip = canEdit ? ui('profileEditBtn')
+                    // 對方停用 HSC（總開關關）→ 灰掉並提示，避免不清楚而反覆點擊。舊版沒公告 enabled → undefined 視為啟用。
+                    const hscOff = info.enabled === false;
+                    const tip = hscOff ? ui('profileEditDisabled')
+                        : canEdit ? ui('profileEditBtn')
                         : (info.edit ? ui('profileEditNoPerm') : ui('profileEditOff'));
                     // 依當前 UI 主題深淺自動切換：暗底用深色鈕+白線稿(B)，亮底用白鈕+深線稿(W)
                     // 這裡（next(args) 之後）本幀畫面已經畫好，才是取色的正確時機——
@@ -141,7 +144,7 @@ import { HSC_Z } from '../util/zlayers.js';
                     //  LCE 開著時靠 LCE.Theme 蓋過去看不出來，LCE 一停用就會固定成誤判。
                     //  每幀重算：沒裝 LCE 時走宣告值(便宜)，需要才退像素取樣 8x8，開銷可忽略。
                     const darkBg = refreshThemeIsDark();
-                    DrawButton(1715, 75, 90, 90, '', "White", '', tip, !canEdit);
+                    DrawButton(1715, 75, 90, 90, '', "White", '', tip, hscOff || !canEdit);
                     DrawImageResize(darkBg ? HSC_ICON_B : HSC_ICON_W, 1717, 77, 86, 86);
                 }
                 return r;
@@ -153,6 +156,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
                 if (info && CONFIG.showProfileButton && MouseIn(1715, 75, 90, 90)) {
+                    if (info.enabled === false) return;   // 對方停用 HSC → 吃掉點擊（灰鈕不開啟）
                     const can = _permFor(C, info);
                     if (can.catalyst || can.status || can.trigger || can.wake || can.response || can.allowed) {
                         openRemoteSettings(C);   // 內部會先確保拿到對方當前文本，再（真正切換時）清 DOM 並開啟

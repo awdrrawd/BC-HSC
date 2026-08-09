@@ -659,6 +659,9 @@
     "profileEditOff": {
         "UA": "Редагування не дозволено"
     },
+    "profileEditDisabled": {
+        "UA": "Співрозмовник вимкнув HSC"
+    },
     "profileEditNoPerm": {
         "UA": "Вас немає в білому списку — не можна редагувати"
     },

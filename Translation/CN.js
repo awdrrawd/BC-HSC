@@ -659,6 +659,9 @@
     "profileEditOff": {
         "CN": "对方未开放编辑文本"
     },
+    "profileEditDisabled": {
+        "CN": "对方已停用 HSC"
+    },
     "profileEditNoPerm": {
         "CN": "你不在对方白名单，无法编辑"
     },

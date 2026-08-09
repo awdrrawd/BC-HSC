@@ -659,6 +659,9 @@
     "profileEditOff": {
         "DE": "Bearbeitung nicht erlaubt"
     },
+    "profileEditDisabled": {
+        "DE": "HSC ist deaktiviert"
+    },
     "profileEditNoPerm": {
         "DE": "Nicht auf der Whitelist — keine Bearbeitung"
     },

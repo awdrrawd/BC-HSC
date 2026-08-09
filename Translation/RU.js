@@ -659,6 +659,9 @@
     "profileEditOff": {
         "RU": "Редактирование не разрешено"
     },
+    "profileEditDisabled": {
+        "RU": "Собеседник отключил HSC"
+    },
     "profileEditNoPerm": {
         "RU": "Вас нет в белом списке — нельзя править"
     },

@@ -1,10 +1,10 @@
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
-import { ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
+import { CONFIG, ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
 import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
 import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
-import { startHypnoDecay, restoreHypnoState } from '../hypno/hypno.js';
+import { startHypnoDecay, restoreHypnoState, disableHypno } from '../hypno/hypno.js';
 import { ensureI18n, ui } from '../expansion/i18n.js';
 import { hookCensor } from '../effects/censor.js';
 import { hookL10n } from '../expansion/l10n.js';
@@ -165,7 +165,12 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         try {
             const hs = _savedHypno;
             console.log('🐈‍⬛ [HSC] 登入還原催眠狀態:', hs);
-            if (hs && ((hs.v || 0) > 0 || hs.f)) restoreHypnoState(hs.v, hs.f, hs.r, hs.inf);
+            if (hs && ((hs.v || 0) > 0 || hs.f)) {
+                // 催眠系統已停用（總開關或催眠狀態關）卻殘留公告 → 不還原，改公告清除，
+                //  否則他人頭上會一直殘留進度球/符咒（停用者自己看不到，難以察覺）。
+                if (CONFIG.enabled && CONFIG.hypnoEnabled) restoreHypnoState(hs.v, hs.f, hs.r, hs.inf);
+                else { try { disableHypno(); } catch (e) {} }
+            }
         } catch (e) {}
         // 資料保險：頁面關閉/重整前，強制送出 BC 帳號更新佇列。
         //  BC 的 ServerAccountUpdate 對 OnlineSharedSettings 等是 debounce ~2 秒且「沒有 unload flush」，

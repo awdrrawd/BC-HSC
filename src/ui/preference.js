@@ -463,6 +463,7 @@ import { HSC_Z } from '../util/zlayers.js';
             if (!remote && MouseIn(100, 205, 300, 50)) {
                 CONFIG.enabled = !CONFIG.enabled; saveSettings();
                 if (!CONFIG.enabled) { try { disableHypno(); } catch (e) {} }   // 總開關關 → 歸零狀態並清除所有顯示中效果
+                try { publishSharedSettings(); } catch (e) {}   // 公告 enabled 狀態 → 他人 profile 按鈕顯示「對方停用 HSC」
                 return;
             }
             const TABP = Math.min(80, Math.floor(660 / Math.max(1, tabs.length)));
@@ -717,7 +718,7 @@ import { HSC_Z } from '../util/zlayers.js';
             // ── 三大系統開關 ──
             toggleRow('voiceEnabledLabel', 'voiceEnabledD', CONFIG.voiceEnabled, () => { CONFIG.voiceEnabled = !CONFIG.voiceEnabled; saveSettings(); });
             toggleRow('dailyEnabledLabel', 'dailyEnabledD', CONFIG.depthEnabled, () => { CONFIG.depthEnabled = !CONFIG.depthEnabled; saveSettings(); applyDepthLoop(); });
-            toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); });
+            toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); if (!CONFIG.hypnoEnabled) { try { disableHypno(); } catch (e) {} } });   // 停用催眠狀態 → 歸零並公告清除（否則他人頭上仍殘留進度球/符咒）
             toggleRow('hypnoClimaxLabel', 'hypnoClimaxD', CONFIG.hypnoClimax, () => { CONFIG.hypnoClimax = !CONFIG.hypnoClimax; saveSettings(); }, H_ROW, SEC_GAP);
 
             // ── 看見他人效果 ──

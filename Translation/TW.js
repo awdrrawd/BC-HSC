@@ -659,6 +659,9 @@
     "profileEditOff": {
         "TW": "對方未開放編輯文本"
     },
+    "profileEditDisabled": {
+        "TW": "對方已停用 HSC"
+    },
     "profileEditNoPerm": {
         "TW": "你不在對方白名單，無法編輯"
     },

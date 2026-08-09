@@ -7,7 +7,7 @@ import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 
 export function triggerClimaxEffect(scale = 1) {
-    if (!CONFIG.climax) return;
+    if (!CONFIG.enabled || !CONFIG.climax) return;   // 總開關關 → 高潮特效也停用
     if (CONFIG.sound) playSoundCategory('climax', Math.min(0.5 + scale * 0.2, 1));  // 高潮聲
     const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
     if (!canvas) return;

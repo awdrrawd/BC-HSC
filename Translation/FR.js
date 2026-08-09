@@ -659,6 +659,9 @@
     "profileEditOff": {
         "FR": "Édition non autorisée"
     },
+    "profileEditDisabled": {
+        "FR": "HSC est désactivé"
+    },
     "profileEditNoPerm": {
         "FR": "Pas sur leur liste blanche — édition impossible"
     },
