@@ -5,7 +5,7 @@ import { applyDepthLoop } from '../effects/depth.js';
 import { assetUrl, imageUrl } from '../util/icons.js';
 import { updateHeadTalisman } from '../hypno/hypno-anim.js';
 import { disableHypno } from '../hypno/hypno.js';
-import { HSC_LANGS, HSC_LANG_NAMES, ensureLang, ui } from '../expansion/i18n.js';
+import { HSC_LANGS, HSC_LANG_NAMES, HSC_LANG_FLAGS, ensureLang, ui } from '../expansion/i18n.js';
 import { WL_TOKENS } from './panel.js';
 import { hscConfirm } from './profile.js';
 import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from '../effects/sound.js';
@@ -654,7 +654,9 @@ import { HSC_Z } from '../util/zlayers.js';
                     position: 'fixed', zIndex: HSC_Z.prefInput, boxSizing: 'border-box',
                     background: '#8E44A1', color: '#ffffff',
                     border: '1px solid #b060c0', borderRadius: '4px',
-                    padding: '2px 6px', fontFamily: 'sans-serif', outline: 'none', cursor: 'pointer',
+                    // "Twemoji Country Flags" 讓語言下拉的國旗顯示（白嫖 BC polyfill 注入的字體）；
+                    // 非語言下拉沒有國旗碼點，不受影響。
+                    padding: '2px 6px', fontFamily: '"Twemoji Country Flags",sans-serif', outline: 'none', cursor: 'pointer',
                 });
                 el.addEventListener('keydown', ev => ev.stopPropagation());
                 el.addEventListener('change', () => { if (onChange) onChange(el.value); });
@@ -754,7 +756,7 @@ import { HSC_Z } from '../util/zlayers.js';
             // ── 語言 ──
             this.title(cy, ui('language'), ui('languageD'));
             this.select('hsc-lang', CTRL_X, cy - H_ROW / 2, 240, H_ROW, CONFIG.lang || 'auto',
-                HSC_LANGS.map(l => [l, HSC_LANG_NAMES[l] || l]),
+                HSC_LANGS.map(l => [l, (HSC_LANG_FLAGS[l] ? HSC_LANG_FLAGS[l] + ' ' : '') + (HSC_LANG_NAMES[l] || l)]),
                 v => { CONFIG.lang = v; saveSettings(); ensureLang(v); });
             const BH = 45;
             cy = next(cy, H_ROW, BH, SEC_GAP);

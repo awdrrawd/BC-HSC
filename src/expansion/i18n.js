@@ -64,6 +64,9 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
     }
     // 可選語言（auto = 依遊戲語系）
     const HSC_LANGS = ['auto', 'TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'RU', 'UA'];
+    // 國旗 emoji（國家碼 regional indicator）；顯示需白嫖 BC country-flag polyfill 的
+    // "Twemoji Country Flags" 字體（見 preference.js 的 select()）。auto 用地球=跟隨 BC 語系。
+    const HSC_LANG_FLAGS = { auto: '🌐', TW: '🇹🇼', CN: '🇨🇳', EN: '🇬🇧', JA: '🇯🇵', KO: '🇰🇷', DE: '🇩🇪', FR: '🇫🇷', RU: '🇷🇺', UA: '🇺🇦' };
     const HSC_LANG_NAMES = { auto: 'Auto', TW: '繁體中文', CN: '简体中文', EN: 'English', JA: '日本語', KO: '한국어', DE: 'Deutsch', FR: 'Français', RU: 'Русский', UA: 'Українська' };
 
     // BC 遊戲語系碼 → 檔案碼：中文各寫法歸 TW；BC 的國家碼 JP/KR → ISO 639-1 語言碼 JA/KO
@@ -246,6 +249,7 @@ export {
     ensureLang,
     HSC_LANGS,
     HSC_LANG_NAMES,
+    HSC_LANG_FLAGS,
     hscLang,
     ui,
     HSC_FALLBACK,
