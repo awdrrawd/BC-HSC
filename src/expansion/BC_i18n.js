@@ -37,7 +37,7 @@
     //  優先讀「已持久化」的 BondageClubLanguage —— BC 啟動時 TranslationLanguage 先是
     //  預設 "EN"，稍後才由 TranslationLoad() 覆寫成真正語系，直接信任它會抓到瞬間的 EN。
     //  故：localStorage → TranslationLanguage → 瀏覽器語系 → EN。
-    const SUPPORTED = ['TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'RU', 'UA'];
+    const SUPPORTED = ['TW', 'CN', 'EN', 'JA', 'KO', 'DE', 'FR', 'ES', 'VI', 'RU', 'UA'];
     function detectLang() {
         let raw = '';
         try { raw = (typeof localStorage !== 'undefined' && localStorage.getItem('BondageClubLanguage')) || ''; } catch (e) {}
