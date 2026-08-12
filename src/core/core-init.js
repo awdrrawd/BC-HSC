@@ -43,7 +43,6 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         return new Promise(resolve => {
             const check = () => {
                 if (
-                    typeof Player !== 'undefined' &&
                     typeof CharacterSetFacialExpression === 'function' &&
                     typeof ChatRoomCharacter !== 'undefined'
                 ) resolve(true);
@@ -59,17 +58,17 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
     //  真資料覆蓋掉（＝一直掉設定的主因）。這裡等到登入後才載入設定。
     //  不設逾時：不管多久都等到登入完成才載入設定（絕不在登入前碰設定）。
     function waitForLogin() {
+        if (typeof Player !== 'undefined' && Player?.MemberNumber !== undefined) return Promise.resolve();
         return new Promise(resolve => {
-            const check = () => {
-                let loggedIn = false;
-                try {
-                    loggedIn = (typeof ServerIsLoggedIn === 'function' && ServerIsLoggedIn())
-                        || (typeof Player !== 'undefined' && Player && typeof Player.MemberNumber === 'number' && Player.MemberNumber > 0 && !!Player.AccountName);
-                } catch (e) {}
-                if (loggedIn) resolve(true);
-                else setTimeout(check, 200);
-            };
-            check();
+            const removeHook = getModApi().hookFunction('LoginResponse', 0, (args, next) => {
+                const result = next(args);
+                queueMicrotask(() => {
+                    if (typeof Player === 'undefined' || Player?.MemberNumber === undefined) return;
+                    removeHook();
+                    resolve();
+                });
+                return result;
+            });
         });
     }
 
@@ -132,15 +131,34 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
     // ════════════════════════════════════════
     async function initialize() {
         console.log(`🐈‍⬛ [HSC] ⌛ 初始化 v${MOD_VER}...`);
-        injectStyles();
 
-        const sdkReady  = await waitForBcModSdk();
+        const sdkReady = await waitForBcModSdk();
+        if (!sdkReady) {
+            console.error('🐈‍⬛ [HSC] ❌ bcModSdk 載入逾時');
+            return;
+        }
+        try {
+            setModApi(bcModSdk.registerMod({
+                name:       'Liko - HSC',
+                fullName:   "Hypnotic Slave Club",
+                version:    MOD_VER,
+                repository: 'https://github.com/awdrrawd/BC-HSC',
+            }));
+        } catch (e) {
+            console.error('🐈‍⬛ [HSC] ❌ registerMod 失敗:', e.message);
+            return;
+        }
+        console.log(`🐈‍⬛ [HSC] ✅ v${MOD_VER} loaded`);
+
+        await waitForLogin();
         const gameReady = await waitForGame();
 
         if (!gameReady) {
             console.error('🐈‍⬛ [HSC] ❌ 遊戲載入逾時');
             return;
         }
+
+        injectStyles();
 
         // 先載入 i18n（讓預設文本等依語言產生）
         await ensureI18n();
@@ -183,21 +201,9 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
             }
         } catch (e) {}
 
-        if (sdkReady) {
+        if (modApi) {
             try {
-                setModApi(bcModSdk.registerMod({
-                    name:       'Liko - HSC',
-                    fullName:   "Hypnotic Slave Club",
-                    version:    MOD_VER,
-                    repository: 'https://github.com/awdrrawd/BC-HSC',
-                }));
-            } catch (e) {
-                console.warn('🐈‍⬛ [HSC] ⚠️ registerMod 失敗，進入相容模式:', e.message);
-            }
-
-            if (modApi) {
-                try {
-                    modApi.onUnload(() => {
+                modApi.onUnload(() => {
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
@@ -210,10 +216,9 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
                         if (styles) styles.remove();
                         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
                         if (canvas) { canvas.style.filter = ''; canvas.style.transform = ''; }
-                    });
-                } catch (e) {
-                    // 舊版 bcModSdk 不支援 onUnload，忽略即可
-                }
+                });
+            } catch (e) {
+                // 舊版 bcModSdk 不支援 onUnload，忽略即可
             }
         }
 
