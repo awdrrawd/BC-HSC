@@ -138,12 +138,34 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
             return;
         }
         try {
-            setModApi(bcModSdk.registerMod({
+            const _api = bcModSdk.registerMod({
                 name:       'Liko - HSC',
                 fullName:   "Hypnotic Slave Club",
                 version:    MOD_VER,
                 repository: 'https://github.com/awdrrawd/BC-HSC',
-            }));
+            });
+            // ★ 統一保護所有 hook 回呼：讓任何 hook 都不會把例外拋回 bcModSdk。
+            //   bcModSdk 執行 hook 時是 `enter(); c = hook(); exit(); return c;`——exit（BCX 用來
+            //   收掉 debug context 的收尾）沒有包 try/finally，所以只要 hook 一拋例外，exit 就被跳過，
+            //   BCX 的 context 殘留在堆疊上 → 下一個 root context（socket 訊息 / 點擊 / 動畫幀）就會報
+            //   "Root context when we already have context"（Array(1) = 我們這顆殘留的 context）。
+            //   包一層：出錯記一次；若 hook 還沒呼叫過 next 就補跑（維持 BC 原行為），已呼叫過則不重跑
+            //   （避免原函式跑兩次），最終一定正常回傳 → exit 一定被呼叫 → 不再殘留。
+            //   用 Object.create 包一層（不改動 _api 本身，避免 SDK 凍結物件時在嚴格模式下拋錯），
+            //   只覆寫 hookFunction，其餘方法（onUnload…）沿原型透傳。
+            const _origHook = _api.hookFunction.bind(_api);
+            const safeApi = Object.create(_api);
+            safeApi.hookFunction = (target, priority, hook) => _origHook(target, priority, function (args, next) {
+                let called = false;
+                const wrappedNext = a => { called = true; return next(a); };
+                try { return hook.call(this, args, wrappedNext); }
+                catch (e) {
+                    try { console.warn('🐈‍⬛ [HSC] hook 例外（已吞下，避免殘留 BCX context）:', target, e); } catch (e2) {}
+                    if (!called) { try { return next(args); } catch (e3) {} }
+                    return undefined;
+                }
+            });
+            setModApi(safeApi);
         } catch (e) {
             console.error('🐈‍⬛ [HSC] ❌ registerMod 失敗:', e.message);
             return;
