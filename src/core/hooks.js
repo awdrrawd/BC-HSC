@@ -125,11 +125,17 @@ import { effectScale } from '../util/util.js';
         ];
         let orgasmHooked = false;
         for (const fn of orgasmFnCandidates) {
+            // ★ 先確認函式存在再 hook：對不存在的名稱直接呼叫 modApi.hookFunction 會拋錯，
+            //   而 bcModSdk 的 API 呼叫外層沒有 try/finally → BCX 的 apiEndpointEnter 收尾被跳過，
+            //   "ModSDK hookFunction by Liko - HSC" 這顆 context 殘留在 BCX 堆疊上，登入後第一個
+            //   root context（點擊 / socket 訊息）就會報 "Root context when we already have context"。
+            //   先探測就完全不觸發那次拋錯，警告消失。
+            if (typeof window[fn] !== 'function') continue;
             try {
                 modApi.hookFunction(fn, 0, orgasmHandler);
                 orgasmHooked = true;
                 break;
-            } catch { /* 函數不存在，試下一個 */ }
+            } catch (e) { /* 保底：極少數情況仍失敗就試下一個 */ }
         }
         if (!orgasmHooked) {
             _hookOrgasmPoll();

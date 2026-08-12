@@ -112,18 +112,12 @@ import { HSC_Z } from '../util/zlayers.js';
         if (!all.length) return;
         const line = resolveMe(all[Math.floor(Math.random() * all.length)]);
 
-        // 建立壓暗人影圖（source-atop 只染角色，不透明）
+        // 人影底圖：被抽中角色外觀的快照。壓暗「不」在這裡做——改到實際渲染後統一施作
+        //  （見 hookGhostDraw）。因為 BC 的 DrawCharacter 有時用我們的快取畫布、有時會依外觀重繪，
+        //  預先壓暗只在「剛好用到快取」時生效 → 造成「有時黑有時不黑」。渲染後再壓暗就一律是黑影。
         const fc = document.createElement('canvas'); fc.width = src.width; fc.height = src.height;
         const x = fc.getContext('2d');
         try { x.drawImage(src, 0, 0); } catch (e) { return; }
-        x.globalCompositeOperation = 'source-atop';
-        x.fillStyle = 'rgba(8,2,14,0.84)';     // 壓很暗（保留輪廓）
-        x.fillRect(0, 0, fc.width, fc.height);
-        x.fillStyle = 'rgba(0,0,0,0.6)';        // 臉部更黑
-        x.beginPath();
-        x.ellipse(fc.width * 0.50, fc.height * 0.43, fc.width * 0.20, fc.height * 0.11, 0, 0, Math.PI * 2);
-        x.fill();
-        x.globalCompositeOperation = 'source-over';
 
         // 建立「人影角色」克隆（共用被抽中角色的外觀，但用壓暗後的畫布）
         //  → 用 BC 自己的 DrawCharacter 繪製（身高/姿勢/縮放完全正確，不變形）。
@@ -215,6 +209,12 @@ import { HSC_Z } from '../util/zlayers.js';
                             const baseX = useA ? a.x : X;
                             const baseY = useA ? a.y : Y;
                             DrawCharacter(_ghost.char, baseX + offXbc, baseY + offYbc, Zoom, undefined, tctx);
+                            // ★ 渲染後一律壓暗：暫存畫布此刻只有人影本體（其餘透明），source-atop 只作用在
+                            //   角色像素上 → 每次都是黑影，不受 BC 用快取或重繪影響（修「有時黑有時不黑」）。
+                            tctx.globalCompositeOperation = 'source-atop';
+                            tctx.fillStyle = 'rgba(8,2,14,0.84)';
+                            tctx.fillRect(0, 0, _ghostTemp.width, _ghostTemp.height);
+                            tctx.globalCompositeOperation = 'source-over';
                             const prevA = ctx.globalAlpha;
                             ctx.globalAlpha = _ghost.alpha;
                             ctx.drawImage(_ghostTemp, 0, 0);
