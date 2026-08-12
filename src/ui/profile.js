@@ -285,12 +285,15 @@ import { HSC_Z } from '../util/zlayers.js';
                             if (Array.isArray(dict.Response) && okFor(em.response)) { CONFIG.responseList   = clean(dict.Response); changed = true; }
                             if (Array.isArray(dict.Allowed)  && okFor(em.allowed))  { CONFIG.allowedPhrases = clean(dict.Allowed);  changed = true; }
                             if (changed) {
-                                saveSettings(true);
-                                publishSharedSettings();
                                 const who = (typeof CharacterNickname === 'function' && data.Sender)
                                     ? (ChatRoomCharacter?.find(c => c.MemberNumber === data.Sender)?.Nickname || data.Sender)
                                     : data.Sender;
-                                printChat(ui('editedYourText', { who }), 8000);
+                                // 存檔/公告會做 ServerSend / 帳號同步；不要在 BC 派發此 socket 事件的
+                                //  同步流程內做（會讓 BCX 偵測到 HSC hook 內又開了 root context 而警告）。
+                                //  延一輪到乾淨的呼叫堆疊再做（比照 net.js 的送出佇列）。
+                                setTimeout(() => {
+                                    try { saveSettings(true); publishSharedSettings(); printChat(ui('editedYourText', { who }), 8000); } catch (e) {}
+                                }, 0);
                             }
                             // 回報結果給編輯者（成功 / 被拒），讓對方知道是否真的儲存
                             hscServerSend('HSC_SetTextsAck',
