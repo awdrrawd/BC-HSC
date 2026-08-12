@@ -130,8 +130,6 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
     //  初始化
     // ════════════════════════════════════════
     async function initialize() {
-        console.log(`🐈‍⬛ [HSC] ⌛ 初始化 v${MOD_VER}...`);
-
         const sdkReady = await waitForBcModSdk();
         if (!sdkReady) {
             console.error('🐈‍⬛ [HSC] ❌ bcModSdk 載入逾時');
@@ -182,7 +180,6 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         // 登入還原：依上次公告的催眠進度，還原自己的狀態（與他人一致；不重播儀式、不再發旁白）
         try {
             const hs = _savedHypno;
-            console.log('🐈‍⬛ [HSC] 登入還原催眠狀態:', hs);
             if (hs && ((hs.v || 0) > 0 || hs.f)) {
                 // 催眠系統已停用（總開關或催眠狀態關）卻殘留公告 → 不還原，改公告清除，
                 //  否則他人頭上會一直殘留進度球/符咒（停用者自己看不到，難以察覺）。
