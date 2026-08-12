@@ -153,17 +153,22 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
             //   （避免原函式跑兩次），最終一定正常回傳 → exit 一定被呼叫 → 不再殘留。
             //   用 Object.create 包一層（不改動 _api 本身，避免 SDK 凍結物件時在嚴格模式下拋錯），
             //   只覆寫 hookFunction，其餘方法（onUnload…）沿原型透傳。
+            //   注意：_api 是凍結物件，hookFunction 為唯讀，直接指派（即使在 Object.create 的子物件上）
+            //   會因原型鏈上的唯讀屬性而在嚴格模式拋錯 → 改用 defineProperty 直接定義自有屬性覆蓋。
             const _origHook = _api.hookFunction.bind(_api);
             const safeApi = Object.create(_api);
-            safeApi.hookFunction = (target, priority, hook) => _origHook(target, priority, function (args, next) {
-                let called = false;
-                const wrappedNext = a => { called = true; return next(a); };
-                try { return hook.call(this, args, wrappedNext); }
-                catch (e) {
-                    try { console.warn('🐈‍⬛ [HSC] hook 例外（已吞下，避免殘留 BCX context）:', target, e); } catch (e2) {}
-                    if (!called) { try { return next(args); } catch (e3) {} }
-                    return undefined;
-                }
+            Object.defineProperty(safeApi, 'hookFunction', {
+                configurable: true, writable: true,
+                value: (target, priority, hook) => _origHook(target, priority, function (args, next) {
+                    let called = false;
+                    const wrappedNext = a => { called = true; return next(a); };
+                    try { return hook.call(this, args, wrappedNext); }
+                    catch (e) {
+                        try { console.warn('🐈‍⬛ [HSC] hook 例外（已吞下，避免殘留 BCX context）:', target, e); } catch (e2) {}
+                        if (!called) { try { return next(args); } catch (e3) {} }
+                        return undefined;
+                    }
+                }),
             });
             setModApi(safeApi);
         } catch (e) {
