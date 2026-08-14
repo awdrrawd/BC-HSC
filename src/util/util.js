@@ -113,6 +113,16 @@ import { HSC_Z } from './zlayers.js';
     const effectQueue   = [];
     let isEffectPlaying = false;
 
+    // 登入後先忽略真實的語音催眠觸發，避免 BCX「聽我聲音」在初始化時
+    // 一次補入訊息，造成多個效果與網路請求瞬間同時啟動。
+    const LOGIN_TRIGGER_GUARD_MS = 30000;
+    let _loginTriggerGuardUntil = 0;
+
+    function startLoginTriggerGuard() {
+        _loginTriggerGuardUntil = Date.now() + LOGIN_TRIGGER_GUARD_MS;
+        effectQueue.length = 0;
+    }
+
     async function processQueue() {
         if (isEffectPlaying || effectQueue.length === 0) return;
         isEffectPlaying = true;
@@ -129,6 +139,8 @@ import { HSC_Z } from './zlayers.js';
 
     let _lastTriggerTime = 0;
     function triggerVoiceEffect(voiceText, isTest = false) {
+        // 設定頁與 /hsc 的測試觸發不受登入保護影響。
+        if (!isTest && Date.now() < _loginTriggerGuardUntil) return;
         // 合併近乎同時的觸發（例如聊天觸發詞 + [Voice] 訊息），避免重複觸發/雙重 emote
         const now = Date.now();
         if (!isTest && now - _lastTriggerTime < 1500) return;
@@ -206,6 +218,7 @@ export {
     pickRandom,
     effectQueue,
     processQueue,
+    startLoginTriggerGuard,
     triggerVoiceEffect,
     wait,
     randInt,

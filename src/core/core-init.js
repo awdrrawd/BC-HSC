@@ -15,7 +15,7 @@ import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from '../
 import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from '../ui/profile.js';
 import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
 import { injectStyles } from '../ui/styles.js';
-import { clearBCXCache } from '../util/util.js';
+import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
 import { installColorAPI } from '../expansion/theme-color-api.js';
 
 // ════════════════════════════════════════
@@ -149,6 +149,7 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         console.log(`🐈‍⬛ [HSC] ✅ v${MOD_VER} loaded`);
 
         await waitForLogin();
+        startLoginTriggerGuard();
         const gameReady = await waitForGame();
 
         if (!gameReady) {
