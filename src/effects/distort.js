@@ -3,7 +3,7 @@
 // ════════════════════════════════════════
 import { CONFIG } from '../core/config.js';
 import { isForced } from '../hypno/hypno.js';
-import { effectScale, getOverlay } from '../util/util.js';
+import { effectScale } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 
 export function triggerScreenDistort() {
@@ -20,7 +20,6 @@ export function triggerScreenDistort() {
     try { dataURL = canvas.toDataURL(); } catch(e) { return; } // 跨域保護時跳過
 
     const rect    = canvas.getBoundingClientRect();
-    const overlay = getOverlay();
 
     const snap = document.createElement('img');
     snap.src = dataURL;

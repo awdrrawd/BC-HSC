@@ -16,7 +16,7 @@ import { MOD_VER, CONFIG, HSC_SCREEN } from './core/config.js';
 import { triggerVoiceEffect } from './util/util.js';
 import { loadSettings, saveSettings, exportSettings, importSettings } from './core/storage.js';
 import { handleHSCCommand } from './core/commands.js';
-import { currentDepthLevel, runDepthEffect } from './effects/depth.js';
+import { runDepthEffect } from './effects/depth.js';
 import { getHypnoValue, isForced, wake } from './hypno/hypno.js';
 import { playHypnoAnim } from './hypno/hypno-anim.js';
 import { EXT } from './ui/preference.js';
@@ -44,8 +44,8 @@ if (_hscAlreadyInitialized) {
         trigger: (text = '[Voice]') => triggerVoiceEffect(String(text), false),
         // 測試觸發（不發訊息、不廣播）
         test: (text = '[Voice] test') => triggerVoiceEffect(String(text), true),
-        // 觸發背景深度效果
-        runDepth: (level) => runDepthEffect(level || currentDepthLevel() || 1),
+        // 觸發背景深度效果（扁平效果，無等級參數）
+        runDepth: () => runDepthEffect(),
         // 執行 /hsc 子指令（如 'setting' / 'show' / 'help'）
         command: (sub = '') => handleHSCCommand(`/hsc ${sub}`.trim()),
         // 供其他插件檢測：HSC 是否正在 profile 就地設定頁（類似 bcx.inBcxSubscreen()）

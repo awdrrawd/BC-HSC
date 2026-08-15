@@ -219,7 +219,9 @@ function addArousal(kind) {
                 // 一般說話（會像自己開口，可用於呻吟等）
                 ServerSend('ChatRoomChat', { Type: 'Chat', Content: msg });
             } else {
-                ServerSend('ChatRoomChat', { Type: 'Emote', Content: "*" + msg });
+                // BC 的 Emote 類型本身會以「* ... *」包裹內容，
+                // 故 Content 不需（也不該）再手動加前導 *，否則會變成 **msg**。
+                ServerSend('ChatRoomChat', { Type: 'Emote', Content: msg });
             }
         } catch (e) { /* 靜默 */ }
     }

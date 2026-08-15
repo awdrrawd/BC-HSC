@@ -64,12 +64,21 @@ import { HSC_Z } from './zlayers.js';
             if (contentEl && (contentEl.textContent || '').trim()) {
                 return (contentEl.textContent || '').replace(/\s+/g, ' ').trim();
             }
-            // ③ fallback：clone 去雜訊（含所有按鈕：名稱鍵、回覆鍵 ↩️、選單鍵）+ 去開頭殘留的冒號
-            const clone = el.cloneNode(true);
-            clone.querySelectorAll('.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp, button')
-                 .forEach(x => x.remove());
-            let t = (clone.textContent || '').replace(/\s+/g, ' ').trim();
-            t = t.replace(/^(?:\s|↩️|↩)+/, '').replace(/^[:：]\s*/, '');   // 去開頭回覆箭頭與冒號
+            // ③ fallback：直接走訪文字節點、跳過名稱/時間/按鈕等雜訊子樹，
+            //   不再 cloneNode 整棵訊息 DOM（每則訊息省一次完整拷貝，降低 observer 開銷）
+            const SKIP = '.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp, button';
+            let t = '';
+            const walkText = (node) => {
+                node.childNodes.forEach(n => {
+                    if (n.nodeType === 3) { t += n.nodeValue; return; }
+                    if (n.nodeType === 1) {
+                        if (n.matches?.(SKIP)) return;   // 整個雜訊子樹跳過
+                        walkText(n);
+                    }
+                });
+            };
+            walkText(el);
+            t = t.replace(/\s+/g, ' ').trim().replace(/^(?:\s|↩️|↩)+/, '').replace(/^[:：]\s*/, '');   // 去開頭回覆箭頭與冒號
             return t;
         } catch { return ''; }
     }
