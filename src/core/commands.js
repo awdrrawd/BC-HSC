@@ -31,7 +31,12 @@ import { T, triggerVoiceEffect } from '../util/util.js';
                 whiteSpace:   'pre-wrap',
                 transition:   'opacity 0.5s ease',
             });
-            el.innerHTML = '<span style="opacity:0.6;font-size:0.85em">🌀 HSC</span>　' + text.split('\n').join('<br>');
+            // 用 textContent 而非 innerHTML，避免 /hsc test 的使用者輸入被當成 HTML 造成 Self-XSS
+            const prefix = document.createElement('span');
+            prefix.style.cssText = 'opacity:0.6;font-size:0.85em';
+            prefix.textContent = '🌀 HSC';
+            el.appendChild(prefix);
+            el.appendChild(document.createTextNode('　' + text));   // el 本身 white-space:pre-wrap，換行原樣呈現
             log.appendChild(el);
             log.scrollTop = log.scrollHeight;
             if (timeoutMs > 0) {

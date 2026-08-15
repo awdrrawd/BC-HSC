@@ -62,33 +62,37 @@ import { T } from '../util/util.js';
     // 預載所有音源（進房間後呼叫一次）
     // 失敗時用 printChat 留訊息（10 秒後自動消失）
     function preloadSounds() {
-        const list = SOUND_DEFAULTS.hypno;   // 預載催眠呻吟（喘息後備）
-        if (!list.length) return;
+        // 預載全部分類的內建預設音效（hypno/voice/climax/depth），
+        // 減少首次觸發各類效果時的解碼延遲（P3）。
+        const cats = Object.keys(SOUND_DEFAULTS);
         let _failNotified = false;
-        list.forEach(url => {
-            if (_soundBufferCache.has(url)) return;
-            const ctx = _getAudioCtx();
-            fetchAsset(url)
-                .then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.arrayBuffer();
-            })
-                .then(ab => ctx.decodeAudioData(ab))
-                .then(buf => {
-                _soundBufferCache.set(url, buf);
-            })
-                .catch(e => {
-                // 每次重新進房間只通知一次，避免四個 URL 連續刷訊息
-                if (!_failNotified) {
-                    _failNotified = true;
-                    // 延遲 3 秒，等玩家看完催眠特效再顯示
-                    setTimeout(() => {
-                        printChat(
-                            T('🔇 HSC 音源載入失敗，聲音效果暫時停用', '🔇 HSC sound load failed, audio disabled'),
-                            10000  // 10 秒後消失
-                        );
-                    }, 3000);
-                }
+        cats.forEach(cat => {
+            const list = SOUND_DEFAULTS[cat] || [];
+            list.forEach(url => {
+                if (_soundBufferCache.has(url)) return;
+                const ctx = _getAudioCtx();
+                fetchAsset(url)
+                    .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.arrayBuffer();
+                })
+                    .then(ab => ctx.decodeAudioData(ab))
+                    .then(buf => {
+                    _soundBufferCache.set(url, buf);
+                })
+                    .catch(e => {
+                    // 每次重新進房間只通知一次，避免多個 URL 連續刷訊息
+                    if (!_failNotified) {
+                        _failNotified = true;
+                        // 延遲 3 秒，等玩家看完催眠特效再顯示
+                        setTimeout(() => {
+                            printChat(
+                                T('🔇 HSC 音源載入失敗，聲音效果暫時停用', '🔇 HSC sound load failed, audio disabled'),
+                                10000  // 10 秒後消失
+                            );
+                        }, 3000);
+                    }
+                });
             });
         });
     }

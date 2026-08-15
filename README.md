@@ -34,29 +34,52 @@ Assets/                 # 集中的素材根目錄
 Translation/            # i18n 字庫（文字資料不算素材，留在根目錄），一國一檔
 public/                 # ← 由上面自動產生，已 gitignore；vite 部署到 Pages
 src/
-  main.js               # 進入點：設定 window.Liko.HSCApi、呼叫 initialize()
-  modules/
+  main.js               # 進入點：設定 window.Liko.HSC、呼叫 initialize()
+  core/                 # 設定、儲存、生命週期、指令、網路、hook 註冊
     config.js           # 版本/共用可變狀態（CONFIG、modApi…）+ setter、預設值
-    i18n.js             # 多語（引擎+字庫皆自我裝載自 BC-HSC，繁中 fallback 內建）
     storage.js          # ExtensionSettings / OnlineSharedSettings / IndexedDB / 匯入匯出
-    icons.js            # 讀主題色(--tmd-element)/取樣畫布，自動挑 HSC-iconW / HSC-iconB + 按鈕色
-    zlayers.js          # 集中的 z-index 分層表（上限 10，兩個堆疊環境）
-    atmosphere.js       # 催眠模糊/淡紫（hook Player.GetBlurLevel/GetTints，BC 原生）
-    geometry.js         # 畫布座標、頭/嘴位置換算、快取
-    util.js             # 興奮度、BCX 清單、文本工具、效果佇列、雜項
-    effects.js          # 粉紅暈染/暗角/螺旋/電波/扭曲/校正
-    effects2.js         # 彈幕/喘氣粒子/高潮特效
-    sound.js            # 音源載入與播放
-    character-fx.js     # 表情/興奮度/狀態訊息/訊息浮現/廣播/中央頭像
-    depth.js            # 背景催眠深度循環（人影、模糊…）
-    run.js              # 主效果流程 runEffect / 解析 [Voice]
-    commands.js         # /hsc 指令、聊天輸入攔截
-    panel.js            # 控制面板、白名單解析、DOM observer
+    commands.js         # /hsc 指令、聊天輸入攔截、printChat
+    net.js              # 跨客戶端隱藏訊息（遠端編輯）收送
     hooks.js            # DrawCharacter / OrgasmStage hook
+    core-init.js        # 等待工具與 initialize()
+  expansion/            # 多語引擎與主題色 API
+    i18n.js             # 多語（引擎+字庫皆自我裝載自 BC-HSC，繁中 fallback 內建）
+    BC_i18n.js          # BC 原生 i18n 橋接
+    l10n.js             # 接收端在地化（依自己語言替換夾帶標記的訊息）
+    theme-color-api.js  # 讀 BC 介面顏色並判斷亮暗（內嵌版 ColorAPI）
+  util/                 # 共用工具/幾何/圖示/z 分層
+    util.js             # 興奮度、BCX 清單、文本工具、效果佇列、雜項
+    text.js             # 彈幕文字包裹等文本處理
+    geometry.js         # 畫布座標、頭/嘴位置換算、快取
+    icons.js            # 讀主題色、取樣畫布，自動挑 HSC-iconW / HSC-iconB + 按鈕色
+    zlayers.js          # 集中的 z-index 分層表
+  ui/                   # 控制面板、偏好設定頁、角色資料頁
+    panel.js            # 控制面板、白名單解析、DOM observer
     preference.js       # 偏好設定頁（PreferenceRegisterExtensionSetting）
     profile.js          # 角色資料頁 HSC 按鈕、遠端編輯、設定頁註冊
     styles.js           # CSS 動畫
-    core-init.js        # 等待工具與 initialize()
+  hypno/                # 催眠狀態與強控中行為
+    hypno.js            # 催眠值/強控狀態（時間制）、清醒
+    hypno-speech.js     # 強控中攔截說話（思考/呆站/照說/回應/自慰）
+    hypno-anim.js       # 符咒儀式動畫
+    hypno-orb.js        # 頭頂催眠球/符咒
+  effects/              # 一個效果一個檔 + 編排
+    pink-flash.js       # 粉紅暈染
+    vignette.js         # 邊緣暗角
+    spiral.js           # 催眠螺旋
+    waves.js            # 同心圓電波
+    distort.js          # 畫面扭曲
+    danmaku.js          # 彈幕文字
+    breath.js           # 喘氣粒子
+    climax.js           # 高潮特效
+    atmosphere.js       # 催眠模糊/淡紫（hook GetBlurLevel/GetTints，BC 原生）
+    crowd.js            # 圍觀人群
+    censor.js           # 面部/名稱識別障礙
+    character-fx.js     # 表情/興奮度/狀態訊息/訊息浮現/廣播
+    state-fx.js         # 強控中訊息類效果（彈幕/妨礙/干擾）
+    depth.js            # 背景催眠深度循環（人影、模糊…）
+    sound.js            # 音源載入與播放
+    run.js              # 主效果流程 runEffect / 解析 [Voice]
 ```
 
 ### 模組化重點
@@ -64,7 +87,7 @@ src/
 - **共用可變狀態**（`CONFIG`、`EXPRESSION_SETS`、`modApi`、`_depthTimer`、`_domObserver`…）集中由擁有模組以 ESM live-binding 匯出，重新指派一律經 setter（`setConfig` / `setModApi`…），其他模組只讀。
 - **i18n**：優先使用共用的 `window.Liko.i18n` 引擎（跨插件一致語系），未就緒時退回內建詞庫。
 - **版本號**單一來源為 `package.json`，經 vite `define` 注入為 `__HSC_VERSION__`；`npm run dev/build` 前會 `sync-version` 同步兩個 loader 的 `@version`。
-- **對外 API**：`window.Liko.HSCApi`（`trigger` / `test` / `runDepth` / `command` / `getConfig` / `save`…），供測試與其他插件連動。
+- **對外 API**：`window.Liko.HSC`（`trigger` / `test` / `runDepth` / `command` / `getConfig` / `save`…），供測試與其他插件連動。
 
 ## 部署
 

@@ -73,7 +73,8 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
     }
 
     let _fallbackInterval = null;
-    let _screenGuard = null;
+    let _screenGuard = null;        // 輪詢兜底用：setInterval 的 id
+    let _screenGuardUnhook = null;  // CommonSetScreen hook 的移除函式（bcModSdk hookFunction 回傳值）
 
     // 離開 ChatRoom（切到 profile/偏好/更衣室等任何非聊天室畫面）→ 清掉所有暫態疊加特效。
     //  例外：人臉／名稱識別障礙是繪圖 hook 自行判斷畫面，不在 overlay 內，不受此清除影響。
@@ -205,6 +206,7 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
+                        if (typeof _screenGuardUnhook === 'function') { try { _screenGuardUnhook(); } catch (e) {} _screenGuardUnhook = null; }
                         try { stopHypnoAnim(); updateHeadTalisman(); } catch (e) {}
                         if (_depthTimer)       { clearInterval(_depthTimer); setDepthTimer(null); }
                         removePanel();
@@ -234,7 +236,21 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         waitForChatRoom();
         // 邊緣觸發：只在「離開 ChatRoom 的那一刻」清一次暫態特效，
         //  絕不在房內輪詢清除（避免誤清正在播放的特效）。
-        if (!_screenGuard) {
+        //  改用 BC 原生 CommonSetScreen hook 偵測畫面切換（P2：省一條常駐 400ms 計時器）；
+        //  args[args.length-1] 即新畫面名稱，相容 (New) 與 (Prev,New) 兩種簽章。
+        if (!_screenGuardUnhook && typeof CommonSetScreen === 'function') {
+            try {
+                _screenGuardUnhook = modApi.hookFunction('CommonSetScreen', 5, (args, next) => {
+                    const newScreen = args[args.length - 1];
+                    if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom' && newScreen !== 'ChatRoom') {
+                        clearTransientEffects();
+                    }
+                    return next(args);
+                });
+            } catch (e) { _screenGuardUnhook = null; }
+        }
+        // 極少數 BC 版本沒有 CommonSetScreen 時，才退回 400ms 輪詢兜底
+        if (!_screenGuardUnhook && !_screenGuard) {
             let _lastScreen = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';
             _screenGuard = setInterval(() => {
                 const cur = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';

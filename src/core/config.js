@@ -6,7 +6,7 @@
 import { ui } from '../expansion/i18n.js';
 
     // 版本號由 package.json 經 vite define 注入（見 vite.config.js）
-    const MOD_VER = (typeof __HSC_VERSION__ !== 'undefined' && __HSC_VERSION__) || "2.1.1";
+    const MOD_VER = (typeof __HSC_VERSION__ !== 'undefined' && __HSC_VERSION__) || "1.0.2";
     // 共用可變狀態：bcModSdk 的 mod api（由 core-init 於註冊後 setModApi 設定）
     let modApi = null;
     function setModApi(v) { modApi = v; }

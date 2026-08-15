@@ -58,7 +58,13 @@ export function maybeInterceptHypnoSpeech() {
 
     try { ElementValue('InputChat', ''); } catch (e) {}   // 清空輸入，阻止原本送出
     _busy = true;
-    sendLocalizedAction('hs_thinking');
+    try {
+        sendLocalizedAction('hs_thinking');
+    } catch (e) {
+        // 思考動作發送失敗也必須解除 _busy，否則強控中往後的說話永遠無法被攔截
+        _busy = false;
+        return false;
+    }
     setTimeout(() => {
         try {
             const r = Math.floor(Math.random() * 4);
@@ -76,7 +82,7 @@ export function maybeInterceptHypnoSpeech() {
                 doMasturbate();
             }
         } catch (e) {}
-        _busy = false;
+        finally { _busy = false; }   // 無論中段是否拋錯，2 秒後都解除攔截鎖
     }, 2000);
     return true;
 }
