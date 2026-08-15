@@ -63,7 +63,7 @@ src/
 
 - **共用可變狀態**（`CONFIG`、`EXPRESSION_SETS`、`modApi`、`_depthTimer`、`_domObserver`…）集中由擁有模組以 ESM live-binding 匯出，重新指派一律經 setter（`setConfig` / `setModApi`…），其他模組只讀。
 - **i18n**：優先使用共用的 `window.Liko.i18n` 引擎（跨插件一致語系），未就緒時退回內建詞庫。
-- **版本號**單一來源為 `package.json`，經 vite `define` 注入為 `__HSC_VERSION__`；`npm run dev/build` 前會 `sync-version` 同步兩個 loader 的 `@version`。
+- **主程式版本號**來源為 `package.json`，經 vite `define` 注入為 `__HSC_VERSION__`；loader 採獨立版本，只有載入機制變更時才手動更新。
 - **對外 API**：`window.Liko.HSCApi`（`trigger` / `test` / `runDepth` / `command` / `getConfig` / `save`…），供測試與其他插件連動。
 
 ## 部署

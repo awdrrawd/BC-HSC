@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         本地測試 - HSC
 // @namespace    https://github.com/awdrrawd/BC-HSC
-// @version      1.0.2
+// @version      0.1
 // @description  HSC 本地開發載入器
 // @author       莉柯莉絲(Likolisu)
 // @supportURL   https://github.com/awdrrawd/BC-HSC
