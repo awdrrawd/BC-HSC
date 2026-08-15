@@ -69,7 +69,7 @@
     .url-row { display: grid; grid-template-columns: minmax(200px, 1fr) auto minmax(150px, 210px); gap: 10px; }
     #repoUrl { width: 100%; }
     .hint { margin: 10px 2px 0; color: var(--muted); font-size: 12px; }
-    .status { display: flex; align-items: center; justify-content: flex-end; color: var(--muted); min-width: 180px; }
+    .status { height: 40px; align-self: start; display: flex; align-items: center; justify-content: flex-end; color: var(--muted); min-width: 180px; }
     .status.ok { color: var(--ok); }
     .status.error { color: var(--danger); }
     .workspace { margin-top: 18px; overflow: hidden; }
@@ -167,10 +167,7 @@
           <input id="repoUrl" aria-label="GitHub 檔案或資料夾網址" value="https://github.com/awdrrawd/BC-FCM/tree/main/Translation">
           <button id="loadBtn" class="primary" data-ui="loadUrl">載入網址</button>
           <select id="projectSelect" aria-label="預設插件庫">
-            <option value="https://github.com/awdrrawd/BC-FCM/tree/main/Translation">FCM Translation</option>
-            <option value="https://github.com/awdrrawd/BC-AFC/tree/main/Translation">AFC Translation</option>
-            <option value="https://github.com/awdrrawd/BC-HSC/tree/main/Translation">HSC Translation</option>
-            <option value="https://github.com/awdrrawd/BC-LCE/tree/main/Translation">LCE Translation</option>
+            <option value="">…</option>
           </select>
         </div>
         <p class="hint" data-ui="urlHint">支援 GitHub tree、blob、raw 及 GitHub Pages 網址；資料只在瀏覽器內處理。</p>
@@ -252,7 +249,7 @@
   <script>
     'use strict';
 
-    const DEFAULT_URL = 'https://github.com/awdrrawd/BC-FCM/tree/main/Translation';
+    const SITES_CONFIG_URL = 'https://raw.githubusercontent.com/awdrrawd/liko-Plugin-Repository/main/Translation-Tool/sites.json';
     const RECOMMENDED_LANGS = new Set(['TW', 'CN', 'JA', 'KO', 'DE', 'FR', 'ES', 'PT', 'RU', 'UA', 'VI']);
     const LANGUAGE_CATALOG = [
       ['EN','English'], ['TW','繁體中文'], ['CN','简体中文'], ['JA','日本語'], ['KO','한국어'],
@@ -819,6 +816,38 @@
       }));
     }
 
+    async function initializeProjectSites() {
+      els.projectSelect.disabled = true;
+      const urls = location.pathname.includes('/Translation-Tool/')
+        ? [new URL('sites.json', location.href).href, SITES_CONFIG_URL]
+        : [SITES_CONFIG_URL];
+      let config = null;
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          config = await response.json();
+          break;
+        } catch (error) { lastError = error; }
+      }
+      const sites = Array.isArray(config?.sites) ? config.sites
+        .filter(site => site && site.enabled !== false && typeof site.name === 'string' && typeof site.url === 'string')
+        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) || a.name.localeCompare(b.name)) : [];
+      if (!sites.length) {
+        els.projectSelect.innerHTML = '<option value="">—</option>';
+        els.projectSelect.title = `sites.json: ${lastError?.message || 'no enabled sites'}`;
+        console.warn('[Translation Studio] Unable to load preset sites:', lastError);
+        return '';
+      }
+      els.projectSelect.innerHTML = sites.map(site => `<option value="${escapeHtml(site.url)}">${escapeHtml(site.name)}</option>`).join('');
+      els.projectSelect.disabled = false;
+      const selected = sites.find(site => site.id === config.defaultSite) || sites[0];
+      els.projectSelect.value = selected.url;
+      els.repoUrl.value = selected.url;
+      return selected.url;
+    }
+
     els.loadBtn.addEventListener('click', () => loadFromUrl());
     els.projectSelect.addEventListener('change', () => { els.repoUrl.value = els.projectSelect.value; loadFromUrl(els.projectSelect.value); });
     els.repoUrl.addEventListener('keydown', event => { if (event.key === 'Enter') loadFromUrl(); });
@@ -841,7 +870,7 @@
 
     initializeUiLanguages();
     renderLanguageHelp();
-    loadFromUrl(DEFAULT_URL);
+    initializeProjectSites().then(url => { if (url) loadFromUrl(url); });
   </script>
 </body>
 </html>
