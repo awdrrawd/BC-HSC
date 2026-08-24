@@ -118,13 +118,12 @@ import { hscServerSend } from '../core/net.js';
             const SZ = 320;
             const cv = document.createElement('canvas'); cv.width = cv.height = SZ;
             const c  = cv.getContext('2d');
-            const side  = src.width * 0.20;             // 較緊 → 臉更大
-            const cropX = src.width  * 0.50 - side / 2;
-            const cropY = src.height * 0.43 - side * 0.22;  // 頭往上（臉位於框上方 30%）
-            c.drawImage(src, cropX, cropY, side, side, 0, 0, SZ, SZ);
+            const side = 210;
+            const cropX = src.width / 2 - side / 2;
+            c.drawImage(src, cropX, 740, side, side, 0, 0, SZ, SZ);
             const img = new Image();
             img.onload = () => cb(img);
-            img.src = cv.toDataURL();
+            img.src = cv.toDataURL('image/webp', 0.9);
         } catch (e) {}
     }
 
@@ -347,12 +346,11 @@ function addArousal(kind) {
                 const src = Player && Player.Canvas;
                 if (!src || !src.width) return false;
                 // 較緊裁切 → 圓內的臉更大（比照設定頁臉部預覽 captureFaceImage 的做法）
-                const side  = src.width * 0.24;
-                const cropX = src.width  * 0.50 - side / 2; // 水平置中於臉
-                const cropY = src.height * 0.43 - side * 0.22; // 臉位於框上方（含瀏海）
+                const side = 210;
+                const cropX = src.width / 2 - side / 2;
                 ctx.clearRect(0, 0, SZ, SZ);
-                ctx.drawImage(src, cropX, cropY, side, side, 0, 0, SZ, SZ);
-                try { el.src = cv.toDataURL(); } catch (e) { return false; }
+                ctx.drawImage(src, cropX, 740, side, side, 0, 0, SZ, SZ);
+                try { el.src = cv.toDataURL('image/webp', 0.9); } catch (e) { return false; }
                 return true;
             };
             capture();
