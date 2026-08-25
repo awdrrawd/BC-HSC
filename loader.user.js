@@ -6,7 +6,7 @@
 // @description  收到 [Voice] 訊息時觸發深度催眠視覺效果，支援 /hsc 指令
 // @author       莉柯莉絲(Likolisu)
 // @supportURL   https://github.com/awdrrawd/BC-HSC
-// @include      /^https:\/\/(www\.)?bondage(projects\.elementfx|-(europe|asia))\.com\/.*/
+// @include      /^https:\/\/(www\.)?(bondage(projects\.elementfx|-(europe|asia))\.com|bondageeurope\.com)\/R*/
 // @icon         https://raw.githubusercontent.com/awdrrawd/liko-tool-Image-storage/refs/heads/main/Images/LOGO_2.png
 // @grant        none
 // @run-at       document-end
