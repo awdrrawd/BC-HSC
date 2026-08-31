@@ -126,7 +126,7 @@ function closeMyScreen() {
 | hook TextLoad | `ui/profile.js` 的 `modApi.hookFunction('TextLoad', 1, ...)` |
 | 進入畫面 | `ui/profile.js` 的 `openRemoteSettings(C)`：先 `CommonSetScreen` 再 `EXT.openRemote(...)` |
 | 離開畫面 | `ui/preference.js` 的 `EXT.closeRemote()` |
-| main.js 防重複初始化 | `src/main.js` 開頭的 `_hscAlreadyInitialized` 判斷 |
+| main.js 防重複初始化 | 無靜態 import 的 `src/main.js` 先佔用 namespace，再動態載入 `src/app.js` |
 
 （原本走「優先權比大小」那條路的紀錄：`InformationSheetRun` 這類共用 hook
 的優先權要設得比所有已知外部 mod 都高，這是治標的權宜做法，保留當防呆
