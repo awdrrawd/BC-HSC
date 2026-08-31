@@ -1,5 +1,10 @@
 node_modules/
-dist/
+# 只追蹤 loader 入口與應用程式本體；其餘建置素材仍忽略。
+dist/*
+!dist/assets/
+dist/assets/*
+!dist/assets/main.js
+!dist/assets/app.js
 # public/ 由 scripts/copy-assets.mjs 於 build 前從 Assets/ Translation/ 產生
 public/
 *.log

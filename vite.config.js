@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 
-// Build a tiny bootstrap (assets/main.js) plus the application chunk
-// (assets/app.js). The bootstrap guard must run before application dependencies.
+// Build a tiny bootstrap plus one application chunk. main.js has no static
+// imports, so it claims window.Liko.HSC before app.js or any dependency runs.
 export default defineConfig({
   base: './',
   define: {

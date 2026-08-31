@@ -2,7 +2,7 @@
 
 收到 `[Voice]` 訊息時觸發沉浸式催眠視覺／音效效果，支援 `/hsc` 指令。作者：莉柯莉絲(Likolisu)。
 
-本專案以 **Vite** 把入口打包成 `dist/assets/main.js`，由使用者腳本（loader）用動態 `import()` 載入；入口會先完成防重複佔位，再載入 `dist/assets/app.js` 的實際功能。GitHub Actions 於 push 到 `main` 時自動 build 並部署到 GitHub Pages。
+本專案以 **Vite** 打包成 `dist/assets/main.js` 與 `dist/assets/app.js`：使用者腳本先載入無靜態依賴的 `main.js`，同步完成防重複佔位後，才動態載入實際功能。GitHub Actions 於 push 到 `main` 時自動 build 並部署到 GitHub Pages。
 
 ## 安裝（使用者）
 
@@ -25,7 +25,11 @@ npm run lint     # ESLint（no-undef 會抓出漏掉的跨模組 import）
 ```
 loader.user.js          # 正式載入器（GitHub Pages）
 loader.local.user.js    # 本地開發載入器（vite preview:5174）
+<<<<<<< Updated upstream
 vite.config.js          # 打包設定（單檔 inlineDynamicImports；__HSC_VERSION__ define）
+=======
+vite.config.js          # bootstrap + application chunk 打包設定；__HSC_VERSION__ define
+>>>>>>> Stashed changes
 # 素材來源（build 前由 scripts/copy-assets.mjs 複製到 public/，自我裝載、隨 Pages 部署）
 Assets/                 # 集中的素材根目錄
   Icon/                 # icon（HSC-icon*.png）；幾乎不編輯，不算素材故獨立一夾
@@ -34,6 +38,7 @@ Assets/                 # 集中的素材根目錄
 Translation/            # i18n 字庫（文字資料不算素材，留在根目錄），一國一檔
 public/                 # ← 由上面自動產生，已 gitignore；vite 部署到 Pages
 src/
+<<<<<<< Updated upstream
   main.js               # 進入點：設定 window.Liko.HSCApi、呼叫 initialize()
   modules/
     config.js           # 版本/共用可變狀態（CONFIG、modApi…）+ setter、預設值
@@ -57,6 +62,16 @@ src/
     profile.js          # 角色資料頁 HSC 按鈕、遠端編輯、設定頁註冊
     styles.js           # CSS 動畫
     core-init.js        # 等待工具與 initialize()
+=======
+  main.js               # 無靜態 import：先防重複佔位，再動態載入 app.js
+  app.js                # 公開 API 與實際 initialize() 入口
+  core/                 # 設定、儲存、生命週期、指令、網路與 hooks
+  expansion/            # i18n、接收端在地化與主題色 API
+  util/                 # 共用工具、文字、幾何、圖示與 z-index
+  ui/                   # 控制面板、偏好設定與角色資料頁
+  hypno/                # 催眠狀態、強控說話、動畫與頭頂顯示
+  effects/              # 視覺、音效、角色及背景干擾效果
+>>>>>>> Stashed changes
 ```
 
 ### 模組化重點
