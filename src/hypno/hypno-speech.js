@@ -85,7 +85,7 @@ export function maybeInterceptHypnoSpeech() {
                 doMasturbate();
             }
         } catch (e) {}
-        _busy = false;
+        finally { _busy = false; }
     }, 2000);
     return true;
 }

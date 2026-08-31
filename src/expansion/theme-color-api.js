@@ -78,7 +78,7 @@ export function installColorAPI(getModApi) {
   if (global.Liko.__Sys_ColorAPI__ || _installed) return;
   _installed = true;
 
-  const MOD_VER = "2.2";
+  const COLORAPI_VER = "2.2";
 
   // ---------------------------------------------------------------------------
   // 共用小工具
@@ -437,7 +437,7 @@ export function installColorAPI(getModApi) {
   /** 目前用的是哪條路線，除錯用 */
   function getMode() {
     return {
-      version: MOD_VER,
+      version: COLORAPI_VER,
       lceAvailable: _getLceColor() !== null,          // LCE 有裝且已開啟染色（getThemeColor 目前是否會走路線 0）
       modApiAvailable: !!(typeof getModApi === 'function' && getModApi()),  // HSC 自己的 modApi 是否已就緒（路線 A 是否可用）
       hooked: _hooked, armed: _armed, tainted: _tainted,
@@ -451,7 +451,7 @@ export function installColorAPI(getModApi) {
   // ---------------------------------------------------------------------------
 
   const API = {
-    version: MOD_VER,
+    version: COLORAPI_VER,
     getThemeColor,   // 建議優先使用
     getUIColor,
     getCanvasColor,
@@ -463,5 +463,5 @@ export function installColorAPI(getModApi) {
 
   // 掛上系統擴充命名（與 standalone 版共用同一個位置：__Sys_ColorAPI__）
   global.Liko.__Sys_ColorAPI__ = API;
-  console.log(`🐈‍⬛ [ColorAPI] ✅ v${MOD_VER}（HSC 內嵌版）loaded`);
+  console.log(`🐈‍⬛ [ColorAPI] ✅ v${COLORAPI_VER}（HSC 內嵌版）loaded`);
 }

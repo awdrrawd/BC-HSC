@@ -22,7 +22,6 @@ import { HSC_Z } from '../util/zlayers.js';
     //  深度等級 = 由強度推算，受「深度上限」限制
     // ════════════════════════════════════════
     // 相容：0/1（供 window.Liko.HSC.runDepth 用）
-    function currentDepthLevel() { return (CONFIG.enabled && CONFIG.depthEnabled) ? 1 : 0; }
 
     let _depthTimer = null;
     function setDepthTimer(v) { _depthTimer = v; }   // 供 core-init 卸載時清除
@@ -244,7 +243,6 @@ import { HSC_Z } from '../util/zlayers.js';
     }
 
 export {
-    currentDepthLevel,
     _depthTimer, setDepthTimer,
     applyDepthLoop,
     runDepthEffect,
