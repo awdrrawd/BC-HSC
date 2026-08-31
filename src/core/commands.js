@@ -31,7 +31,10 @@ import { T, triggerVoiceEffect } from '../util/util.js';
                 whiteSpace:   'pre-wrap',
                 transition:   'opacity 0.5s ease',
             });
-            el.innerHTML = '<span style="opacity:0.6;font-size:0.85em">🌀 HSC</span>　' + text.split('\n').join('<br>');
+            const prefix = document.createElement('span');
+            prefix.style.cssText = 'opacity:0.6;font-size:0.85em';
+            prefix.textContent = '🌀 HSC';
+            el.append(prefix, document.createTextNode('　' + String(text)));
             log.appendChild(el);
             log.scrollTop = log.scrollHeight;
             if (timeoutMs > 0) {
@@ -47,7 +50,9 @@ import { T, triggerVoiceEffect } from '../util/util.js';
                 ChatRoomMessage({
                     Type:    'LocalMessage',
                     Sender:  Player.MemberNumber,
-                    Content: `<font color="#ffb3d9">🌀 [HSC] ${text}</font>`,
+                    Content: `<font color="#ffb3d9">🌀 [HSC] ${String(text)
+                        .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+                        .replaceAll('"', '&quot;').replaceAll("'", '&#39;')}</font>`,
                 });
                 return;
             }

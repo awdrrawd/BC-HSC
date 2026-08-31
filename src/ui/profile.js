@@ -9,7 +9,6 @@ import { EXT, waitForPreference } from './preference.js';
 import { interfereEnterLeave } from '../effects/state-fx.js';
 import { publishSharedSettings, saveSettings } from '../core/storage.js';
 import { hscServerSend } from '../core/net.js';
-import { isZh } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════

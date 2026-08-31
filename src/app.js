@@ -5,7 +5,7 @@ import { MOD_VER, CONFIG, HSC_SCREEN } from './core/config.js';
 import { triggerVoiceEffect } from './util/util.js';
 import { loadSettings, saveSettings, exportSettings, importSettings } from './core/storage.js';
 import { handleHSCCommand } from './core/commands.js';
-import { currentDepthLevel, runDepthEffect } from './effects/depth.js';
+import { runDepthEffect } from './effects/depth.js';
 import { getHypnoValue, isForced, wake } from './hypno/hypno.js';
 import { playHypnoAnim } from './hypno/hypno-anim.js';
 import { EXT } from './ui/preference.js';
@@ -27,7 +27,7 @@ if (alreadyInitialized) {
         version: MOD_VER,
         trigger: (text = '[Voice]') => triggerVoiceEffect(String(text), false),
         test: (text = '[Voice] test') => triggerVoiceEffect(String(text), true),
-        runDepth: (level) => runDepthEffect(level || currentDepthLevel() || 1),
+        runDepth: () => runDepthEffect(),
         command: (sub = '') => handleHSCCommand(`/hsc ${sub}`.trim()),
         inSubscreen: () =>
             (typeof CurrentScreen !== 'undefined' && CurrentScreen === HSC_SCREEN) ||

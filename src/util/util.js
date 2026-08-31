@@ -64,12 +64,22 @@ import { HSC_Z } from './zlayers.js';
             if (contentEl && (contentEl.textContent || '').trim()) {
                 return (contentEl.textContent || '').replace(/\s+/g, ' ').trim();
             }
-            // ③ fallback：clone 去雜訊（含所有按鈕：名稱鍵、回覆鍵 ↩️、選單鍵）+ 去開頭殘留的冒號
-            const clone = el.cloneNode(true);
-            clone.querySelectorAll('.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp, button')
-                 .forEach(x => x.remove());
-            let t = (clone.textContent || '').replace(/\s+/g, ' ').trim();
-            t = t.replace(/^(?:\s|↩️|↩)+/, '').replace(/^[:：]\s*/, '');   // 去開頭回覆箭頭與冒號
+            // ③ fallback：走訪文字節點並跳過雜訊子樹，避免為每則訊息複製整棵 DOM。
+            const skip = '.ChatMessageName, .chat-room-message-popup, .chat-room-metadata, .ChatMessageTimestamp, button';
+            let t = '';
+            const walkText = current => {
+                current.childNodes.forEach(child => {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        t += child.nodeValue || '';
+                    } else if (child.nodeType === Node.ELEMENT_NODE && !child.matches?.(skip)) {
+                        t += child.tagName === 'BR' ? ' ' : '';
+                        walkText(child);
+                    }
+                });
+            };
+            walkText(el);
+            t = t.replace(/\s+/g, ' ').trim();
+            t = t.replace(/^(?:\s|↩️|↩)+/, '').replace(/^[:：]\s*/, '');
             return t;
         } catch { return ''; }
     }

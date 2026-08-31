@@ -62,7 +62,8 @@ import { T } from '../util/util.js';
     // 預載所有音源（進房間後呼叫一次）
     // 失敗時用 printChat 留訊息（10 秒後自動消失）
     function preloadSounds() {
-        const list = SOUND_DEFAULTS.hypno;   // 預載催眠呻吟（喘息後備）
+        // 預載各類別實際會用到的預設音源，避免首次效果才開始下載／解碼。
+        const list = [...new Set(Object.values(SOUND_DEFAULTS).flat())];
         if (!list.length) return;
         let _failNotified = false;
         list.forEach(url => {
@@ -78,7 +79,7 @@ import { T } from '../util/util.js';
                 _soundBufferCache.set(url, buf);
             })
                 .catch(e => {
-                // 每次重新進房間只通知一次，避免四個 URL 連續刷訊息
+                // 每次重新進房間只通知一次，避免多個 URL 連續刷訊息
                 if (!_failNotified) {
                     _failNotified = true;
                     // 延遲 3 秒，等玩家看完催眠特效再顯示

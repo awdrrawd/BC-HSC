@@ -25,7 +25,7 @@ import { CONFIG } from '../core/config.js';
 import { loadHscImage } from '../util/icons.js';
 import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
-import { bcToScreen, playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from '../util/geometry.js';
+import { playerDrawPos, refreshCanvasCache, getPlayerHeadScreenPos, _cachedScaleX } from '../util/geometry.js';
 
 const COLS = 6, ROWS = 2, CELL_AR = 0.5, BASE_W = 320;
 const CHAR_AR_FALLBACK = 0.5; // 快照失敗時的人物寬高比後備值（500:1000）
