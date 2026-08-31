@@ -15,7 +15,16 @@ import { resolveMe, pickRandom } from '../util/util.js';
 let _busy = false;
 
 function sendChat(text) {
-    try { if (typeof ServerSend === 'function' && text) ServerSend('ChatRoomChat', { Type: 'Chat', Content: String(text) }); } catch (e) {}
+    if (!text) return;
+    try {
+        // Use BC's normal sender path so hypnosis garbling, physical gags,
+        // stuttering, OOC ranges and RestrictionSettings are all handled once.
+        if (typeof ChatRoomSendChatMessage === 'function') {
+            ChatRoomSendChatMessage(String(text));
+        } else if (typeof ServerSend === 'function') {
+            ServerSend('ChatRoomChat', { Type: 'Chat', Content: String(text) });
+        }
+    } catch (e) {}
 }
 
 // 自慰：優先跑 BC 的 MasturbateHand 活動（會自動發訊息）；無法執行則發 Action 描述

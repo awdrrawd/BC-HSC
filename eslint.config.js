@@ -11,7 +11,7 @@ const bcGlobals = [
   'DrawTextFit', 'DrawingGetTextSize', 'DrawImage', 'DrawImageResize', 'DrawCharacter', 'DrawRect',
   'DrawEmptyRect', 'DrawCircle', 'DrawBackNextButton', 'MouseIn', 'MouseX', 'MouseY',
   'ServerSend', 'ServerAccountUpdate', 'ServerPlayerExtensionSettingsSync',
-  'ChatRoomSendChat', 'ChatRoomSendEmote', 'ChatRoomSendLocal', 'ChatRoomCharacterViewDrawOverlay',
+  'ChatRoomSendChat', 'ChatRoomSendChatMessage', 'ChatRoomSendEmote', 'ChatRoomSendLocal', 'ChatRoomCharacterViewDrawOverlay',
   'ChatRoomRun', 'ChatRoomLeave', 'ChatRoomHideElements', 'PreferenceRegisterExtensionSetting',
   'PreferenceExit', 'CommandCombine', 'CommandExecute', 'LZString', 'bcModSdk',
   'InformationSheetRun', 'InformationSheetClick', 'InformationSheetExit', 'InformationSheetUnload',
