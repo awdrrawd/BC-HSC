@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url)));
 
-// Build HSC as a single ES-module bundle (assets/main.js) that the userscript
-// loader imports with a dynamic import(). Mirrors the BC-AEE build model.
+// Build a tiny bootstrap (assets/main.js) plus the application chunk
+// (assets/app.js). The bootstrap guard must run before application dependencies.
 export default defineConfig({
   base: './',
   define: {
@@ -17,7 +17,6 @@ export default defineConfig({
     rollupOptions: {
       input: 'src/main.js',
       output: {
-        inlineDynamicImports: true,
         entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name].[ext]',

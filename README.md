@@ -2,7 +2,7 @@
 
 收到 `[Voice]` 訊息時觸發沉浸式催眠視覺／音效效果，支援 `/hsc` 指令。作者：莉柯莉絲(Likolisu)。
 
-本專案以 **Vite** 把 `src/` 下的 ES 模組打包成單一 `dist/assets/main.js`，由使用者腳本（loader）用動態 `import()` 載入。GitHub Actions 於 push 到 `main` 時自動 build 並部署到 GitHub Pages。
+本專案以 **Vite** 把入口打包成 `dist/assets/main.js`，由使用者腳本（loader）用動態 `import()` 載入；入口會先完成防重複佔位，再載入 `dist/assets/app.js` 的實際功能。GitHub Actions 於 push 到 `main` 時自動 build 並部署到 GitHub Pages。
 
 ## 安裝（使用者）
 
