@@ -115,7 +115,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
 
         const intensitySlider = document.createElement('input');
         intensitySlider.type  = 'range';
-        intensitySlider.min   = '0.3';
+        intensitySlider.min   = '0.1';
         intensitySlider.max   = '3.0';
         intensitySlider.step  = '0.1';
         intensitySlider.value = String(CONFIG.intensity);
@@ -191,10 +191,10 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
             triggerVoiceEffect(txt, true);
         });
 
-        // 日常干擾測試（依目前深度上限，至少 1 級）
+        // 日常干擾是自由勾選的扁平效果，不再使用舊版深度等級。
         const depthBtn = _mkBtn(T('🌀 日常','🌀 Daily'), '#3a2a6e', '#bb99ff', () => {
             refreshCanvasCache();
-            runDepthEffect(Math.max(1, CONFIG.depthMax || 1));
+            runDepthEffect();
         });
 
         // 立即陷入催眠（拉滿催眠值 → 進強控；免每次催到 100%）

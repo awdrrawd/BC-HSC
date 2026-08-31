@@ -74,6 +74,7 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
 
     let _fallbackInterval = null;
     let _screenGuard = null;
+    let _screenGuardUnhook = null;
 
     // 離開 ChatRoom（切到 profile/偏好/更衣室等任何非聊天室畫面）→ 清掉所有暫態疊加特效。
     //  例外：人臉／名稱識別障礙是繪圖 hook 自行判斷畫面，不在 overlay 內，不受此清除影響。
@@ -205,6 +206,7 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
+                        if (_screenGuardUnhook) { try { _screenGuardUnhook(); } catch (e) {} _screenGuardUnhook = null; }
                         try { stopHypnoAnim(); updateHeadTalisman(); } catch (e) {}
                         if (_depthTimer)       { clearInterval(_depthTimer); setDepthTimer(null); }
                         removePanel();
@@ -234,7 +236,22 @@ import { installColorAPI } from '../expansion/theme-color-api.js';
         waitForChatRoom();
         // 邊緣觸發：只在「離開 ChatRoom 的那一刻」清一次暫態特效，
         //  絕不在房內輪詢清除（避免誤清正在播放的特效）。
-        if (!_screenGuard) {
+        // Current BC: CommonSetScreen(NewModule, NewScreen, options?). Hook the
+        // actual NewScreen argument; the PR's last-argument approach mistakes
+        // the optional settings object for a screen name.
+        if (!_screenGuardUnhook && typeof CommonSetScreen === 'function') {
+            try {
+                _screenGuardUnhook = modApi.hookFunction('CommonSetScreen', 5, (args, next) => {
+                    const newScreen = args[1];
+                    if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom' && newScreen !== 'ChatRoom') {
+                        clearTransientEffects();
+                    }
+                    return next(args);
+                });
+            } catch (e) { _screenGuardUnhook = null; }
+        }
+        // Compatibility fallback for versions where CommonSetScreen cannot be hooked.
+        if (!_screenGuardUnhook && !_screenGuard) {
             let _lastScreen = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';
             _screenGuard = setInterval(() => {
                 const cur = (typeof CurrentScreen !== 'undefined') ? CurrentScreen : '';
