@@ -4,6 +4,11 @@
 
 本專案以 **Vite** 打包成 `dist/assets/main.js` 與 `dist/assets/app.js`：使用者腳本先載入無靜態依賴的 `main.js`，同步完成防重複佔位後，才動態載入實際功能。GitHub Actions 於 push 到 `main` 時自動 build 並部署到 GitHub Pages。
 
+## 文件
+
+- [HSC 架構與擴充指南](docs/architecture.md)
+- [互動式功能分支圖](docs/hsc-architecture.html)
+
 ## 安裝（使用者）
 
 在 Tampermonkey 安裝 **`loader.user.js`**。它只是個載入器，會從 GitHub Pages 抓取打包後的主程式：
