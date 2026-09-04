@@ -98,14 +98,8 @@ export const HSC_ICON_B = imageUrl('HSC-iconB.png');
 })();
 
 // ── 判定「當前 UI 主題色」是否過深 ──
-// HSC 自己不判斷顏色，只單純問共用 ColorAPI（__Sys_ColorAPI__，由 core-init.js 於
-//  初始化時呼叫 expansion/theme-color-api.js 的 installColorAPI() 掛上）要結果。
-//  有沒有裝 LCE、有沒有 modApi 可用宣告值、要不要退回像素取樣——這些優先序全部
-//  由 ColorAPI 內部處理好，HSC 不重複那套邏輯，架構上只有它一個顏色來源。
-//
-// 不用時間快取：主題不會自己一直變，沒必要每幀或定時重算。
-//  進入資訊頁（profile）時由 refreshThemeIsDark() 重算一次，之後每幀重用同一份結果；
-//  就算這次沒跟上（例如剛切主題），下次再進 profile 就會更新——換取最省的取樣/運算。
+// 優先序：既有 ColorAPI（專業工具）→ LCE 正在使用的主題色 → HSC 自行取樣。
+// HSC 不安裝 ColorAPI、不註冊額外 mod，也不建立額外繪圖 hook。
 let _themeDark = null;   // null = 尚未計算
 // 重算並快取當前主題深淺（進入畫面時呼叫一次）。
 export function refreshThemeIsDark() {
@@ -117,9 +111,6 @@ export function hscThemeIsDark() {
     return _themeDark === null ? refreshThemeIsDark() : _themeDark;
 }
 function _computeThemeIsDark() {
-    // 共用 __Sys_ColorAPI__：優先用 getThemeColor()——它內部已依
-    //  「LCE 暴露 API → 宣告值 → 像素取樣」的優先序處理好，拿不到才退像素取樣；
-    //  舊版沒有 getThemeColor 時退回 getCanvasColor。
     const ColorAPI = (typeof window !== 'undefined') ? window.Liko?.__Sys_ColorAPI__ : null;
     if (ColorAPI) {
         try {
@@ -127,13 +118,68 @@ function _computeThemeIsDark() {
                 ? ColorAPI.getThemeColor()
                 : ColorAPI.getCanvasColor({ x: 1000, y: 110, size: 8 });
             if (color) { const d = ColorAPI.isDark(color); if (d !== null) return d; }
-        } catch { /* ColorAPI 呼叫失敗 → 落到下方保守預設 */ }
+        } catch { /* ColorAPI 呼叫失敗 → LCE / 本地取樣 */ }
     }
-    // ColorAPI 還沒安裝好（installColorAPI 尚未執行、或 modApi 還沒註冊完成）
-    //  或呼叫不到結果：保守預設回「亮底」，不在 HSC 這邊另外做取色判斷；
-    //  等下次 refreshThemeIsDark()（例如重新進入資訊頁）ColorAPI 應該已經就緒，
-    //  就會拿到真正的顏色。
+
+    try {
+        const theme = window.Liko?.LCE?.Theme;
+        if (theme?.enabled && theme.Main) {
+            const d = _isDarkColor(theme.Main);
+            if (d !== null) return d;
+        }
+    } catch { /* LCE 不可用 → 本地取樣 */ }
+
+    const sampled = _sampleCanvasColor({ x: 1000, y: 110, size: 8 });
+    const sampledDark = _isDarkColor(sampled);
+    if (sampledDark !== null) return sampledDark;
     return false;
+}
+
+let _sampleCanvas = null;
+let _sampleContext = null;
+
+function _sampleCanvasColor({ x, y, size }) {
+    try {
+        const source = (typeof MainCanvas !== 'undefined' && MainCanvas?.canvas)
+            ? MainCanvas.canvas
+            : document.getElementById('MainCanvas');
+        if (!source) return null;
+        if (!_sampleCanvas) {
+            _sampleCanvas = document.createElement('canvas');
+            _sampleContext = _sampleCanvas.getContext('2d', { willReadFrequently: true });
+        }
+        if (!_sampleContext) return null;
+        if (_sampleCanvas.width !== size || _sampleCanvas.height !== size) {
+            _sampleCanvas.width = size;
+            _sampleCanvas.height = size;
+        }
+        _sampleContext.clearRect(0, 0, size, size);
+        _sampleContext.drawImage(source, x, y, size, size, 0, 0, size, size);
+        const data = _sampleContext.getImageData(0, 0, size, size).data;
+        const tally = new Map();
+        let best = null, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 0) continue;
+            const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
+            const next = (tally.get(key) || 0) + 1;
+            tally.set(key, next);
+            if (next > count) { best = key; count = next; }
+        }
+        return best === null ? null : `#${best.toString(16).padStart(6, '0')}`;
+    } catch { return null; }
+}
+
+function _isDarkColor(color, threshold = 0.5) {
+    if (typeof color !== 'string') return null;
+    const match = color.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return null;
+    let hex = match[1];
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const channel = offset => {
+        const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+        return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4) < threshold;
 }
 
 // 依當前主題深淺選圖（給不易取樣座標的按鈕，如偏好頁註冊鈕）

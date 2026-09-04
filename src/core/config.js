@@ -11,7 +11,7 @@ import { ui } from '../expansion/i18n.js';
     let modApi = null;
     function setModApi(v) { modApi = v; }
     // 存取器（而非直接匯出 modApi 這個值）：給「呼叫當下 modApi 可能還沒註冊好」的模組用
-    // （例如 theme-color-api.js 在 HSC 尚未 registerMod 前就已 import 並掛上 install），
+    // 讓需要延遲取得 SDK API 的模組可在 HSC 完成 registerMod 後安全存取，
     // 讓它們晚點（真正要用時）才透過這個函式讀到「當下最新」的 modApi，而不是 import 那一刻的舊值。
     function getModApi() { return modApi; }
     // ════════════════════════════════════════
