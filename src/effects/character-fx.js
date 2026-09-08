@@ -170,7 +170,7 @@ function addArousal(kind) {
 
     // ════════════════════════════════════════
     //  觸發時發送狀態 emote（讓他人知道你的狀態）
-    //  ChatRoomSendEmote 會自動帶上玩家名字，傳後綴即可
+    //  使用 BC 無自動名稱的 Emote 格式，完整句子由模板與 $me 控制。
     // ════════════════════════════════════════
     function sendStatusEmote() {
         if (!CONFIG.emoteEnabled) return;
@@ -198,8 +198,8 @@ function addArousal(kind) {
                 // 一般說話（會像自己開口，可用於呻吟等）
                 ServerSend('ChatRoomChat', { Type: 'Chat', Content: msg });
             } else {
-                // Emote 的 Content 應是純內容；前導 * 會被 BC 解讀成特殊無署名格式。
-                ServerSend('ChatRoomChat', { Type: 'Emote', Content: msg });
+                // BC 接收端移除前導 * 並略過自動名稱；已有標記的模板不重複添加。
+                ServerSend('ChatRoomChat', { Type: 'Emote', Content: msg.startsWith('*') ? msg : '*' + msg });
             }
         } catch (e) { /* 靜默 */ }
     }
