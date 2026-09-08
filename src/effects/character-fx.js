@@ -1,3 +1,4 @@
+import { createExpressionState } from './expression-state.js';
 // ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { _emitBreathPuff, breathIntervalMs } from './breath.js';
@@ -16,7 +17,7 @@ import { hscServerSend } from '../core/net.js';
     // ════════════════════════════════════════
     //  BC 有兩個眼睛組：Eyes(右眼) / Eyes2(左眼)；WCE 再對應 右眼_Luzi / 左眼_Luzi
     function saveExpression() {
-        const groups = ["Eyebrows", "Eyes", "Eyes2", "Mouth", "Blush"];
+        const groups = ["Eyebrows", "Eyes", "Eyes2", "Mouth", "Blush", "右眼_Luzi", "左眼_Luzi"];
         const saved  = {};
         for (const g of groups) {
             const item = Player.Appearance.find(a => a.Asset.Group.Name === g);
@@ -35,47 +36,36 @@ import { hscServerSend } from '../core/net.js';
             Eyes2:      eyes2,
             Mouth:      exprObj.Mouth ?? null,
             Blush:      exprObj.Blush ?? null,
-            '右眼_Luzi': eyes,
-            '左眼_Luzi': eyes2,
+            '右眼_Luzi': exprObj['右眼_Luzi'] !== undefined ? exprObj['右眼_Luzi'] : eyes,
+            '左眼_Luzi': exprObj['左眼_Luzi'] !== undefined ? exprObj['左眼_Luzi'] : eyes2,
         };
     }
 
     function applyExpression(exprObj) {
         const map = _expandExpr(exprObj);
-        // 1. 同步到伺服器（其他人看得到；Luzi 群組可能不被原生函式接受，try 即可）
-        for (const [g, val] of Object.entries(map)) {
-            try { CharacterSetFacialExpression(Player, g, val); } catch (e) {}
+        // 一次寫完所有部位，避免逐部位同步留下中間狀態；左右眼保持獨立。
+        for (const item of Player.Appearance) {
+            const group = item.Asset.Group.Name;
+            if (!Object.hasOwn(map, group)) continue;
+            item.Property ??= {};
+            item.Property.Expression = map[group];
         }
-        // 2. 直接設 Property，確保本地 canvas 立即更新（含左眼 Eyes2 / Luzi）
-        for (const [g, val] of Object.entries(map)) {
-            try {
-                const it = Player.Appearance.find(a => a.Asset.Group.Name === g);
-                if (it) { if (!it.Property) it.Property = {}; it.Property.Expression = val; }
-            } catch (e) {}
+        // 與原生表情設定相同，取消被替換部位的舊計時表情，避免稍後覆蓋還原值。
+        if (Player.ExpressionQueue) {
+            Player.ExpressionQueue = Player.ExpressionQueue.filter(({ Group }) => !Object.hasOwn(map, Group));
         }
-        try { CharacterRefresh(Player, false, false); } catch (e) {}
+        CharacterRefresh(Player, false, false);
+        // ChatRoomCharacterUpdate 自行檢查是否在房內；只送最終完整外觀。
+        try { ChatRoomCharacterUpdate(Player); } catch (e) {
+            console.warn('🐈‍⬛ [HSC] 表情外觀同步失敗:', e);
+        }
     }
 
-    // 表情效果共用堆疊：避免 VOICE 與深度同時觸發時，互相把對方套的表情當成「原始值」存起來
-    //  → 第一個進入時才記錄真實表情；全部結束才還原真實表情
-    let _exprRealSnapshot = null;
-    let _exprEffectCount  = 0;
-    function pushExprEffect(exprObj) {
-        try {
-            if (_exprEffectCount === 0) _exprRealSnapshot = saveExpression();
-            _exprEffectCount++;
-            applyExpression(exprObj);
-        } catch (e) {}
-    }
-    function popExprEffect() {
-        try {
-            _exprEffectCount--;
-            if (_exprEffectCount <= 0) {
-                _exprEffectCount = 0;
-                if (_exprRealSnapshot) { applyExpression(_exprRealSnapshot); _exprRealSnapshot = null; }
-            }
-        } catch (e) {}
-    }
+    // 共用原始快取；每個語音、深度與強控效果持有自己的識別碼。
+    const expressionState = createExpressionState(saveExpression, applyExpression);
+    const pushExprEffect = expressionState.push;
+    const popExprEffect = expressionState.pop;
+    const clearExprEffects = expressionState.clear;
 
     // 取某表情組的有效值清單（含 null=無表情），用於設定頁循環選擇
     const _exprOptCache = {};
@@ -100,16 +90,6 @@ import { hscServerSend } from '../core/net.js';
         idx = (idx + dir + opts.length) % opts.length;
         setObj[group] = opts[idx];
     }
-    // 只在本地套用表情（不同步伺服器），給設定頁即時預覽用
-    function applyExpressionLocal(obj) {
-        const map = _expandExpr(obj);
-        for (const [g, val] of Object.entries(map)) {
-            const it = Player.Appearance.find(a => a.Asset.Group.Name === g);
-            if (it) { if (!it.Property) it.Property = {}; it.Property.Expression = val; }
-        }
-        try { CharacterRefresh(Player, false, false); } catch (e) {}
-    }
-
     // 截目前 Player 臉部成 Image（給設定頁臉部預覽）
     function captureFaceImage(cb, srcCanvas) {
         try {
@@ -384,9 +364,9 @@ export {
     applyExpression,
     pushExprEffect,
     popExprEffect,
+    clearExprEffects,
     getExpressionOptions,
     cycleExpression,
-    applyExpressionLocal,
     captureFaceImage,
     addArousal,
     hypnoOrgasm,

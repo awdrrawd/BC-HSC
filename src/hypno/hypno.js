@@ -10,7 +10,7 @@
 // ════════════════════════════════════════
 
 import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
-import { pushExprEffect, popExprEffect, hypnoOrgasm } from '../effects/character-fx.js';
+import { pushExprEffect, popExprEffect, clearExprEffects, hypnoOrgasm } from '../effects/character-fx.js';
 import { sendLocalizedAction } from '../expansion/l10n.js';
 import { updateCrowd } from '../effects/crowd.js';
 import { updateHeadTalisman, playHypnoAnim, stopHypnoAnim } from './hypno-anim.js';
@@ -29,7 +29,7 @@ function _publishHypno(immediate = false) {
 let _hypno = 0;              // 0~100（未強控時的累積催眠值）
 let _forced = false;         // 強控中（催眠狀態）
 let _wakeAt = 0;             // 自動清醒時間戳（ms）；0 = 無自動清醒（∞，只能靠清醒詞）
-let _forcedExprPushed = false;
+let _forcedExprToken = null;
 let _decayTimer = null;
 let _idleTimer = null;       // 強控中每 10 分鐘一次的狀態 Action
 
@@ -47,6 +47,14 @@ function _computeWakeAt() {
     return CONFIG.autoWake ? (Date.now() + Math.max(1, (CONFIG.autoWakeMin || 30)) * 60000) : 0;
 }
 
+function _startForcedExpression() {
+    try {
+        if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprToken) {
+            _forcedExprToken = pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
+        }
+    } catch (e) {}
+}
+
 function _enterForced() {
     if (_forced) return;
     _forced = true;
@@ -61,12 +69,7 @@ function _enterForced() {
         updateHeadTalisman();   // 頭上符咒獨立於動畫 → 未開動畫也要顯示
     }
     // 強控視覺：套一組催眠表情並保持到解除
-    try {
-        if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprPushed) {
-            pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
-            _forcedExprPushed = true;
-        }
-    } catch (e) {}
+    _startForcedExpression();
     // 強控中每 10 分鐘一次狀態 Action
     if (_idleTimer) clearInterval(_idleTimer);
     _idleTimer = setInterval(() => { if (_forced) sendLocalizedAction('hs_forcedIdle'); }, 600000);
@@ -79,7 +82,7 @@ function _exitForced() {
     _wakeAt = 0;
     _hypno = 0;                 // ★ 清醒 → 催眠值歸 0（時間制新規）
     if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
-    if (_forcedExprPushed) { try { popExprEffect(); } catch (e) {} _forcedExprPushed = false; }
+    if (_forcedExprToken) { try { popExprEffect(_forcedExprToken); } catch (e) {} _forcedExprToken = null; }
     updateCrowd(false);         // 收起人群
     updateHeadTalisman();       // 收起頭上符咒
     if (was) sendLocalizedAction('hs_exitForced');   // 醒來時
@@ -120,12 +123,7 @@ export function restoreHypnoState(v, forced, remSec, inf) {
         _forced = true;
         // 還原清醒倒數：∞ → 0（無自動清醒）；否則 now + 上次剩餘秒（拿不到剩餘就用自動清醒基底）
         _wakeAt = inf ? 0 : (remSec > 0 ? (Date.now() + remSec * 1000) : _computeWakeAt());
-        try {
-            if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprPushed) {
-                pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
-                _forcedExprPushed = true;
-            }
-        } catch (e) {}
+        _startForcedExpression();
         updateCrowd(true);         // 若已在房內立即顯示；否則進房事件會再補
         updateHeadTalisman();
         if (_idleTimer) clearInterval(_idleTimer);
@@ -140,7 +138,8 @@ export function disableHypno() {
     _forced = false;
     _wakeAt = 0;
     if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
-    if (_forcedExprPushed) { try { popExprEffect(); } catch (e) {} _forcedExprPushed = false; }
+    _forcedExprToken = null;
+    clearExprEffects();
     // 清除顯示中的狀態：人群、儀式動畫、頭上符咒
     try { updateCrowd(false); } catch (e) {}
     try { stopHypnoAnim(); } catch (e) {}

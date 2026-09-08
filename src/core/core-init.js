@@ -1,3 +1,4 @@
+import { clearExprEffects } from '../effects/character-fx.js';
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
@@ -42,7 +43,8 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         return new Promise(resolve => {
             const check = () => {
                 if (
-                    typeof CharacterSetFacialExpression === 'function' &&
+                    typeof CharacterRefresh === 'function' &&
+                    typeof ChatRoomCharacterUpdate === 'function' &&
                     typeof ChatRoomCharacter !== 'undefined'
                 ) resolve(true);
                 else if (Date.now() - start > timeout) resolve(false);
@@ -198,6 +200,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         if (modApi) {
             try {
                 modApi.onUnload(() => {
+                        clearExprEffects();
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }

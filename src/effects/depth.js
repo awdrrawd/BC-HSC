@@ -41,8 +41,8 @@ import { HSC_Z } from '../util/zlayers.js';
             refreshCanvasCache();
             // 表情變化（共用堆疊，避免與 VOICE 同時觸發時互相覆蓋還原值；6 秒後還原）
             if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length) {
-                pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
-                setTimeout(popExprEffect, 6000);
+                const exprToken = pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
+                setTimeout(() => popExprEffect(exprToken), 6000);
             }
             const E = CONFIG.depthEffects || {};
             if (E.smoke)       triggerPinkFlash();
