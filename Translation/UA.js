@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "UA": "Немає прав на це"
     },
+    "whitelistOwner": {
+        "UA": "Власник"
+    },
+    "whitelistLover": {
+        "UA": "Партнер"
+    },
+    "whitelistFriend": {
+        "UA": "Друзі"
+    },
     "whitelistD": {
         "UA": "Номери учасників або мітки ($owner = власник, $lover = кохані вкл. AFC, $friend = друзі, $white = білий список BC), через кому/пробіл. Спільний для всіх прав «Білий список»."
     },

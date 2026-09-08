@@ -1,3 +1,4 @@
+import { createPreferenceLayout, PREF_LAYOUT } from './preference-layout.js';
 // ── auto-wired cross-module imports ──
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '../effects/character-fx.js';
 import { CONFIG, DEFAULT_EXPRESSIONS, HSC_SCREEN, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from '../core/config.js';
@@ -52,6 +53,7 @@ import { HSC_Z } from '../util/zlayers.js';
     // 內容框（中間區）與卷軸視窗（往左移 50、加寬 50，把側邊按鈕讓出的空間用上）
     const FRAME_X = 425, FRAME_Y = 178, FRAME_W = 900, FRAME_H = 732;
     const CONTENT_X = 450;                 // 內容左緣
+    const ROW_HEIGHT = PREF_LAYOUT.rowHeight;
     const CONTENT_TOP = 200;               // 內容第一列基準 y
     const FRAME_BOT = FRAME_Y + FRAME_H;   // 視窗底
 
@@ -110,7 +112,7 @@ import { HSC_Z } from '../util/zlayers.js';
         unload() { this._cleanup(); },
         exit() { this.hoverDesc = ''; this._cleanup(); },
         _cleanup() {
-            this._restoreExpr();
+            this._clearExprPreview();
             this._unbindCanvasEvents();
             for (const id in this._inputs) { try { this._inputs[id].remove(); } catch {} }
             this._inputs = {};
@@ -159,6 +161,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 this._applyScrollDrag(p.y);
                 return;
             }
+            if (p.x < FRAME_X || p.x > FRAME_X + FRAME_W || p.y < FRAME_Y || p.y > FRAME_BOT) return;
             // 命中滑桿 → 開始拖曳並立即跳到該位置
             for (const c of this._mid) {
                 if (c.slider && p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h) {
@@ -260,6 +263,7 @@ import { HSC_Z } from '../util/zlayers.js';
 
             // 卷軸計算 + 軌道（可拖曳）
             this._maxScroll = Math.max(0, this._contentBottom - FRAME_BOT + 20);
+            this.scroll = Math.max(0, Math.min(this.scroll, this._maxScroll));
             if (this._maxScroll > 0) {
                 const trackTop = FRAME_Y + 4;
                 const trackH = FRAME_H - 8;
@@ -470,7 +474,7 @@ import { HSC_Z } from '../util/zlayers.js';
             for (let i = 0; i < tabs.length; i++) {
                 if (MouseIn(100, 285 + i * TABP, 300, 50)) {
                     if (this.activeTab !== tabs[i].key) {
-                        if (this.activeTab === 'expr') this._restoreExpr();  // 離開表情分頁還原
+                        if (this.activeTab === 'expr') this._clearExprPreview();  // 離開分頁時清除克隆頭像預覽快取
                         this.activeTab = tabs[i].key; this.scroll = 0; this._rscroll = 0;
                     }
                     return;
@@ -521,9 +525,10 @@ import { HSC_Z } from '../util/zlayers.js';
             } catch (e) {}
         },
         // 不再改動真實 Player → 無需還原（保留空殼相容舊呼叫）
-        _restoreExpr() { this._exprPrevKey = ''; this._exprFaceImg = null; },
+        _clearExprPreview() { this._exprPrevKey = ''; this._exprFaceImg = null; },
 
         // ── 中間區繪製工具（cy 為內容座標，繪製時自動扣卷軸）──
+        _layout() { return createPreferenceLayout(CONTENT_TOP, bottom => this._track(bottom)); },
         _y(cy) { return cy - this.scroll; },
         _track(cyBottom) { if (cyBottom > this._contentBottom) this._contentBottom = cyBottom; },
 
@@ -531,10 +536,10 @@ import { HSC_Z } from '../util/zlayers.js';
         title(cy, text, desc) {
             const y = this._y(cy);
             const prev = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-            DrawTextFit(text, CONTENT_X, y, 260, 'Black', '');
+            DrawTextFit(text, CONTENT_X, y, 230, 'Black', '');
             MainCanvas.textAlign = prev;
             this._track(cy + 20);
-            if (desc && MouseIn(CONTENT_X, y - 20, 260, 40) && MouseY >= FRAME_Y && MouseY <= FRAME_BOT)
+            if (desc && MouseIn(CONTENT_X, y - 20, 230, 40) && MouseY >= FRAME_Y && MouseY <= FRAME_BOT)
                 this.hoverDesc = desc;
         },
         // 分隔標題（置中）
@@ -630,9 +635,12 @@ import { HSC_Z } from '../util/zlayers.js';
                 this._inputs[id] = el;
             }
             if (document.activeElement !== el) el.value = value;
+            this._placeInput(el, cx, cy, w, h);
+        },
+
+        _placeInput(el, cx, cy, w, h) {
             const y = this._y(cy);
             this._track(cy + h);
-            // 卷出視窗 → 隱藏
             if (y < FRAME_Y || y + h > FRAME_BOT) { el.style.display = 'none'; return; }
             const r = this._cv ? this._cv.getBoundingClientRect()
                                : (document.getElementById('MainCanvas') || document.querySelector('canvas')).getBoundingClientRect();
@@ -675,107 +683,88 @@ import { HSC_Z } from '../util/zlayers.js';
                 }
             }
             if (document.activeElement !== el) el.value = value;
-            const y = this._y(cy);
-            this._track(cy + h);
-            if (y < FRAME_Y || y + h > FRAME_BOT) { el.style.display = 'none'; return; }
-            const r = this._cv ? this._cv.getBoundingClientRect()
-                               : (document.getElementById('MainCanvas') || document.querySelector('canvas')).getBoundingClientRect();
-            const sx = r.width / 2000, sy = r.height / 1000;
-            el.style.display = '';
-            el.style.left   = (r.left + cx * sx) + 'px';
-            el.style.top    = (r.top  + y  * sy) + 'px';
-            el.style.width  = (w * sx) + 'px';
-            el.style.height = (h * sy) + 'px';
-            el.style.fontSize = Math.round(20 * sy) + 'px';
+            this._placeInput(el, cx, cy, w, h);
         },
 
-        // 深度效果層定義
         // ════════ 基本設定 ════════
         _run_basic() {
-            const prev = MainCanvas.textAlign;
+            const flow = this._layout();
             const CTRL_X = 700;
-            const ROW_GAP = 5;   // 藍：同組列距
-            const SEC_GAP = 10;  // 紅：跨組列距
-            const H_ROW   = 40;  // 一般 title+toggle / title+select 列高
-            const H_INPUT = 42;  // 白名單輸入框高
-            const H_PERM  = 44;  // 6 類編輯權限列高
-
-            // cy 永遠代表「這一列的中心」；用兩邊實際高度換算下一列中心，跟高度改動無關
-            const next = (cy, curH, nextH, gap) => cy + curH / 2 + gap + nextH / 2;
-
-            let cy = 214;
-
-            const toggleRow = (labelKey, descKey, val, onClick, nextH = H_ROW, gap = ROW_GAP) => {
+            let cy = flow.row();
+            const toggleRow = (labelKey, descKey, val, onClick) => {
+                cy = flow.row();
                 this.title(cy, ui(labelKey), ui(descKey));
-                this.toggle(CTRL_X, cy - H_ROW / 2, 116, H_ROW, val ? ui('on') : ui('off'), val, ui(descKey), onClick);
-                cy = next(cy, H_ROW, nextH, gap);
+                this.toggle(CTRL_X, cy - ROW_HEIGHT / 2, 116, ROW_HEIGHT, val ? ui('on') : ui('off'), val, ui(descKey), onClick);
             };
-
-            // 頁名
             this.title(cy, ui('tab_basic'), '');
-            cy = next(cy, H_ROW, H_ROW, ROW_GAP);
 
             // ── 三大系統開關 ──
             toggleRow('voiceEnabledLabel', 'voiceEnabledD', CONFIG.voiceEnabled, () => { CONFIG.voiceEnabled = !CONFIG.voiceEnabled; saveSettings(); });
             toggleRow('dailyEnabledLabel', 'dailyEnabledD', CONFIG.depthEnabled, () => { CONFIG.depthEnabled = !CONFIG.depthEnabled; saveSettings(); applyDepthLoop(); });
             toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); if (!CONFIG.hypnoEnabled) { try { disableHypno(); } catch (e) {} } });   // 停用催眠狀態 → 歸零並公告清除（否則他人頭上仍殘留進度球/符咒）
-            toggleRow('hypnoClimaxLabel', 'hypnoClimaxD', CONFIG.hypnoClimax, () => { CONFIG.hypnoClimax = !CONFIG.hypnoClimax; saveSettings(); }, H_ROW, SEC_GAP);
+            toggleRow('hypnoClimaxLabel', 'hypnoClimaxD', CONFIG.hypnoClimax, () => { CONFIG.hypnoClimax = !CONFIG.hypnoClimax; saveSettings(); });
 
             // ── 看見他人效果 ──
-            this.title(cy, ui('seeOthersEffect'), ''); cy = next(cy, H_ROW, H_ROW, ROW_GAP);
+            cy = flow.row(ROW_HEIGHT, PREF_LAYOUT.sectionGap);
+            this.title(cy, ui('seeOthersEffect'), '');
             toggleRow('fx_pant', 'seeOthersPantD', CONFIG.seeOthersPant, () => { CONFIG.seeOthersPant = !CONFIG.seeOthersPant; saveSettings(); });
             toggleRow('seeOthersHypnoLabel', 'seeOthersHypnoD', CONFIG.seeOthersHypno, () => { CONFIG.seeOthersHypno = !CONFIG.seeOthersHypno; saveSettings(); });
             toggleRow('seeOthersTalisLabel', 'seeOthersTalisD', CONFIG.seeOthersTalisman, () => { CONFIG.seeOthersTalisman = !CONFIG.seeOthersTalisman; saveSettings(); });
-            toggleRow('showProfileBtnLabel', 'showProfileBtnD', CONFIG.showProfileButton, () => { CONFIG.showProfileButton = !CONFIG.showProfileButton; saveSettings(); }, H_ROW, SEC_GAP);
+            toggleRow('showProfileBtnLabel', 'showProfileBtnD', CONFIG.showProfileButton, () => { CONFIG.showProfileButton = !CONFIG.showProfileButton; saveSettings(); });
 
             // ── 允許編輯對象 ──
-            this.title(cy, ui('editPermTitle'), ui('editPermTitleD')); cy = next(cy, H_ROW, H_ROW, ROW_GAP);
+            cy = flow.row(ROW_HEIGHT, PREF_LAYOUT.sectionGap);
+            this.title(cy, ui('editPermTitle'), ui('editPermTitleD'));
+            const setWhitelist = value => {
+                CONFIG.whitelist = [...new Set(value.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
+                    .map(s => /^\d+$/.test(s) ? Number(s) : s)
+                    .filter(s => typeof s === 'number' || WL_TOKENS.includes(s)))];
+                saveSettings(); publishSharedSettings();
+            };
+            cy = flow.row();
+            const shortcuts = [['$owner', 'whitelistOwner'], ['$lover', 'whitelistLover'], ['$white', 'whitelist'], ['$friend', 'whitelistFriend']];
+            shortcuts.forEach(([token, label], i) => {
+                this.btn(CTRL_X + i * 124, cy - ROW_HEIGHT / 2, 116, ROW_HEIGHT, ui(label), 'White', token, () => {
+                    if ((CONFIG.whitelist || []).includes(token)) return;
+                    setWhitelist([...(CONFIG.whitelist || []), token].join(', '));
+                    const input = this._inputs['hsc-whitelist'];
+                    if (input) input.value = CONFIG.whitelist.join(', ');
+                });
+            });
+            cy = flow.row();
             this.title(cy, ui('whitelist'), ui('whitelistD'));
-            this.input('hsc-whitelist', CTRL_X, cy - H_INPUT / 2, 480, H_INPUT, (CONFIG.whitelist || []).join(', '),
-                { placeholder: ui('whitelistPh'), onChange: val => {
-                    CONFIG.whitelist = val.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean)
-                        .map(s => /^\d+$/.test(s) ? Number(s) : s)
-                        .filter(s => typeof s === 'number' || WL_TOKENS.includes(s));
-                    saveSettings(); publishSharedSettings();
-                }});
-            cy = next(cy, H_INPUT, H_PERM, ROW_GAP);
+            this.input('hsc-whitelist', CTRL_X, cy - ROW_HEIGHT / 2, 480, ROW_HEIGHT, (CONFIG.whitelist || []).join(', '),
+                { placeholder: ui('whitelistPh'), onChange: setWhitelist });
 
             const em = CONFIG.editModes || (CONFIG.editModes = {});
             const setEdit = (cat, m) => { em[cat] = m; saveSettings(); publishSharedSettings(); };
             const COLS = [['off', ui('editOff')], ['whitelist', ui('whitelist')], ['any', ui('editAny')]];
             const permCats = [['catalyst', 'sec_hypnoText'], ['status', 'sec_statusMsg'], ['trigger', 'sec_triggerWords'], ['wake', 'sec_wakeWord'], ['response', 'sec_hypnoResponse'], ['allowed', 'allowedPhrasesLabel']];
-            permCats.forEach(([cat, lbKey], i) => {
-                const p2 = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-                DrawTextFit(ui(lbKey), CONTENT_X, this._y(cy), 150, 'Black', '');
-                MainCanvas.textAlign = p2;
-                this._track(cy + H_PERM / 2);
-                COLS.forEach(([m, lb], ci) => this.toggle(CTRL_X + ci * 124, cy - H_PERM / 2, 118, H_PERM, lb, (em[cat] || 'off') === m, null, () => setEdit(cat, m)));
-                const isLast = i === permCats.length - 1;
-                cy = next(cy, H_PERM, isLast ? H_ROW : H_PERM, isLast ? SEC_GAP : ROW_GAP);
+            permCats.forEach(([cat, lbKey]) => {
+                cy = flow.row();
+                this.title(cy, ui(lbKey), '');
+                COLS.forEach(([m, lb], ci) => this.toggle(CTRL_X + ci * 124, cy - ROW_HEIGHT / 2, 118, ROW_HEIGHT, lb, (em[cat] || 'off') === m, null, () => setEdit(cat, m)));
             });
 
             // ── 語言 ──
+            cy = flow.row(ROW_HEIGHT, PREF_LAYOUT.sectionGap);
             this.title(cy, ui('language'), ui('languageD'));
-            this.select('hsc-lang', CTRL_X, cy - H_ROW / 2, 240, H_ROW, CONFIG.lang || 'auto',
+            this.select('hsc-lang', CTRL_X, cy - ROW_HEIGHT / 2, 240, ROW_HEIGHT, CONFIG.lang || 'auto',
                 HSC_LANGS.map(l => [l, (HSC_LANG_FLAGS[l] ? HSC_LANG_FLAGS[l] + ' ' : '') + (HSC_LANG_NAMES[l] || l)]),
                 v => { CONFIG.lang = v; saveSettings(); ensureLang(v); });
-            const BH = 45;
-            cy = next(cy, H_ROW, BH, SEC_GAP);
+            cy = flow.row(ROW_HEIGHT, PREF_LAYOUT.sectionGap);
 
             // ── 導出 / 導入 / 恢復預設 ──
             const BW = 200, BGAP = 16;
             const cX = (FRAME_X + FRAME_W / 2);
             const expX = Math.round(cX - (BW * 3 + BGAP * 2) / 2);
-            this.btn(expX, cy - BH / 2, BW, BH, ui('export'), 'White', ui('exportD'), () => exportSettings());
-            this.btn(expX + (BW + BGAP), cy - BH / 2, BW, BH, ui('import'), 'White', ui('importD'), () => importSettings());
-            this.btn(expX + (BW + BGAP) * 2, cy - BH / 2, BW, BH, ui('resetAll'), 'White', ui('resetAllD'),
+            this.btn(expX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, ui('export'), 'White', ui('exportD'), () => exportSettings());
+            this.btn(expX + (BW + BGAP), cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, ui('import'), 'White', ui('importD'), () => importSettings());
+            this.btn(expX + (BW + BGAP) * 2, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, ui('resetAll'), 'White', ui('resetAllD'),
                 () => hscConfirm(ui('confirmResetAll'), () => {
                     setConfig(makeDefaultConfig()); setExpressionSets(CONFIG.expressionSets);
                     saveSettings(true); publishSharedSettings(); applyDepthLoop();
                 }));
-            this._track(cy + BH / 2 + 10);
-
-            MainCanvas.textAlign = prev;
         },
 
         // ════════ 效果設定 ════════
@@ -801,121 +790,122 @@ import { HSC_Z } from '../util/zlayers.js';
         // 標題 + 整數滑桿 + 右側數值
         _sliderVal(cy, labelKey, descKey, get, set, min, max, step) {
             this.title(cy, ui(labelKey), ui(descKey));
-            this.slider(650, cy - 17, 380, get(), min, max, step, ui(descKey), v => set(v), () => saveSettings());
+            this.slider(700, cy - 20, 380, get(), min, max, step, ui(descKey), v => set(v), () => saveSettings());
             const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-            DrawText(String(get()), 1080, this._y(cy), 'Black', '');
+            DrawText(String(get()), 1110, this._y(cy), 'Black', '');
             MainCanvas.textAlign = p;
         },
         // ════════ 語言催眠設定（頁名 + 催眠強度 + 效果 + 興奮/催眠值）════════
         _run_voice() {
             this._defaultDesc = ui('effectsHint');
-            let cy = 226;
-            this.title(cy, ui('tab_voice'), ''); cy += 44;
+            const flow = this._layout();
+            let cy = flow.row();
+            this.title(cy, ui('tab_voice'), ''); cy = flow.row();
             // 催眠強度
             this.title(cy, ui('intensity'), ui('intensityD'));
-            this.slider(650, cy - 17, 380, CONFIG.intensity, 0.1, 3.0, 0.1, ui('intensityD'), v => { CONFIG.intensity = v; }, () => saveSettings());
-            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText(CONFIG.intensity.toFixed(1), 1080, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
-            cy += 52;
+            this.slider(700, cy - 20, 380, CONFIG.intensity, 0.1, 3.0, 0.1, ui('intensityD'), v => { CONFIG.intensity = v; }, () => saveSettings());
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText(CONFIG.intensity.toFixed(1), 1110, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; }
+            cy = flow.row();
             // 興奮值 / 催眠值（在效果設定上方；標籤不加後綴，已分類到本子頁）
-            this._sliderVal(cy, 'arousalStepLabel', 'arousalVoiceD', () => CONFIG.arousalStepVoice, v => { CONFIG.arousalStepVoice = Math.round(v); }, 0, 20, 1); cy += 48;
-            this._sliderVal(cy, 'hypnoLabel', 'hypnoVoiceD2', () => CONFIG.hypnoVoiceStep, v => { CONFIG.hypnoVoiceStep = Math.round(v); }, 0, 20, 1); cy += 54;
+            this._sliderVal(cy, 'arousalStepLabel', 'arousalVoiceD', () => CONFIG.arousalStepVoice, v => { CONFIG.arousalStepVoice = Math.round(v); }, 0, 20, 1); cy = flow.row();
+            this._sliderVal(cy, 'hypnoLabel', 'hypnoVoiceD2', () => CONFIG.hypnoVoiceStep, v => { CONFIG.hypnoVoiceStep = Math.round(v); }, 0, 20, 1); cy = flow.row();
             // 效果設定
-            this.title(cy, ui('sec_effects'), ui('effectsHint')); cy += 40;
+            this.title(cy, ui('sec_effects'), ui('effectsHint'));
             const list = this._effectToggles();
+            const gridY = flow.grid(list.length, 2);
             list.forEach(([key, emoji, nameKey], i) => {
-                const col = i % 2, row = (i - col) / 2;
-                const cx = 450 + col * 410, yy = cy + row * 54;
-                this.toggle(cx, yy, 390, 44, emoji + ' ' + ui(nameKey), !!CONFIG[key], ui(nameKey + 'D'),
+                const col = i % 2;
+                const cx = 450 + col * 410, yy = gridY(i);
+                this.toggle(cx, yy, 390, ROW_HEIGHT, emoji + ' ' + ui(nameKey), !!CONFIG[key], ui(nameKey + 'D'),
                     () => { CONFIG[key] = !CONFIG[key]; saveSettings(); }, key);
             });
-            cy += Math.ceil(list.length / 2) * 54 + 12;
-            this.title(cy + 22, ui('climaxMode'), ui('climaxModeD'));
-            this.toggle(650, cy, 200, 44, CONFIG.climaxMode === 'always' ? ui('climaxEvery') : ui('climaxOrgasm'),
+            cy = flow.row(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap);
+            this.title(cy, ui('climaxMode'), ui('climaxModeD'));
+            this.toggle(700, cy - ROW_HEIGHT / 2, 200, ROW_HEIGHT, CONFIG.climaxMode === 'always' ? ui('climaxEvery') : ui('climaxOrgasm'),
                 CONFIG.climaxMode === 'always', null, () => { CONFIG.climaxMode = CONFIG.climaxMode === 'always' ? 'orgasm' : 'always'; saveSettings(); });
-            this._track(cy + 64);
         },
         // ════════ 日常干擾設定（頁名 + 循環時間 + 效果 + 興奮/催眠值）════════
         _run_daily() {
             this._defaultDesc = ui('depthEffectsHint');
-            let cy = 226;
-            this.title(cy, ui('tab_daily'), ''); cy += 44;
+            const flow = this._layout();
+            let cy = flow.row();
+            this.title(cy, ui('tab_daily'), ''); cy = flow.row();
             this.title(cy, ui('interval'), ui('intervalD'));
-            this.input('hsc-interval', 650, cy - 17, 110, 42, String(CONFIG.depthIntervalMin),
+            this.input('hsc-interval', 700, cy - ROW_HEIGHT / 2, 110, ROW_HEIGHT, String(CONFIG.depthIntervalMin),
                 { type: 'number', onChange: val => { let n = parseInt(val, 10); if (isNaN(n)) n = CONFIG.depthIntervalMin; CONFIG.depthIntervalMin = Math.max(1, Math.min(99, n)); saveSettings(); applyDepthLoop(); } });
-            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawTextFit(ui('minutes'), 780, this._y(cy), 150, 'Black', ''); MainCanvas.textAlign = p; }
-            cy += 52;
+            { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawTextFit(ui('minutes'), 830, this._y(cy), 150, 'Black', ''); MainCanvas.textAlign = p; }
+            cy = flow.row();
             // 興奮值 / 催眠值（在效果設定上方；標籤不加後綴）
-            this._sliderVal(cy, 'arousalStepLabel', 'arousalDailyD', () => CONFIG.arousalStepDepth, v => { CONFIG.arousalStepDepth = Math.round(v); }, 0, 20, 1); cy += 48;
-            this._sliderVal(cy, 'hypnoLabel', 'hypnoDailyD', () => CONFIG.hypnoDepthStep, v => { CONFIG.hypnoDepthStep = Math.round(v); }, 0, 20, 1); cy += 54;
+            this._sliderVal(cy, 'arousalStepLabel', 'arousalDailyD', () => CONFIG.arousalStepDepth, v => { CONFIG.arousalStepDepth = Math.round(v); }, 0, 20, 1); cy = flow.row();
+            this._sliderVal(cy, 'hypnoLabel', 'hypnoDailyD', () => CONFIG.hypnoDepthStep, v => { CONFIG.hypnoDepthStep = Math.round(v); }, 0, 20, 1); cy = flow.row();
             // 效果設定
-            this.title(cy, ui('sec_effects'), ui('depthEffectsHint')); cy += 40;
+            this.title(cy, ui('sec_effects'), ui('depthEffectsHint'));
             const fxName = { smoke:'fx_smoke', pant:'fx_pant', chatDanmaku:'fx_danmaku', ghost:'fx_ghost', figureBlur:'fx_figblur', sfx:'fx_sfx', chatlogBlur:'fx_chatblur', fade:'fx_fade' };
             const demoMap = { smoke:'pinkFlash', pant:'steamParticles', chatDanmaku:'danmaku', ghost:'ghost', figureBlur:'figureBlur', chatlogBlur:'chatlogBlur', sfx:'sound', fade:'chatFade' };
             const dKeys = ['smoke','chatDanmaku','ghost','figureBlur','sfx','fade','chatlogBlur','pant'];
             const DE = CONFIG.depthEffects || (CONFIG.depthEffects = {});
-            const baseY = cy;
+            const gridY = flow.grid(dKeys.length, 3);
             dKeys.forEach((k, i) => {
-                const cx = 470 + (i % 3) * 250, yy = baseY + Math.floor(i / 3) * 52;
-                this.toggle(cx, yy, 230, 44, ui(fxName[k]), !!DE[k], ui(fxName[k] + 'D'),
+                const cx = 470 + (i % 3) * 250, yy = gridY(i);
+                this.toggle(cx, yy, 230, ROW_HEIGHT, ui(fxName[k]), !!DE[k], ui(fxName[k] + 'D'),
                     () => { DE[k] = !DE[k]; saveSettings(); }, demoMap[k]);
             });
-            this._track(baseY + Math.ceil(dKeys.length / 3) * 52 + 12);
         },
         // ════════ 催眠狀態設定（頁名 + 自動清醒/成長 + 效果設定）════════
         _run_state() {
-            let cy = 226;
+            const flow = this._layout();
+            let cy = flow.row();
             const CX = 750;            // 控制欄 X
             const BW = 116;            // 按鈕寬度（與其他分頁一致）
-            this.title(cy, ui('tab_state'), ''); cy += 44;
+            this.title(cy, ui('tab_state'), ''); cy = flow.row();
             const leftLbl = (txt, x) => { const p = MainCanvas.textAlign; MainCanvas.textAlign = 'left'; DrawText(txt, x, this._y(cy), 'Black', ''); MainCanvas.textAlign = p; };
             // 自動清醒：開/關 ＋（開啟時）分鐘 BAR（15~99）＝進入強控的清醒倒數基底
             this.title(cy, ui('autoWakeLabel'), ui('autoWakeD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.autoWake ? ui('on') : ui('off'), CONFIG.autoWake, ui('autoWakeD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.autoWake ? ui('on') : ui('off'), CONFIG.autoWake, ui('autoWakeD'),
                 () => { CONFIG.autoWake = !CONFIG.autoWake; saveSettings(); });
-            cy += 58;
+            cy = flow.row();
             if (CONFIG.autoWake) {
-                this.slider(CX, cy - 17, 300, CONFIG.autoWakeMin || 30, 15, 99, 1, ui('autoWakeD'),
+                this.slider(CX, cy - 20, 300, CONFIG.autoWakeMin || 30, 15, 99, 1, ui('autoWakeD'),
                     v => { CONFIG.autoWakeMin = Math.round(v); }, () => saveSettings());
                 leftLbl((CONFIG.autoWakeMin || 30) + ' ' + ui('minUnit'), CX + 312);
-                cy += 58;
+                cy = flow.row();
             }
             // 催眠延長：開/關 ＋（開啟時）秒數 BAR（10~990，10 秒一格）＝強控中每次觸發延長秒數
             this.title(cy, ui('hypnoExtendLabel'), ui('hypnoExtendD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.hypnoExtend ? ui('on') : ui('off'), CONFIG.hypnoExtend, ui('hypnoExtendD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.hypnoExtend ? ui('on') : ui('off'), CONFIG.hypnoExtend, ui('hypnoExtendD'),
                 () => { CONFIG.hypnoExtend = !CONFIG.hypnoExtend; saveSettings(); });
-            cy += 58;
+            cy = flow.row();
             if (CONFIG.hypnoExtend) {
-                this.slider(CX, cy - 17, 300, CONFIG.hypnoExtendSec || 60, 10, 990, 10, ui('hypnoExtendD'),
+                this.slider(CX, cy - 20, 300, CONFIG.hypnoExtendSec || 60, 10, 990, 10, ui('hypnoExtendD'),
                     v => { CONFIG.hypnoExtendSec = Math.round(v / 10) * 10; }, () => saveSettings());
                 leftLbl((CONFIG.hypnoExtendSec || 60) + ' ' + ui('secUnit'), CX + 312);
-                cy += 58;
+                cy = flow.row();
             }
-            cy += 12;
             // 效果設定
-            this.title(cy, ui('sec_effects'), ''); cy += 40;
+            this.title(cy, ui('sec_effects'), ''); cy = flow.row();
             // 催眠動畫：開/關
             this.title(cy, ui('hypnoAnimLabel'), ui('hypnoAnimD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.hypnoAnimEnabled ? ui('on') : ui('off'), CONFIG.hypnoAnimEnabled, ui('hypnoAnimD'),
                 () => { CONFIG.hypnoAnimEnabled = !CONFIG.hypnoAnimEnabled; saveSettings(); });
-            cy += 52;
+            cy = flow.row();
             // 頭上貼符咒（獨立開關，不需開動畫）＋ 同一行放：◀ 樣式N ▶ ＋ 染色（符咒與動畫共用）
             this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
                 () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); try { updateHeadTalisman(); } catch (e) {} });
             {
                 const st = Math.min(12, Math.max(1, CONFIG.hypnoAnimStyle || 1));
                 const dk = 'hypnoStyle' + st + '|' + (CONFIG.hypnoAnimColor || '');   // 顏色也納入 → 改色即時重繪預覽
                 const bx = CX + BW + 40;
-                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st <= 1 ? 12 : st - 1; saveSettings(); }, dk);
-                this.btn(bx + 52, cy - 20, 110, 40, ui('hypnoStyleName', { n: st }), '#8E44A1', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
-                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
-                this.colorBtn(bx + 240, cy - 20, 64, 40, CONFIG.hypnoAnimColor,
+                this.btn(bx, cy - ROW_HEIGHT / 2, 44, ROW_HEIGHT, '◀', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st <= 1 ? 12 : st - 1; saveSettings(); }, dk);
+                this.btn(bx + 52, cy - ROW_HEIGHT / 2, 110, ROW_HEIGHT, ui('hypnoStyleName', { n: st }), '#8E44A1', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                this.btn(bx + 170, cy - ROW_HEIGHT / 2, 44, ROW_HEIGHT, '▶', 'White', ui('hypnoStyleD'), () => { CONFIG.hypnoAnimStyle = st >= 12 ? 1 : st + 1; saveSettings(); }, dk);
+                this.colorBtn(bx + 240, cy - ROW_HEIGHT / 2, 64, ROW_HEIGHT, CONFIG.hypnoAnimColor,
                     (col) => { CONFIG.hypnoAnimColor = col; saveSettings(); }, ui('hypnoStyleD'), dk);
             }
-            cy += 52;
+            cy = flow.row();
             // 面部識別障礙：開/關 ＋ ◀ 圓圈/線條 ▶（樣式選擇器一律顯示，關閉時也能挑選/檢查）
             this.title(cy, ui('fx_faceCensor'), ui('fx_faceCensorD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.faceCensor ? ui('on') : ui('off'), CONFIG.faceCensor, ui('fx_faceCensorD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.faceCensor ? ui('on') : ui('off'), CONFIG.faceCensor, ui('fx_faceCensorD'),
                 () => { CONFIG.faceCensor = !CONFIG.faceCensor; saveSettings(); });
             {
                 const isLine = CONFIG.faceCensorStyle === 'line';
@@ -923,67 +913,63 @@ import { HSC_Z } from '../util/zlayers.js';
                 const fdk = isLine ? 'faceCensorLine' : 'faceCensorCircle';
                 const swap = () => { CONFIG.faceCensorStyle = isLine ? 'circle' : 'line'; saveSettings(); };
                 const bx = CX + BW + 40;
-                this.btn(bx, cy - 20, 44, 40, '◀', 'White', ui('fx_faceCensorD'), swap, fdk);
-                this.btn(bx + 52, cy - 20, 110, 40, styleName, '#8E44A1', ui('fx_faceCensorD'), swap, fdk);
-                this.btn(bx + 170, cy - 20, 44, 40, '▶', 'White', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx, cy - ROW_HEIGHT / 2, 44, ROW_HEIGHT, '◀', 'White', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 52, cy - ROW_HEIGHT / 2, 110, ROW_HEIGHT, styleName, '#8E44A1', ui('fx_faceCensorD'), swap, fdk);
+                this.btn(bx + 170, cy - ROW_HEIGHT / 2, 44, ROW_HEIGHT, '▶', 'White', ui('fx_faceCensorD'), swap, fdk);
             }
-            cy += 52;
+            cy = flow.row();
             // 名稱識別障礙：三態（關 / 僅玩家 / 含關係網）
             this.title(cy, ui('fx_nameCensor'), ui('fx_nameCensorD'));
             {
                 const ncOpts = [['off', ui('censorOff')], ['player', ui('nameCensorPlayer')], ['network', ui('nameCensorNetwork')]];
                 ncOpts.forEach(([val, label], i) => {
                     const active = (CONFIG.nameCensor || 'off') === val;
-                    this.btn(CX + i * 122, cy - 20, 116, 40, label, active ? '#8E44A1' : 'White', ui('fx_nameCensorD'),
+                    this.btn(CX + i * 122, cy - ROW_HEIGHT / 2, 116, ROW_HEIGHT, label, active ? '#8E44A1' : 'White', ui('fx_nameCensorD'),
                         () => { CONFIG.nameCensor = val; saveSettings(); }, val === 'off' ? undefined : 'nameCensor');
                 });
             }
-            cy += 52;
+            cy = flow.row();
             // 顯示人群（演示）
             this.title(cy, ui('fx_crowd'), ui('fx_crowdD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.crowd ? ui('on') : ui('off'), CONFIG.crowd, ui('fx_crowdD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.crowd ? ui('on') : ui('off'), CONFIG.crowd, ui('fx_crowdD'),
                 () => { CONFIG.crowd = !CONFIG.crowd; saveSettings(); }, 'crowd');
-            cy += 52 + 12;
+            cy = flow.row(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap);
             // ── 強控中的訊息類效果 ──
-            this.title(cy, ui('sec_stateMsgFx'), ''); cy += 40;
+            this.title(cy, ui('sec_stateMsgFx'), ''); cy = flow.row();
             // 彈幕文字 - 聊天
             this.title(cy, ui('stateDanmakuChatLabel'), ui('stateDanmakuChatD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateDanmakuChat ? ui('on') : ui('off'), CONFIG.stateDanmakuChat, ui('stateDanmakuChatD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.stateDanmakuChat ? ui('on') : ui('off'), CONFIG.stateDanmakuChat, ui('stateDanmakuChatD'),
                 () => { CONFIG.stateDanmakuChat = !CONFIG.stateDanmakuChat; saveSettings(); });
-            cy += 52;
+            cy = flow.row();
             // 彈幕文字 - 悄悄話
             this.title(cy, ui('stateDanmakuWhisperLabel'), ui('stateDanmakuWhisperD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateDanmakuWhisper ? ui('on') : ui('off'), CONFIG.stateDanmakuWhisper, ui('stateDanmakuWhisperD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.stateDanmakuWhisper ? ui('on') : ui('off'), CONFIG.stateDanmakuWhisper, ui('stateDanmakuWhisperD'),
                 () => { CONFIG.stateDanmakuWhisper = !CONFIG.stateDanmakuWhisper; saveSettings(); });
-            cy += 52;
+            cy = flow.row();
             // 訊息妨礙
             this.title(cy, ui('stateMsgSmokeLabel'), ui('stateMsgSmokeD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateMsgSmoke ? ui('on') : ui('off'), CONFIG.stateMsgSmoke, ui('stateMsgSmokeD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.stateMsgSmoke ? ui('on') : ui('off'), CONFIG.stateMsgSmoke, ui('stateMsgSmokeD'),
                 () => { CONFIG.stateMsgSmoke = !CONFIG.stateMsgSmoke; saveSettings(); });
-            cy += 52;
+            cy = flow.row();
             // 信息干擾
             this.title(cy, ui('stateMsgInterfereLabel'), ui('stateMsgInterfereD'));
-            this.toggle(CX, cy - 20, BW, 40, CONFIG.stateMsgInterfere ? ui('on') : ui('off'), CONFIG.stateMsgInterfere, ui('stateMsgInterfereD'),
+            this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.stateMsgInterfere ? ui('on') : ui('off'), CONFIG.stateMsgInterfere, ui('stateMsgInterfereD'),
                 () => { CONFIG.stateMsgInterfere = !CONFIG.stateMsgInterfere; saveSettings(); });
-            this._track(cy + 50);
         },
 
         // ════════ 文本設定 ════════
         _run_texts() {
             if (this.ctx === 'remote') return this._run_texts_remote();
             this._defaultDesc = ui('textsHint');   // 常駐說明
-            // 逐段往下排（title 佔 28、段間留 GAP），避免固定座標互相遮住
-            const GAP = 30;
-            let cy = 228;
+            const flow = this._layout();
+            const cy = flow.row();
             this.title(cy, ui('tab_texts'), ui('textsHint'));
             // 還原預設：與標題同一行、右對齊；在內容框內（會隨捲動離開）
-            this.btn(1050, cy - 19, 200, 46, ui('restoreDefault'), 'White', ui('textsResetD'), () => this._resetTexts());
-            cy += 42;
+            this.btn(1050, cy - ROW_HEIGHT / 2, 200, ROW_HEIGHT, ui('restoreDefault'), 'White', ui('textsResetD'), () => this._resetTexts());
 
             const seg = (labelKey, descKey, id, value, h, opts) => {
-                this.title(cy, ui(labelKey), ui(descKey));
-                this.input(id, 450, cy + 28, 800, h, value, opts);
-                cy += 28 + h + GAP;
+                this.title(flow.row(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap), ui(labelKey), ui(descKey));
+                this.input(id, CONTENT_X, flow.block(h), 800, h, value, opts);
             };
             seg('sec_hypnoText', 'hypnoTextD', 'hsc-texts', (CONFIG.customTexts || []).join('\n'), 130,
                 { multiline: true, placeholder: ui('hypnoTextPh'), onChange: val => { CONFIG.customTexts = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
@@ -1000,8 +986,6 @@ import { HSC_Z } from '../util/zlayers.js';
             // 允許說的話（強控中整句符合就照說、不陷入思考）
             seg('allowedPhrasesLabel', 'allowedPhrasesD', 'hsc-allowed', (CONFIG.allowedPhrases || []).join('\n'), 100,
                 { multiline: true, placeholder: ui('allowedPhrasesPh'), onChange: val => { CONFIG.allowedPhrases = val.split('\n').map(s => s.trim()).filter(Boolean); saveSettings(); } });
-
-            this._track(cy + 20);   // 底部留白
         },
         // 文本設定右側：只放說明（還原預設已移到內容區標題列）
         _right_texts() {
@@ -1023,28 +1007,25 @@ import { HSC_Z } from '../util/zlayers.js';
             const r = this.remote;
             if (!r) { this.closeRemote(); return; }
             this._defaultDesc = ui('remoteEditHint');
-            this.title(228, ui('tab_texts'), ui('remoteEditHint'));
-            let cy = 286;
+            const flow = this._layout();
+            this.title(flow.row(), ui('tab_texts'), ui('remoteEditHint'));
             r.cats.forEach(c => {
-                this.title(cy, c.label + (c.editable ? '' : ' 🔒'), c.editable ? '' : ui('profileEditNoPerm'));
-                this.input('hsc-rtext-' + c.key, 450, cy + 30, 800, 120, (c.data || []).join('\n'),
+                this.title(flow.row(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap), c.label + (c.editable ? '' : ' 🔒'), c.editable ? '' : ui('profileEditNoPerm'));
+                this.input('hsc-rtext-' + c.key, CONTENT_X, flow.block(120), 800, 120, (c.data || []).join('\n'),
                     { multiline: true, readOnly: !c.editable,
                       placeholder: c.editable ? ui('hypnoTextPh') : '',
                       onChange: c.editable
                           ? (val => { c.data = val.split('\n').map(s => s.trim()).filter(Boolean); r.dirty = true; })
                           : null });
-                cy += 178;
             });
-            this._track(cy);
             // 儲存並送出（僅在有可編輯分類時顯示）
             if (r.cats.some(c => c.editable)) {
-                this.btn(450, cy + 6, 320, 50, ui('remoteEditSave'), '#21872F', '',
+                this.btn(CONTENT_X, flow.block(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap), 320, PREF_LAYOUT.rowHeight, ui('remoteEditSave'), '#21872F', '',
                     () => {
                         try { document.activeElement && document.activeElement.blur(); } catch {}
                         try { r.onSave && r.onSave(r.cats); } catch (e) {}
                         this.closeRemote();
                     });
-                this._track(cy + 60);
             }
         },
         // ════════ 表情設定（最多 10 組）════════
@@ -1058,9 +1039,11 @@ import { HSC_Z } from '../util/zlayers.js';
             const sets = CONFIG.expressionSets || [];
             if (!this._exprWork) this._exprWork = this._exprWorkFrom(sets[0]);
 
-            this.title(228, ui('tab_expr'), '');
+            const flow = this._layout();
+            const header = flow.row();
+            this.title(header, ui('tab_expr'), '');
             // 還原預設：與標題同一行、右對齊（跟文本設定一致）
-            this.btn(1050, 209, 200, 46, ui('restoreDefault'), 'White', null,
+            this.btn(1050, header - ROW_HEIGHT / 2, 200, ROW_HEIGHT, ui('restoreDefault'), 'White', null,
                 () => hscConfirm(ui('confirmReset'), () => {
                     CONFIG.expressionSets = DEFAULT_EXPRESSIONS.map(e => ({ ...e }));
                     setExpressionSets(CONFIG.expressionSets); saveSettings();
@@ -1072,27 +1055,26 @@ import { HSC_Z } from '../util/zlayers.js';
             const E_SAVE_X = E_DEL_X - E_GAP - E_BW;     // 保存
             const E_NAME_W = E_SAVE_X - 16 - CONTENT_X;  // 名稱列寬（到保存前留 16）
             sets.forEach((set, i) => {
-                const cy = 300 + i * 52;
+                const cy = flow.block(PREF_LAYOUT.rowHeight);
                 const nm = ui('expr_item', { n: i + 1 });
-                this.btn(CONTENT_X, cy, E_NAME_W, 46, nm, 'White', null,
+                this.btn(CONTENT_X, cy, E_NAME_W, ROW_HEIGHT, nm, 'White', null,
                     () => { this._exprWork = this._exprWorkFrom(set); this._exprPrevKey = ''; });
-                this.btn(E_SAVE_X, cy, E_BW, 46, ui('save'), '#21872F', null,
+                this.btn(E_SAVE_X, cy, E_BW, PREF_LAYOUT.rowHeight, ui('save'), '#21872F', null,
                     () => hscConfirm(ui('confirmReplace', { name: nm }), () => {
                         const w = this._exprWork;
                         sets[i] = { Eyebrows: w.Eyebrows, Eyes: w.Eyes, Mouth: w.Mouth, Blush: w.Blush };
                         saveSettings(); setExpressionSets(CONFIG.expressionSets);
                     }));
-                this.btn(E_DEL_X, cy, E_BW, 46, ui('delete'), '#872626', null,
+                this.btn(E_DEL_X, cy, E_BW, PREF_LAYOUT.rowHeight, ui('delete'), '#872626', null,
                     () => hscConfirm(ui('confirmDelete', { name: nm }), () => {
-                        this._restoreExpr(); sets.splice(i, 1);
+                        this._clearExprPreview(); sets.splice(i, 1);
                         saveSettings(); setExpressionSets(CONFIG.expressionSets);
                     }));
             });
 
-            const cyB = 300 + sets.length * 52 + 14;
+            const cyB = flow.block(60, PREF_LAYOUT.sectionGap);
             // 「新增」已移到右側編輯區（頭像右側）；此處只放說明
-            DrawTextWrap(ui('expr_hint'), CONTENT_X, this._y(cyB + 10), 820, 60, 'Black', undefined, 4);
-            this._track(cyB + 70);
+            DrawTextWrap(ui('expr_hint'), CONTENT_X, this._y(cyB), 820, 60, 'Black', undefined, 4);
         },
 
         // 右側：工作中表情編輯（四部位 ◀值▶、即時臉部預覽）
@@ -1113,7 +1095,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 this.rbtn(1794, y, 52, 52, '▶', 'White', null, () => cycleExpression(work, g, 1));
             });
 
-            // 即時臉部預覽（本地套用後截 Player 臉）
+            // 即時臉部預覽（在克隆角色上套用並截臉）
             this._ensureExprPreview(work);
             // 預覽框置中於右側面板（1350~1900，寬 550）：左右邊距相等
             const bs = 315, bx = Math.round(1350 + (550 - bs) / 2), by = 568;
@@ -1141,7 +1123,8 @@ import { HSC_Z } from '../util/zlayers.js';
         },
         // ════════ 音效設定 ════════
         _run_sounds() {
-            this.title(226, ui('tab_sounds'), ui('soundsHint'));
+            const flow = this._layout();
+            this.title(flow.row(), ui('tab_sounds'), ui('soundsHint'));
             const DEFAULTS = SOUND_DEFAULTS;   // 各分類預設音效
             const LX = 530;        // 欄位左緣
             // 按鈕靠右對齊（右緣 1300）：其他 / ✕ / ▶ / 上傳，輸入框填滿至按鈕前
@@ -1151,20 +1134,17 @@ import { HSC_Z } from '../util/zlayers.js';
             const S_PLAY_X  = S_CLR_X   - 44;    // ▶   1142
             const S_UP_X    = S_PLAY_X  - 62;    // 上傳 1080
             const FIELD_W   = S_UP_X - 20 - LX;  // 輸入框寬（到上傳前留 20）= 480
-            let cy = 286;
-            this._soundCats().forEach(([cat, lbKey, max], ci) => {
+            this._soundCats().forEach(([cat, lbKey, max]) => {
                 const lb = ui(lbKey);
-                if (ci > 0) cy += 40;   // 各大類之間加大間距
-                this.sep(cy, `── ${ui('sndSlotHead', { name: lb, max })} ──`);
-                cy += 26;
+                this.sep(flow.row(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap), `── ${ui('sndSlotHead', { name: lb, max })} ──`);
                 if (!CONFIG.sounds[cat]) CONFIG.sounds[cat] = [];
                 for (let i = 0; i < max; i++) {
                     const entry = CONFIG.sounds[cat][i] || '';
                     const def   = (DEFAULTS[cat] || [])[i] || '';
                     const isIdb = entry.startsWith('idb:');
-                    const rowY  = cy;
+                    const rowY = flow.block(PREF_LAYOUT.rowHeight);
                     const p2 = MainCanvas.textAlign; MainCanvas.textAlign = 'left';
-                    DrawTextFit(lb + (i + 1), CONTENT_X, this._y(rowY + 24), 70, 'Black', '');
+                    DrawTextFit(lb + (i + 1), CONTENT_X, this._y(rowY + ROW_HEIGHT / 2), 70, 'Black', '');
                     MainCanvas.textAlign = p2;
                     if (isIdb) {
                         const name = _sndNameCache[entry.slice(4)] || ui('sndLocalName');
@@ -1173,22 +1153,20 @@ import { HSC_Z } from '../util/zlayers.js';
                         MainCanvas.textAlign = p3;
                     } else {
                         const ph = def ? ui('sndDefaultPh', { file: def.split('/').pop() }) : ui('sndUnsetPh');
-                        this.input('hsc-snd-' + cat + i, LX, rowY + 2, FIELD_W, 40, entry,
+                        this.input('hsc-snd-' + cat + i, LX, rowY, FIELD_W, ROW_HEIGHT, entry,
                             { placeholder: ph, onChange: v => { CONFIG.sounds[cat][i] = v.trim(); saveSettings(); } });
                     }
-                    this.btn(S_UP_X, rowY, 58, 44, ui('upload'), '#8E44A1', null,
+                    this.btn(S_UP_X, rowY, 58, ROW_HEIGHT, ui('upload'), '#8E44A1', null,
                         () => uploadSoundFile(cat, i));
-                    this.btn(S_PLAY_X, rowY, 40, 44, '▶', '#2d5a5a', null,
+                    this.btn(S_PLAY_X, rowY, 40, ROW_HEIGHT, '▶', '#2d5a5a', null,
                         () => { const e = entry || def; if (e) playSoundEntry(e, 0.9, true); });
-                    this.btn(S_CLR_X, rowY, 40, 44, '✕', '#872626', null,
+                    this.btn(S_CLR_X, rowY, 40, ROW_HEIGHT, '✕', '#872626', null,
                         () => { CONFIG.sounds[cat][i] = ''; saveSettings(); });
                     const picked = this._sndPick && this._sndPick.cat === cat && this._sndPick.i === i;
-                    this.btn(S_OTHER_X, rowY, 70, 44, ui('other'), picked ? '#8E44A1' : '#465980', null,
+                    this.btn(S_OTHER_X, rowY, 70, ROW_HEIGHT, ui('other'), picked ? '#8E44A1' : '#465980', null,
                         () => { this._sndPick = picked ? null : { cat, i, label: lb + (i + 1) }; });
-                    cy += 50;
                 }
             });
-            this._track(cy + 10);
         },
 
         // 右側：音效庫（預設＋本機）；可指派給「其他」選中的格子，或直接試聽。可卷動。
@@ -1272,15 +1250,4 @@ import { HSC_Z } from '../util/zlayers.js';
     };
 
 
-export {
-    waitForPreference,
-    HSC_TABS,
-    FRAME_X,
-    FRAME_Y,
-    FRAME_W,
-    FRAME_H,
-    CONTENT_X,
-    CONTENT_TOP,
-    FRAME_BOT,
-    EXT,
-};
+export { waitForPreference, EXT };

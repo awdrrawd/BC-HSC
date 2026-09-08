@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "RU": "Нет прав на это"
     },
+    "whitelistOwner": {
+        "RU": "Хозяин"
+    },
+    "whitelistLover": {
+        "RU": "Партнёр"
+    },
+    "whitelistFriend": {
+        "RU": "Друзья"
+    },
     "whitelistD": {
         "RU": "Номера участников или метки ($owner = владелец, $lover = любовники вкл. AFC, $friend = друзья, $white = белый список BC), через запятую/пробел. Общий для всех прав «Белый список»."
     },

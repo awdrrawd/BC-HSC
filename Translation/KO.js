@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "KO": "이 편집 권한이 없습니다"
     },
+    "whitelistOwner": {
+        "KO": "주인"
+    },
+    "whitelistLover": {
+        "KO": "연인"
+    },
+    "whitelistFriend": {
+        "KO": "친구"
+    },
     "whitelistD": {
         "KO": "회원 번호 또는 토큰($owner＝주인님, $lover＝연인(AFC 포함), $friend＝친구, $white＝BC 화이트리스트), 쉼표 또는 공백으로 구분. 각종 「화이트리스트」 편집 권한은 이 목록을 공유합니다."
     },

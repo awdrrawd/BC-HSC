@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "JA": "この編集権限がありません"
     },
+    "whitelistOwner": {
+        "JA": "主人"
+    },
+    "whitelistLover": {
+        "JA": "恋人"
+    },
+    "whitelistFriend": {
+        "JA": "フレンド"
+    },
     "whitelistD": {
         "JA": "会員番号またはトークン（$owner＝ご主人様、$lover＝恋人(AFC含む)、$friend＝友達、$white＝BCホワイトリスト）、カンマまたはスペース区切り。各種「ホワイトリスト」編集権限はこのリストを共有します。"
     },

@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "CN": "你没有此项编辑权限"
     },
+    "whitelistOwner": {
+        "CN": "主人"
+    },
+    "whitelistLover": {
+        "CN": "恋人"
+    },
+    "whitelistFriend": {
+        "CN": "好友"
+    },
     "whitelistD": {
         "CN": "会员编号或代号（$owner＝主人、$lover＝爱人含 AFC、$friend＝好友、$white＝BC白名单），逗号或空白分隔。各类「白名单」编辑权限共用此名单。"
     },

@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "EN": "You can't edit this"
     },
+    "whitelistOwner": {
+        "EN": "Owner"
+    },
+    "whitelistLover": {
+        "EN": "Lover"
+    },
+    "whitelistFriend": {
+        "EN": "Friends"
+    },
     "whitelistD": {
         "EN": "Member numbers or tokens ($owner = owner, $lover = lovers incl. AFC, $friend = friends, $white = BC whitelist), comma/space separated. Shared by every \"Whitelist\" edit permission."
     },

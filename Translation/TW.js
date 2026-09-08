@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "TW": "你沒有此項編輯權限"
     },
+    "whitelistOwner": {
+        "TW": "主人"
+    },
+    "whitelistLover": {
+        "TW": "戀人"
+    },
+    "whitelistFriend": {
+        "TW": "好友"
+    },
     "whitelistD": {
         "TW": "會員編號或代號（$owner＝主人、$lover＝愛人含 AFC、$friend＝好友、$white＝BC白名單），逗號或空白分隔。各類「白名單」編輯權限共用此名單。"
     },

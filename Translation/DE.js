@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "DE": "Keine Berechtigung hierfür"
     },
+    "whitelistOwner": {
+        "DE": "Besitzer"
+    },
+    "whitelistLover": {
+        "DE": "Partner"
+    },
+    "whitelistFriend": {
+        "DE": "Freunde"
+    },
     "whitelistD": {
         "DE": "Mitgliedsnummern oder Kürzel ($owner = Besitzer, $lover = Geliebte inkl. AFC, $friend = Freunde, $white = BC-Whitelist), durch Komma/Leerzeichen getrennt. Von allen „Whitelist\"-Rechten geteilt."
     },

@@ -668,6 +668,15 @@
     "remoteEditNoPerm": {
         "FR": "Vous ne pouvez pas modifier ceci"
     },
+    "whitelistOwner": {
+        "FR": "Propriétaire"
+    },
+    "whitelistLover": {
+        "FR": "Partenaire"
+    },
+    "whitelistFriend": {
+        "FR": "Amis"
+    },
     "whitelistD": {
         "FR": "Numéros de membre ou jetons ($owner = propriétaire, $lover = amants dont AFC, $friend = amis, $white = liste blanche BC), séparés par virgule/espace. Partagé par toutes les permissions « Liste blanche »."
     },

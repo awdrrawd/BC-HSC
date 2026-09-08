@@ -182,6 +182,7 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
         remoteEditOk: '✅ {name} 已套用你的編輯', remoteEditDenied: '⚠️ {name} 未套用你的編輯（你不在對方白名單）',
         profileEditBtn: '編輯對方的 HSC 文本', profileEditOff: '對方未開放編輯文本', profileEditDisabled: '對方已停用 HSC',
         profileEditNoPerm: '你不在對方白名單，無法編輯', remoteEditNoPerm: '你沒有此項編輯權限',
+        whitelistOwner: '主人', whitelistLover: '戀人', whitelistFriend: '好友',
         whitelistD: '會員編號或代號（$owner＝主人、$lover＝愛人含 AFC、$friend＝好友、$white＝BC白名單），逗號或空白分隔。各類「白名單」編輯權限共用此名單。', whitelistPh: '例：$owner, $lover, $friend, $white, 12345',
         textsResetD: '把催眠文本／狀態訊息／觸發詞重設為「目前語言」的預設值（切換語言後可用來更新翻譯）。',
         confirmTextsReset: '會用目前語言的預設覆蓋你的催眠文本、狀態訊息與觸發詞，確定嗎？',
