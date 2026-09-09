@@ -66,6 +66,11 @@ import { hscServerSend } from '../core/net.js';
     const pushExprEffect = expressionState.push;
     const popExprEffect = expressionState.pop;
     const clearExprEffects = expressionState.clear;
+    // Optional interoperability: HSC still applies/restores its own face without LCE.
+    function getExpressionState() {
+        const state = expressionState.getState();
+        return { ...state, groups: state.active ? Object.keys(_expandExpr({})) : [] };
+    }
 
     // 取某表情組的有效值清單（含 null=無表情），用於設定頁循環選擇
     const _exprOptCache = {};
@@ -365,6 +370,7 @@ export {
     pushExprEffect,
     popExprEffect,
     clearExprEffects,
+    getExpressionState,
     getExpressionOptions,
     cycleExpression,
     captureFaceImage,

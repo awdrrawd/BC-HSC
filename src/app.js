@@ -11,6 +11,7 @@ import { playHypnoAnim } from './hypno/hypno-anim.js';
 import { EXT } from './ui/preference.js';
 import { l10nTest } from './expansion/l10n.js';
 import { initialize } from './core/core-init.js';
+import { getExpressionState } from './effects/character-fx.js';
 
 window.Liko = window.Liko ?? {};
 
@@ -25,6 +26,7 @@ if (alreadyInitialized) {
 } else {
     window.Liko.HSC = {
         version: MOD_VER,
+        expressions: Object.freeze({ apiVersion: 1, getState: getExpressionState }),
         trigger: (text = '[Voice]') => triggerVoiceEffect(String(text), false),
         test: (text = '[Voice] test') => triggerVoiceEffect(String(text), true),
         runDepth: () => runDepthEffect(),

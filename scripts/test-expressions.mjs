@@ -9,7 +9,10 @@ for (const order of [[0, 1], [1, 0]]) {
     let captures = 0;
     const state = createExpressionState(() => { captures++; return { ...face }; }, v => { face = { ...v }; });
     const effects = [{ Eyes: 'Dazed' }, { Eyes: 'Hearts' }];
+    assert.deepEqual(state.getState(), { active: false, count: 0 });
     const tokens = effects.map(v => state.push(v));
+    assert.deepEqual(state.getState(), { active: true, count: 2 });
+    state.getState().active = false; // A consumer cannot change ownership.
     state.pop(tokens[order[0]]);
     assert.deepEqual(face, effects[order[1]]);
     state.pop(tokens[order[0]]); // 重複完成不能釋放另一個效果
@@ -17,15 +20,26 @@ for (const order of [[0, 1], [1, 0]]) {
     state.pop(tokens[order[1]]);
     assert.deepEqual(face, original);
     assert.equal(captures, 1);
+    assert.deepEqual(state.getState(), { active: false, count: 0 });
 
     const stale = state.push(effects[0]);
     state.clear();
     assert.deepEqual(face, original);
     const current = state.push(effects[1]);
     state.pop(stale); // 停用後舊 timer 不可結束新效果
+    assert.deepEqual(state.getState(), { active: true, count: 1 });
     assert.deepEqual(face, effects[1]);
     state.pop(current);
     assert.deepEqual(face, original);
+}
+
+// Ownership is visible before refresh/upload, including the final restoration.
+{
+    const states = [];
+    const state = createExpressionState(() => ({ Eyes: null }), () => states.push(state.getState()));
+    state.pop(state.push({ Eyes: 'Hearts' }));
+    assert.deepEqual(states, [{ active: true, count: 1 }, { active: true, count: 0 }]);
+    assert.deepEqual(state.getState(), { active: false, count: 0 });
 }
 
 // 用實際表情讀寫函式驗證原生與 Luzi 左右眼各自還原，包含 null。
