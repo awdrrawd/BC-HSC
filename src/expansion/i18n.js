@@ -38,7 +38,7 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
     async function ensureI18n() {
         try {
             // 能力偵測：新引擎 BC_i18n 暴露 __Sys_i18n__.ensure；舊 v1 只有 version 會被誤判，故用 ensure
-            if (typeof window.Liko?.__Sys_i18n__?.ensure !== 'function') await _i18nLoadScript(T_ENGINE);
+            if (typeof window.Liko?.__Sys_i18n__?.ensure !== 'function' || !window.Liko?.__Sys_Flags__) await _i18nLoadScript(T_ENGINE);
             const eng = window.Liko?.__Sys_i18n__;
             if (eng?.ensure) {
                 const urlMap = _stringsUrlMap();

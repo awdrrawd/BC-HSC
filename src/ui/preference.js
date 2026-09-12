@@ -683,6 +683,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 }
             }
             if (document.activeElement !== el) el.value = value;
+            window.Liko?.__Sys_Flags__?.bindSelect(el);
             this._placeInput(el, cx, cy, w, h);
         },
 
