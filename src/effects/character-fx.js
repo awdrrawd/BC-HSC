@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 import { createExpressionState } from './expression-state.js';
 // ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
@@ -119,6 +120,18 @@ import { hscServerSend } from '../core/net.js';
     //  BC 的更新迴圈會把 VibratorLevel 歸零，所以在震動期間每 ~400ms 重設一次維持；
     //  結束時歸零，交還給 BC 依實際玩具重算。
     let _vibeUntil = 0, _vibeTimer = null;
+    transientEffects.onStop(() => {
+        if (_vibeTimer) {
+            clearInterval(_vibeTimer);
+            if (typeof Player !== 'undefined' && Player.ArousalSettings) Player.ArousalSettings.VibratorLevel = 0;
+        }
+        _vibeTimer = null;
+        _vibeUntil = 0;
+        _chatFadeUntil = 0;
+        for (const key of Object.keys(_otherPantUntil)) {
+            delete _otherPantUntil[key]; delete _otherPantActive[key]; delete _otherPantInten[key];
+        }
+    });
     function triggerArousalMeterVibe(durationMs = 5000, level = 4) {
         if (typeof Player === 'undefined' || !Player.ArousalSettings) return;
         _vibeUntil = Date.now() + durationMs;   // 持續震動 5 秒（期間再觸發只延長）
@@ -255,8 +268,10 @@ function addArousal(kind) {
         _otherPantInten[memberNum] = intensity;
         if (_otherPantActive[memberNum]) return;   // 已有迴圈在跑 → 只延長/更新強度
         _otherPantActive[memberNum] = true;
+        const active = transientEffects.checkpoint();
         const overlay = getOverlay();
         const loop = () => {
+            if (!active()) return;
             if (Date.now() > (_otherPantUntil[memberNum] || 0)) { _otherPantActive[memberNum] = false; return; }
             try {
                 refreshCanvasCache();

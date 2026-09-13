@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 // ── auto-wired cross-module imports ──
 import { activateHypnoAtmosphere } from './atmosphere.js';
 import { addArousal, popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
@@ -37,12 +38,14 @@ import { HSC_Z } from '../util/zlayers.js';
 
     // 定時觸發的深度催眠效果：扁平自由勾選，喘氣單一（用原「深度中」參數）
     function runDepthEffect() {
+        const active = transientEffects.checkpoint();
         try {
             refreshCanvasCache();
             // 表情變化（共用堆疊，避免與 VOICE 同時觸發時互相覆蓋還原值；6 秒後還原）
             if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length) {
                 const exprToken = pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
-                setTimeout(() => popExprEffect(exprToken), 6000);
+                const release = transientEffects.onStop(() => popExprEffect(exprToken));
+                setTimeout(() => { release(); popExprEffect(exprToken); }, 6000);
             }
             const E = CONFIG.depthEffects || {};
             if (E.smoke)       triggerPinkFlash();
@@ -55,7 +58,7 @@ import { HSC_Z } from '../util/zlayers.js';
             if (E.pant)        triggerSteamParticles(true, true);   // 單一喘氣（人物身上）
             addArousal('depth');   // 日常干擾興奮值
             // 催眠值：開催眠動畫 → 先播特效、第 5 秒才漲（破百時清場播符咒）；否則即時漲
-            if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('depth'); } catch (e) {} }, 5000); else addHypno('depth');
+            if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { if (active()) addHypno('depth'); } catch (e) {} }, 5000); else addHypno('depth');
         } catch (e) {
             console.warn('🐈‍⬛ [HSC] 深度效果錯誤:', e.message);
         }
@@ -92,7 +95,8 @@ import { HSC_Z } from '../util/zlayers.js';
     // ── 深度（輕）：背後低語人影 ──
     //  畫進 canvas（DrawCharacter hook，在玩家繪製前 → 真正在人物後方）。
     //  用 source-atop 壓暗（不透明，只是變暗），頭頂文字用 DOM。
-    let _ghost = null;   // { canvas, offX, alpha } 由 DrawCharacter hook 讀取繪製
+    let _ghost = null;
+    transientEffects.onStop(() => { _ghost = null; });   // { canvas, offX, alpha } 由 DrawCharacter hook 讀取繪製
     // durationMs：人影出現總時長（含淡入淡出）。預設對齊目前催眠時長；
     //   未來長時間催眠只要傳更大的值，人影就跟隨更久。
     function depthGhostWhisperer(durationMs = 4800) {
@@ -145,8 +149,9 @@ import { HSC_Z } from '../util/zlayers.js';
         const D = Math.max(2500, durationMs);
         const FADE_IN = 1000, FADE_OUT = 1300;
         const start = Date.now();
+        const ghost = _ghost;
         const fade = () => {
-            if (!_ghost) return;
+            if (_ghost !== ghost) return;
             const t = Date.now() - start;
             if      (t < FADE_IN)        _ghost.alpha = (t / FADE_IN) * 0.92;
             else if (t < D - FADE_OUT)   _ghost.alpha = 0.92;

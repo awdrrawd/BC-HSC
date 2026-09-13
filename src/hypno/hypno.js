@@ -1,3 +1,4 @@
+import { transientEffects, forcedEffects } from '../effects/lifecycle.js';
 // ════════════════════════════════════════
 //  HSC module: hypno.js
 //  催眠值（0~100）：語音/日常催眠各自加值，未強控時每 12 秒 -1（比照 BC 興奮值衰減）。
@@ -77,6 +78,7 @@ function _enterForced() {
     _publishHypno(true);   // 強控開始 → 立即公告
 }
 function _exitForced() {
+    forcedEffects.stop();
     const was = _forced;
     _forced = false;
     _wakeAt = 0;
@@ -134,6 +136,8 @@ export function restoreHypnoState(v, forced, remSec, inf) {
 
 // 關閉 HSC 總開關：把催眠進度歸零、狀態設 false（公告給他人），並清除所有顯示中的效果。
 export function disableHypno() {
+    transientEffects.stop();
+    forcedEffects.stop();
     _hypno = 0;
     _forced = false;
     _wakeAt = 0;
@@ -177,6 +181,8 @@ export function startHypnoDecay() {
 
 // SDK 卸載時終止狀態計時器，避免舊實例繼續公告或觸發清醒。
 export function disposeHypno() {
+    transientEffects.stop();
+    forcedEffects.stop();
     if (_decayTimer) clearInterval(_decayTimer);
     if (_idleTimer) clearInterval(_idleTimer);
     _decayTimer = null;

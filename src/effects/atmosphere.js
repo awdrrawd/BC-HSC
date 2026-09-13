@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 // ── auto-wired cross-module imports ──
 import { isForced } from '../hypno/hypno.js';
 
@@ -62,3 +63,5 @@ export function hscTintColor() {
     // 淡淡的紫（最高 a≈0.14，隨淡入淡出縮放）
     return { r: 150, g: 40, b: 200, a: +(0.14 * f).toFixed(3) };
 }
+
+transientEffects.onStop(clearHypnoAtmosphere);
