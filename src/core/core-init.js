@@ -1,3 +1,4 @@
+import { transientEffects, forcedEffects } from '../effects/lifecycle.js';
 import { clearExprEffects } from '../effects/character-fx.js';
 // ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
@@ -80,6 +81,8 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
     // 離開 ChatRoom（切到 profile/偏好/更衣室等任何非聊天室畫面）→ 清掉所有暫態疊加特效。
     //  例外：人臉／名稱識別障礙是繪圖 hook 自行判斷畫面，不在 overlay 內，不受此清除影響。
     function clearTransientEffects() {
+        transientEffects.stop();
+        forcedEffects.stop();
         try { updateCrowd(false); } catch (e) {}
         try { stopHypnoAnim(); } catch (e) {}
         try { updateHeadTalisman(); } catch (e) {}   // 非 ChatRoom → want=false → 收起

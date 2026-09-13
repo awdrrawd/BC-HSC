@@ -1,3 +1,4 @@
+import { transientEffects } from '../effects/lifecycle.js';
 // ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { runEffect } from '../effects/run.js';
@@ -122,6 +123,7 @@ import { HSC_Z } from './zlayers.js';
     // ════════════════════════════════════════
     const effectQueue   = [];
     let isEffectPlaying = false;
+    transientEffects.onStop(() => { effectQueue.length = 0; });
 
     // 登入後先忽略真實的語音催眠觸發，避免 BCX「聽我聲音」在初始化時
     // 一次補入訊息，造成多個效果與網路請求瞬間同時啟動。

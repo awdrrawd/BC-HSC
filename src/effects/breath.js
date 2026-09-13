@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 // ════════════════════════════════════════
 //  HSC effect: 喘氣呼吸（每次呼吸噴一口氣，約 1 秒一次、持續約 10 秒）
 //   位置：角色真實嘴部 +（中央頭像存在時）頭像嘴部
@@ -81,6 +82,7 @@ export function _emitBreathPuff(overlay, mouth) {
 }
 
 let _breathLoopUntil = 0;
+transientEffects.onStop(() => { _breathLoopUntil = 0; });
 let _breathIgnoreHead = false;   // 目前喘氣迴圈是否強制用人物身上座標（深度）
 export function triggerSteamParticles(force = false, ignoreHeadshot = false) {
     if (!force && !CONFIG.steamParticles) return;
@@ -91,7 +93,9 @@ export function triggerSteamParticles(force = false, ignoreHeadshot = false) {
     _breathLoopUntil = Date.now() + 6000;   // 約 7 秒（原 10 秒縮短 3 秒）
     if (!FRESH) return;                      // 已有迴圈在跑 → 只延長時間
 
+    const active = transientEffects.checkpoint();
     const breathe = () => {
+        if (!active()) return;
         if (Date.now() > _breathLoopUntil) return;
         getBreathMouths(_breathIgnoreHead).forEach(m => _emitBreathPuff(overlay, m));
         setTimeout(breathe, breathIntervalMs(CONFIG.intensity));  // 強度越高越頻繁

@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 // ── auto-wired cross-module imports ──
 import { addArousal, broadcastHypnotized, popExprEffect, pushExprEffect, sendStatusEmote, showCenterHeadshot, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
@@ -34,12 +35,15 @@ import { effectScale, getArousalLevel, wait } from '../util/util.js';
         const orgasmStageNow = Player?.ArousalSettings?.OrgasmStage ?? 0;
         const willOrgasm = orgasmStageNow === 2;
         const doExpr = CONFIG.expression && !willOrgasm && EXPRESSION_SETS && EXPRESSION_SETS.length;
+        const active = transientEffects.checkpoint();
         let exprToken = null;
+        const release = transientEffects.onStop(() => popExprEffect(exprToken));
         try {
             if (doExpr) {
                 exprToken = pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
                 // 等表情的 Canvas 重建好，再放其餘特效（截圖才有新表情）
                 await wait(280);
+                if (!active()) return;
             }
 
             const arousalAdd   = addArousal('voice');
@@ -53,7 +57,7 @@ import { effectScale, getArousalLevel, wait } from '../util/util.js';
             //  ★ 包 try/catch：這一段任何失敗都不能擋住下面的視覺效果（否則「正常觸發沒特效、
             //     SHOW 測試卻正常」——因為測試走 isTest 跳過本段）。
             //  開催眠動畫 → 先播特效、第 5 秒才漲催眠值（破百時 _enterForced 會清場播符咒）；否則即時漲
-            if (!isTest) { try { sendStatusEmote(); broadcastHypnotized(); if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { addHypno('voice'); } catch (e) {} }, 5000); else addHypno('voice'); } catch (e) { console.warn('🐈‍⬛ [HSC] 狀態廣播失敗（不影響特效）:', e.message); } }
+            if (!isTest) { try { sendStatusEmote(); broadcastHypnotized(); if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { if (active()) addHypno('voice'); } catch (e) {} }, 5000); else addHypno('voice'); } catch (e) { console.warn('🐈‍⬛ [HSC] 狀態廣播失敗（不影響特效）:', e.message); } }
 
             // ③ 視覺效果同時觸發
             if (CONFIG.centerHeadshot) showCenterHeadshot(totalDur + 1500, true);   // 喘氣時頭像呼吸縮放
@@ -85,17 +89,21 @@ import { effectScale, getArousalLevel, wait } from '../util/util.js';
             );
             if (doClimax) {
                 await wait(600);
+                if (!active()) return;
                 triggerClimaxEffect(scale);
             }
 
             // ⑤ 等效果播完
             await wait(totalDur);
+                if (!active()) return;
 
             // ⑥ 恢復表情（特效結束後 1~2 秒）
             if (doExpr) {
                 await wait(1200 + Math.random() * 800);
+                if (!active()) return;
             }
         } finally {
+            release();
             popExprEffect(exprToken);
         }
     }

@@ -1,3 +1,4 @@
+import { transientEffects } from './lifecycle.js';
 // ── auto-wired cross-module imports ──
 import { printChat } from '../core/commands.js';
 import { CONFIG } from '../core/config.js';
@@ -113,9 +114,17 @@ import { T } from '../util/util.js';
             }
         });
     }
+    const sources = new Set();
+    transientEffects.onStop(() => {
+        for (const src of sources) { try { src.stop(); } catch {} }
+        sources.clear();
+        _previewSrc = null;
+    });
     let _previewSrc = null;   // 目前的試聽音源（換一個會停掉前一個）
     function playSoundEntry(entry, vol = 0.8, stopPrev = false) {
+        const active = transientEffects.checkpoint();
         resolveSoundBuffer(entry).then(buf => {
+            if (!active()) return;
             if (!buf) return;
             try {
                 if (stopPrev && _previewSrc) { try { _previewSrc.stop(); } catch (e) {} _previewSrc = null; }
@@ -123,7 +132,9 @@ import { T } from '../util/util.js';
                 const src = ctx.createBufferSource(); src.buffer = buf;
                 const g = ctx.createGain(); g.gain.value = Math.min(Math.max(vol, 0), 1);
                 src.connect(g); g.connect(ctx.destination); src.start();
-                if (stopPrev) { _previewSrc = src; src.onended = () => { if (_previewSrc === src) _previewSrc = null; }; }
+                sources.add(src);
+                if (stopPrev) _previewSrc = src;
+                src.onended = () => { sources.delete(src); src.disconnect(); g.disconnect(); if (_previewSrc === src) _previewSrc = null; };
             } catch (e) {}
         });
     }

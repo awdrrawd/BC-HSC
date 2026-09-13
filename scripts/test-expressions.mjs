@@ -1,3 +1,4 @@
+import { transientEffects } from '../src/effects/lifecycle.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -94,6 +95,7 @@ for (const forced of [false, true]) {
     const state = createExpressionState(() => ({ ...face }), v => { face = { ...v }; });
     const forcedToken = forced ? state.push({ Eyes: 'Closed' }) : null;
     const context = vm.createContext({
+        transientEffects,
         CONFIG: { enabled: true, voiceEnabled: true, expression: true },
         Player: {}, CurrentScreen: 'ChatRoom', EXPRESSION_SETS: [{ Eyes: 'Hearts' }],
         refreshCanvasCache() {}, pushExprEffect: state.push, popExprEffect: state.pop,

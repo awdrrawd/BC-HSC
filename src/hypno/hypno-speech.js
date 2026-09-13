@@ -1,3 +1,4 @@
+import { transientEffects, forcedEffects } from '../effects/lifecycle.js';
 // ════════════════════════════════════════
 //  HSC module: hypno-speech.js
 //  強控（催眠值 100%）中說話 → 攔截一般 Chat：先發「思考」Action，等 2 秒後隨機四選一：
@@ -67,9 +68,12 @@ export function maybeInterceptHypnoSpeech() {
 
     try { ElementValue('InputChat', ''); } catch (e) {}   // 清空輸入，阻止原本送出
     _busy = true;
+    const active = transientEffects.checkpoint();
+    const forcedActive = forcedEffects.checkpoint();
     sendLocalizedAction('hs_thinking');
     setTimeout(() => {
         try {
+            if (!active() || !forcedActive()) return;
             const r = Math.floor(Math.random() * 4);
             if (r === 0) {
                 sendLocalizedAction('hs_blank');
