@@ -174,3 +174,11 @@ export function startHypnoDecay() {
         }
     }, 1000);
 }
+
+// SDK 卸載時終止狀態計時器，避免舊實例繼續公告或觸發清醒。
+export function disposeHypno() {
+    if (_decayTimer) clearInterval(_decayTimer);
+    if (_idleTimer) clearInterval(_idleTimer);
+    _decayTimer = null;
+    _idleTimer = null;
+}

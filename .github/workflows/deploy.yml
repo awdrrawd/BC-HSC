@@ -15,7 +15,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
   build:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +30,7 @@ jobs:
 
       - name: Build
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Setup Pages
@@ -48,3 +51,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - name: Verify published assets
+        env:
+          HSC_SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/check-deployment.mjs

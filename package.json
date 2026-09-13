@@ -10,7 +10,9 @@
     "preview": "vite preview --port 5174",
     "prebuild": "node scripts/copy-assets.mjs",
     "build": "vite build",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node scripts/test-settings.mjs && node scripts/test-expressions.mjs && node scripts/test-preference-layout.mjs && node scripts/check-translations.mjs",
+    "check": "npm run lint && npm test && npm run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

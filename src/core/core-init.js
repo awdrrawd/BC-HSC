@@ -5,7 +5,7 @@ import { CONFIG, ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
 import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
 import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
-import { startHypnoDecay, restoreHypnoState, disableHypno } from '../hypno/hypno.js';
+import { startHypnoDecay, restoreHypnoState, disableHypno, disposeHypno } from '../hypno/hypno.js';
 import { ensureI18n, ui } from '../expansion/i18n.js';
 import { hookCensor } from '../effects/censor.js';
 import { hookL10n } from '../expansion/l10n.js';
@@ -200,6 +200,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         if (modApi) {
             try {
                 modApi.onUnload(() => {
+                        disposeHypno();
                         clearExprEffects();
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }

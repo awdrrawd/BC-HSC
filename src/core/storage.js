@@ -1,3 +1,5 @@
+import { mergeDefaults, normalizeSettings, serializeSettings } from './settings-data.js';
+import { disableHypno } from '../hypno/hypno.js';
 // ── auto-wired cross-module imports ──
 import { printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
@@ -18,19 +20,6 @@ import { hscServerSend } from './net.js';
     //  - IndexedDB "liko-hsc"          ← 本機上傳音效 bytes / 大量文本（無上限）
     // ════════════════════════════════════════
 
-    // 深合併：以 defaults 為底，用 saved 覆蓋（陣列直接取代）
-    function mergeDefaults(defaults, saved) {
-        if (Array.isArray(defaults)) return Array.isArray(saved) ? saved : defaults;
-        if (defaults && typeof defaults === 'object') {
-            const out = {};
-            for (const k of Object.keys(defaults)) {
-                out[k] = (saved && k in saved) ? mergeDefaults(defaults[k], saved[k]) : defaults[k];
-            }
-            return out;
-        }
-        return saved === undefined ? defaults : saved;
-    }
-
     // 估算設定序列化後的位元組數（壓縮後）
     function estimateESBytes() {
         try {
@@ -40,37 +29,7 @@ import { hscServerSend } from './net.js';
         } catch { return 0; }
     }
 
-    // 只把需要持久化的欄位序列化（音效本機 bytes 不進 ES）
-    function serializeConfig() {
-        const c = CONFIG;
-        return {
-            v: 2,
-            enabled: c.enabled,
-            pinkFlash: c.pinkFlash, hypnoSpiral: c.hypnoSpiral, hypnoWaves: c.hypnoWaves,
-            screenDistort: c.screenDistort, vignette: c.vignette, danmaku: c.danmaku,
-            steamParticles: c.steamParticles, expression: c.expression,
-            chatFade: c.chatFade,
-            climax: c.climax, climaxMode: c.climaxMode, sound: c.sound,
-            intensity: c.intensity, voiceEnabled: c.voiceEnabled,
-            arousalStepVoice: c.arousalStepVoice, arousalStepDepth: c.arousalStepDepth,
-            hypnoEnabled: c.hypnoEnabled, hypnoVoiceStep: c.hypnoVoiceStep, hypnoDepthStep: c.hypnoDepthStep,
-            autoWake: c.autoWake, hypnoClimax: c.hypnoClimax, forcedGrowthDiv: c.forcedGrowthDiv, hypnoAnimEnabled: c.hypnoAnimEnabled, hypnoAnimStyle: c.hypnoAnimStyle, hypnoAnimColor: c.hypnoAnimColor, headTalisman: c.headTalisman,
-            faceCensor: c.faceCensor, nameCensor: c.nameCensor, faceCensorStyle: c.faceCensorStyle, crowd: c.crowd,
-            stateDanmakuChat: c.stateDanmakuChat, stateDanmakuWhisper: c.stateDanmakuWhisper,
-            stateMsgSmoke: c.stateMsgSmoke, stateMsgInterfere: c.stateMsgInterfere,
-            centerHeadshot: c.centerHeadshot, emoteEnabled: c.emoteEnabled, dualSound: c.dualSound,
-            whitelist: c.whitelist, triggerWords: c.triggerWords, seeOthersPant: c.seeOthersPant,
-            seeOthersHypno: c.seeOthersHypno, seeOthersTalisman: c.seeOthersTalisman, showProfileButton: c.showProfileButton,
-            depthEnabled: c.depthEnabled, depthIntervalMin: c.depthIntervalMin, depthEffects: c.depthEffects,
-            editModes: c.editModes, textSource: c.textSource,
-            lang: c.lang,
-            customTexts: c.textSource === 'ES' ? c.customTexts : [],
-            emoteList: c.emoteList, wakeWords: c.wakeWords, responseList: c.responseList, allowedPhrases: c.allowedPhrases,
-            expressionSets: c.expressionSets,
-            soundSource: c.soundSource,
-            // 注意：sounds 不存進 ExtensionSettings（帳號隔離），改存 localStorage 跨帳號共用
-        };
-    }
+    function serializeConfig() { return serializeSettings(CONFIG); }
 
     // 音效設定改存 localStorage（同瀏覽器跨帳號共用），不跟著帳號走
     const SND_LS_KEY = 'HSC_sounds';
@@ -88,42 +47,19 @@ import { hscServerSend } from './net.js';
     function _decodeSaved(raw) {
         try { if (!raw) return null; const json = LZString.decompressFromBase64(raw); return json ? JSON.parse(json) : null; } catch (e) { return null; }
     }
-    // 套用一份 saved 設定（含各種舊版欄位遷移）
     function _applySaved(saved) {
-        setConfig(mergeDefaults(makeDefaultConfig(), saved));
-        // 舊版 nameCensor(布林) → 三態字串（true→僅玩家 / false→關）
-        if (typeof CONFIG.nameCensor === 'boolean') CONFIG.nameCensor = CONFIG.nameCensor ? 'player' : 'off';
-        // 舊版編輯權限遷移 → editModes.catalyst（催眠文本）
-        if (saved.editModes === undefined) {
-            let m = 'off';
-            if (saved.allowEditMode === 'any' || saved.allowEditMode === 'whitelist') m = saved.allowEditMode;
-            else if (saved.allowOthersEdit) m = 'any';
-            CONFIG.editModes = { catalyst: m, status: 'off', trigger: 'off' };
-        }
-        // 舊版深度（分層強度）→ 新版（開/關 + 扁平效果）遷移
-        if (saved.depthMax !== undefined && saved.depthEnabled === undefined) {
-            CONFIG.depthEnabled = saved.depthMax > 0;
-        }
-        if ((saved.depthLight || saved.depthMed || saved.depthHeavy) && saved.depthEffects === undefined) {
-            const L = saved.depthLight || {}, M = saved.depthMed || {}, H = saved.depthHeavy || {};
-            CONFIG.depthEffects = {
-                smoke: !!L.smoke, chatDanmaku: !!L.chatDanmaku, ghost: !!L.ghost,
-                figureBlur: !!M.figureBlur, sfx: !!M.sfx, fade: !!M.fade,
-                chatlogBlur: !!H.chatlogBlur, pant: !!(L.pant || M.pant || H.pant),
-            };
-        }
-        // 舊版 wakeWord(單字串) → wakeWords(清單)
-        if (typeof saved.wakeWord === 'string' && saved.wakeWords === undefined) {
-            CONFIG.wakeWords = saved.wakeWord.trim() ? [saved.wakeWord.trim()] : [];
-        }
-        // 舊版 arousal(布林)/arousalStep(單值) → 語音/日常 兩個興奮值
-        if (saved.arousalStep !== undefined && saved.arousalStepVoice === undefined) {
-            CONFIG.arousalStepVoice = saved.arousalStep;
-            CONFIG.arousalStepDepth = saved.arousalStep;
-        } else if (saved.arousal !== undefined && saved.arousalStepVoice === undefined) {
-            const v = saved.arousal ? 5 : 0;
-            CONFIG.arousalStepVoice = v; CONFIG.arousalStepDepth = v;
-        }
+        setConfig(normalizeSettings(makeDefaultConfig(), saved));
+        setExpressionSets(CONFIG.expressionSets);
+    }
+    // 整份設定的互動套用入口：匯入與重設共用副作用順序。
+    function applySettings(saved) {
+        const sounds = CONFIG.sounds;
+        _applySaved(saved);
+        CONFIG.sounds = sounds;
+        if (!CONFIG.enabled || !CONFIG.hypnoEnabled) disableHypno();
+        applyDepthLoop();
+        saveSettings(true);
+        publishSharedSettings();
     }
     function loadSounds() {
         try {
@@ -384,11 +320,8 @@ import { hscServerSend } from './net.js';
                 try {
                     const data  = JSON.parse(String(r.result));
                     const saved = data.hsc || data;
-                    setConfig(mergeDefaults(makeDefaultConfig(), saved));
-                    setExpressionSets(CONFIG.expressionSets);
-                    saveSettings(true);
-                    publishSharedSettings();
-                    applyDepthLoop();
+                    if (data.plugin && data.plugin !== 'Liko-HSC') throw new Error('Not an HSC settings file');
+                    applySettings(saved);
                     printChat(ui('importDone'), 6000);
                 } catch (e) {
                     console.warn('🐈‍⬛ [HSC] 匯入失敗:', e.message);
@@ -401,6 +334,7 @@ import { hscServerSend } from './net.js';
     }
 
 export {
+    applySettings,
     mergeDefaults,
     estimateESBytes,
     serializeConfig,

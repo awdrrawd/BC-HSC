@@ -1,7 +1,7 @@
 import { createPreferenceLayout, PREF_LAYOUT } from './preference-layout.js';
 // ── auto-wired cross-module imports ──
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '../effects/character-fx.js';
-import { CONFIG, DEFAULT_EXPRESSIONS, HSC_SCREEN, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from '../core/config.js';
+import { CONFIG, DEFAULT_EXPRESSIONS, HSC_SCREEN, MOD_VER, makeDefaultConfig, setExpressionSets } from '../core/config.js';
 import { applyDepthLoop } from '../effects/depth.js';
 import { assetUrl, imageUrl } from '../util/icons.js';
 import { updateHeadTalisman } from '../hypno/hypno-anim.js';
@@ -10,7 +10,7 @@ import { HSC_LANGS, HSC_LANG_NAMES, HSC_LANG_FLAGS, ensureLang, ui } from '../ex
 import { WL_TOKENS } from './panel.js';
 import { hscConfirm } from './profile.js';
 import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from '../effects/sound.js';
-import { HSCDB, exportSettings, importSettings, publishSharedSettings, saveSettings } from '../core/storage.js';
+import { HSCDB, applySettings, exportSettings, importSettings, publishSharedSettings, saveSettings } from '../core/storage.js';
 import { HSC_Z } from '../util/zlayers.js';
 
 // ════════════════════════════════════════
@@ -763,8 +763,7 @@ import { HSC_Z } from '../util/zlayers.js';
             this.btn(expX + (BW + BGAP), cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, ui('import'), 'White', ui('importD'), () => importSettings());
             this.btn(expX + (BW + BGAP) * 2, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, ui('resetAll'), 'White', ui('resetAllD'),
                 () => hscConfirm(ui('confirmResetAll'), () => {
-                    setConfig(makeDefaultConfig()); setExpressionSets(CONFIG.expressionSets);
-                    saveSettings(true); publishSharedSettings(); applyDepthLoop();
+                    applySettings(makeDefaultConfig());
                 }));
         },
 
