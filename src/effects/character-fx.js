@@ -56,8 +56,9 @@ import { hscServerSend } from '../core/net.js';
             Player.ExpressionQueue = Player.ExpressionQueue.filter(({ Group }) => !Object.hasOwn(map, Group));
         }
         CharacterRefresh(Player, false, false);
-        // R132 的完整外觀壓縮可能省略群組層級的 Expression；使用原生表情封包的
-        // Name / Group 明確同步各部位，避免伺服器回傳外觀後把剛套用的表情清掉。
+        // 與原生玩家換表情一致，使用 Name / Group 專用封包同步暫態臉部表情。
+        // R132 !6666 已修復完整外觀壓縮遺失群組表情；保留此路徑兼容修復前後版本，
+        // 不修改遊戲打包函式，也不需要依版本切換同步方式。
         // 全部部位寫完、刷新一次後才同步；Emoticon 不屬於 HSC，不能代送。
         try {
             for (const item of Player.Appearance) {
