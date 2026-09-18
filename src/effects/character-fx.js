@@ -56,8 +56,15 @@ import { hscServerSend } from '../core/net.js';
             Player.ExpressionQueue = Player.ExpressionQueue.filter(({ Group }) => !Object.hasOwn(map, Group));
         }
         CharacterRefresh(Player, false, false);
-        // ChatRoomCharacterUpdate 自行檢查是否在房內；只送最終完整外觀。
-        try { ChatRoomCharacterUpdate(Player); } catch (e) {
+        // R132 的完整外觀壓縮可能省略群組層級的 Expression；使用原生表情封包的
+        // Name / Group 明確同步各部位，避免伺服器回傳外觀後把剛套用的表情清掉。
+        // 全部部位寫完、刷新一次後才同步；Emoticon 不屬於 HSC，不能代送。
+        try {
+            for (const item of Player.Appearance) {
+                const group = item.Asset.Group.Name;
+                if (Object.hasOwn(map, group)) ChatRoomCharacterExpressionUpdate(Player, group);
+            }
+        } catch (e) {
             console.warn('🐈‍⬛ [HSC] 表情外觀同步失敗:', e);
         }
     }

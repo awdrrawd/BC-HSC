@@ -7,7 +7,7 @@ import globals from 'globals';
 const bcGlobals = [
   'Player', 'ChatRoomCharacter', 'ChatRoomCharacterViewOffset', 'CurrentScreen',
   'TranslationLanguage', 'CharacterSetFacialExpression', 'CharacterNickname',
-  'CharacterRefresh', 'CharacterLoadCanvas', 'ChatRoomCharacterUpdate', 'MainCanvas', 'DrawButton', 'DrawText',
+  'CharacterRefresh', 'CharacterLoadCanvas', 'ChatRoomCharacterUpdate', 'ChatRoomCharacterExpressionUpdate', 'MainCanvas', 'DrawButton', 'DrawText',
   'DrawTextFit', 'DrawingGetTextSize', 'DrawImage', 'DrawImageResize', 'DrawCharacter', 'DrawRect',
   'DrawEmptyRect', 'DrawCircle', 'DrawBackNextButton', 'MouseIn', 'MouseX', 'MouseY',
   'ServerSend', 'ServerAccountUpdate', 'ServerPlayerExtensionSettingsSync',

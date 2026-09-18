@@ -59,18 +59,55 @@ const player = { Appearance: appearance, ExpressionQueue: [
 vm.runInNewContext(faceCode + '\nconst t = pushExprEffect({ Eyes: "Hearts" }); popExprEffect(t);', {
     Player: player, createExpressionState,
     CharacterRefresh() { refreshCount++; },
-    ChatRoomCharacterUpdate(character) {
-        assert.equal(refreshCount, uploaded.length + 1, '每次上傳前只刷新一次');
-        uploaded.push(structuredClone(character.Appearance));
+    ChatRoomCharacterExpressionUpdate(character, group) {
+        assert.equal(refreshCount, Math.floor(uploaded.length / groups.length) + 1, '每批表情同步前只刷新一次');
+        const item = character.Appearance.find(i => i.Asset.Group.Name === group);
+        uploaded.push({ Group: group, Name: item.Property.Expression, Appearance: structuredClone(character.Appearance) });
     },
 });
 assert.deepEqual(appearance, before);
-assert.equal(uploaded.length, 2, '套用與還原各只送一次完整外觀');
+assert.equal(uploaded.length, groups.length * 2, '套用與還原都明確同步各臉部群組');
 assert.equal(refreshCount, 2);
 assert.deepEqual(player.ExpressionQueue, [{ Group: 'Other', Timer: 3, Expression: 'Keep' }]);
-assert.deepEqual(uploaded[0].filter(i => ['Eyes', 'Eyes2', '右眼_Luzi', '左眼_Luzi'].includes(i.Asset.Group.Name))
+assert.deepEqual(uploaded[0].Appearance.filter(i => ['Eyes', 'Eyes2', '右眼_Luzi', '左眼_Luzi'].includes(i.Asset.Group.Name))
     .map(i => i.Property.Expression), ['Hearts', 'Hearts', 'Hearts', 'Hearts']);
-assert.deepEqual(uploaded.at(-1), before, '最後送出的外觀必須完整還原，包含 null 與 Luzi');
+assert.deepEqual(uploaded.at(-1).Appearance, before, '最後送出的外觀必須完整還原，包含 null 與 Luzi');
+assert.deepEqual(uploaded.slice(groups.length).map(({ Group, Name }) => [Group, Name]),
+    before.map(item => [item.Asset.Group.Name, item.Property.Expression]), '還原封包必須明確攜帶原始值，包含 null');
+
+// Emoticon belongs to the player: never capture, overwrite, restore, or cancel its timer.
+for (const cleanup of ['pop', 'clear']) {
+    const emoticon = {
+        Asset: { Group: { Name: 'Emoticon' } },
+        Color: ['#ffffff'], Property: { Expression: 'Afk', Opacity: 0.8 },
+    };
+    const queueEntry = { Group: 'Emoticon', Time: 12345, Expression: null };
+    const character = {
+        Appearance: [...structuredClone(before), emoticon],
+        ExpressionQueue: [queueEntry],
+    };
+    const sent = [];
+    const context = vm.createContext({
+        Player: character, createExpressionState,
+        CharacterRefresh() {},
+        ChatRoomCharacterExpressionUpdate(c, group) {
+            assert.ok(groups.includes(group), '只能同步 HSC 管理的臉部群組');
+            sent.push(structuredClone(c.Appearance.at(-1)));
+        },
+    });
+    vm.runInContext(faceCode, context);
+    assert.equal(vm.runInContext('Object.hasOwn(saveExpression(), "Emoticon")', context), false);
+    vm.runInContext('const token = pushExprEffect({ Eyes: "Hearts", Emoticon: null });', context);
+    assert.deepEqual(sent[0], emoticon, '套用臉部表情不能改動表情符號，即使輸入包含 Emoticon');
+    assert.equal(vm.runInContext('getExpressionState().groups.includes("Emoticon")', context), false);
+    emoticon.Property.Expression = 'Brb'; // Player changes the icon while HSC owns the face.
+    const expected = structuredClone(emoticon);
+    vm.runInContext(cleanup === 'pop' ? 'popExprEffect(token)' : 'clearExprEffects()', context);
+    assert.deepEqual(emoticon, expected, '還原或中止必須保留玩家新選的表情符號');
+    assert.deepEqual(sent.at(-1), expected, '同步外觀必須保留最新表情符號');
+    assert.equal(character.ExpressionQueue.length, 1);
+    assert.equal(character.ExpressionQueue[0], queueEntry, '不能取消表情符號的原生計時');
+}
 
 // 部分寫入後失敗，仍須退回有效表情，且失敗的效果不能殘留。
 for (const forced of [false, true]) {
@@ -107,4 +144,4 @@ for (const forced of [false, true]) {
     state.pop(forcedToken);
     assert.deepEqual(face, { Eyes: null });
 }
-console.log('Expression regressions passed: overlap orders, duplicate/stale callbacks, cleanup, Luzi, voice exceptions.');
+console.log('Expression regressions passed: overlap orders, duplicate/stale callbacks, cleanup, Luzi, Emoticon isolation, voice exceptions.');
