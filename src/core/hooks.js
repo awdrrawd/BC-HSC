@@ -3,7 +3,7 @@ import { hscBlurLevel, hscTintColor } from '../effects/atmosphere.js';
 import { CONFIG, modApi } from './config.js';
 import { triggerPinkFlash } from '../effects/pink-flash.js';
 import { triggerClimaxEffect } from '../effects/climax.js';
-import { _charAnchor, _charDrawPos, playerDrawPos } from '../util/geometry.js';
+import { _charAnchor, _charDrawPos, playerDrawPos, pruneStaleCharPositions } from '../util/geometry.js';
 import { drawHypnoStatusForChar } from '../hypno/hypno-orb.js';
 import { effectScale } from '../util/util.js';
 
@@ -18,6 +18,12 @@ import { effectScale } from '../util/util.js';
     //  CharX/CharY/Zoom 已是 BC 計算好的最終座標
     //  包含 HeightRatio/XOffset/YOffset/翻頁偏移，完全正確
     // ════════════════════════════════════════
+    // 每幀都會判斷姿勢：常數集合只建一次，避免每幀在熱路徑配置陣列
+    const PRONE_POSES = new Set(['Hogtied', 'AllFours', 'Suspension', 'SuspensionHogtied']);
+    const isProneChar = (ch) =>
+        !!(ch.ActivePose?.some(p => PRONE_POSES.has(p))) ||
+        Object.values(ch.DrawPoseMapping || ch.PoseMapping || {}).some(p => PRONE_POSES.has(p));
+
     function hookDrawCharacter() {
         if (!modApi) return;
         try {
@@ -45,14 +51,7 @@ import { effectScale } from '../util/util.js';
                     playerDrawPos.valid = true;
                     // 姿勢也每幀更新（不放在座標變化判斷內，避免姿勢變化被漏掉）
                     playerDrawPos.isKneeling = typeof character.IsKneeling === 'function' && character.IsKneeling();
-                    playerDrawPos.isProne    = !!(
-                        character.ActivePose?.some(p =>
-                                                   ['Hogtied','AllFours','Suspension','SuspensionHogtied'].includes(p)
-                                                  ) ||
-                        Object.values(character.DrawPoseMapping || character.PoseMapping || {}).some(p =>
-                                                                                                     ['Hogtied','AllFours','Suspension','SuspensionHogtied'].includes(p)
-                                                                                                    )
-                    );
+                    playerDrawPos.isProne    = isProneChar(character);
                     // （舊的腳邊催眠值進度條已移除，改由頭上的催眠進度球顯示）
                 }
                 return result;
@@ -102,7 +101,10 @@ import { effectScale } from '../util/util.js';
         const orgasmHandler = (args, next) => {
             const result = next(args);
             const [C] = args;
+            // ActivityOrgasmStart 在「被破壞/失敗的高潮」時也會被呼叫（此時 OrgasmStage 被重設為 0，
+            //  不會進入 Stage 2）；舊版沒檢查 → 失敗高潮也噴出高潮特效。輪詢備援本來就有此檢查，這裡補齊。
             if (C && typeof C.IsPlayer === 'function' && C.IsPlayer()
+                && C.ArousalSettings?.OrgasmStage === 2
                 && typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') {
                 if (CONFIG.climax && !_climaxCooldown) {
                     _climaxCooldown = true;
@@ -143,8 +145,11 @@ import { effectScale } from '../util/util.js';
     }
 
     // fallback：每 500ms 輪詢 OrgasmStage
+    let _orgasmPollTimer = null;
+    function stopOrgasmPoll() { if (_orgasmPollTimer) { clearInterval(_orgasmPollTimer); _orgasmPollTimer = null; } }
     function _hookOrgasmPoll() {
-        setInterval(() => {
+        if (_orgasmPollTimer) return;
+        _orgasmPollTimer = setInterval(() => {
             if (!CONFIG.climax || _climaxCooldown) return;
             if (typeof CurrentScreen === 'undefined' || CurrentScreen !== 'ChatRoom') {
                 _lastOrgasmStage = Player?.ArousalSettings?.OrgasmStage ?? 0;
@@ -169,6 +174,7 @@ import { effectScale } from '../util/util.js';
     //  記錄每個角色 DrawCharacter 的「真實繪製座標」到 _charAnchor（含 ECHO 貼貼等活動 X 位移）。
     //  面部識別障礙就是靠 DrawCharacter 座標永遠對得準；讓喘氣/符咒等效果也改用它（getBodyAnchorBc/Screen）。
     // ════════════════════════════════════════
+    let _lastPrune = 0;
     function hookCharAnchor() {
         if (!modApi) return;
         try {
@@ -178,7 +184,9 @@ import { effectScale } from '../util/util.js';
                     const C = args[0], X = args[1], Y = args[2], Zoom = args[3];
                     if (C && C.MemberNumber != null && typeof X === 'number'
                         && typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') {
-                        _charAnchor[C.MemberNumber] = { x: X, y: Y, zoom: Zoom, t: Date.now() };
+                        const now = Date.now();
+                        _charAnchor[C.MemberNumber] = { x: X, y: Y, zoom: Zoom, t: now };
+                        if (now - _lastPrune > 30000) { _lastPrune = now; pruneStaleCharPositions(60000, now); }
                     }
                 } catch (e) {}
                 return r;
@@ -195,4 +203,5 @@ export {
     hookOrgasmStage,
     hookCharAnchor,
     _hookOrgasmPoll,
+    stopOrgasmPoll,
 };

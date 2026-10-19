@@ -10,6 +10,7 @@ import { interfereEnterLeave } from '../effects/state-fx.js';
 import { publishSharedSettings, saveSettings } from '../core/storage.js';
 import { hscServerSend } from '../core/net.js';
 import { HSC_Z } from '../util/zlayers.js';
+import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
 
 // ════════════════════════════════════════
 //  HSC module: profile.js
@@ -219,9 +220,9 @@ import { HSC_Z } from '../util/zlayers.js';
                     try {
                         const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Access');
                         if (d && Number(d.Target) === Player?.MemberNumber) {
-                            const who = d.Name
-                                || (ChatRoomCharacter?.find(c => c.MemberNumber === Number(data.Sender))?.Nickname)
-                                || data.Sender;
+                            // 名稱以房內角色（伺服器驗證的 Nickname/Name）為準；對方自報的 d.Name 只當後備，且一律消毒
+                            const sc = ChatRoomCharacter?.find(c => c.MemberNumber === Number(data.Sender));
+                            const who = safeDisplayName(sc?.Nickname || sc?.Name || d.Name || data.Sender);
                             printChat(ui('accessedYourText', { who }), 8000);
                         }
                     } catch (e) {}
@@ -234,12 +235,12 @@ import { HSC_Z } from '../util/zlayers.js';
                         if (d && Number(d.Target) === Player?.MemberNumber) {
                             _permCache[Number(data.Sender)] = {
                                 can: { catalyst: !!d.cc, status: !!d.cs, trigger: !!d.ct, wake: !!d.cw, response: !!d.cr, allowed: !!d.ca },
-                                texts: Array.isArray(d.texts) ? d.texts : [],
-                                emotes: Array.isArray(d.emotes) ? d.emotes : [],
-                                triggers: Array.isArray(d.triggers) ? d.triggers : [],
-                                wake: Array.isArray(d.wake) ? d.wake : [],
-                                response: Array.isArray(d.response) ? d.response : [],
-                                allowed: Array.isArray(d.allowed) ? d.allowed : [],
+                                texts: cleanStringList(d.texts),
+                                emotes: cleanStringList(d.emotes),
+                                triggers: cleanStringList(d.triggers),
+                                wake: cleanStringList(d.wake),
+                                response: cleanStringList(d.response),
+                                allowed: cleanStringList(d.allowed),
                                 ts: Date.now(),
                             };
                             // 有等待中的「開啟編輯器」請求且正是此人 → 密本到手，開啟（避免開出空白編輯器）
@@ -263,7 +264,7 @@ import { HSC_Z } from '../util/zlayers.js';
                         const sender = Number(data.Sender);
                         if (sender && sender !== Player?.MemberNumber && CONFIG.seeOthersPant) {
                             const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Hypnotized');
-                            startOtherPant(sender, (d && d.Duration) || 7000, (d && d.Intensity) || 1);
+                            startOtherPant(sender, clampNumber(d && d.Duration, 500, 30000, 7000), clampNumber(d && d.Intensity, 0.1, 3, 1));
                         }
                     } catch (e) {}
                     return;  // 不顯示此隱藏訊息
@@ -275,7 +276,7 @@ import { HSC_Z } from '../util/zlayers.js';
                         const wl = resolveWhitelistNumbers();   // 含 $owner/$lover/$friend/$white 展開
                         const okFor = m => m === 'any' ||
                             (m === 'whitelist' && wl.has(Number(data.Sender)));
-                        const clean = arr => arr.map(s => String(s).trim()).filter(Boolean).slice(0, 200);
+                        const clean = arr => cleanStringList(arr, 200, 500);
                         if (dict && dict.Target === Player.MemberNumber) {
                             // 是否「有提交但因權限被拒」（用來回報「不在白名單」）
                             const tried = ['Texts', 'Emotes', 'Triggers', 'Wake', 'Response', 'Allowed'].some(k => Array.isArray(dict[k]));
