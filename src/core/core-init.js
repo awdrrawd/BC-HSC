@@ -4,7 +4,7 @@ import { clearExprEffects } from '../effects/character-fx.js';
 import { hookChatInput, printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
-import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage } from './hooks.js';
+import { hookAtmosphere, hookCharAnchor, hookDrawCharacter, hookOrgasmStage, stopOrgasmPoll } from './hooks.js';
 import { hookHypnoSpeech } from '../hypno/hypno-speech.js';
 import { startHypnoDecay, restoreHypnoState, disableHypno, disposeHypno } from '../hypno/hypno.js';
 import { ensureI18n, ui } from '../expansion/i18n.js';
@@ -204,6 +204,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
             try {
                 modApi.onUnload(() => {
                         disposeHypno();
+                        stopOrgasmPoll();
                         clearExprEffects();
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }

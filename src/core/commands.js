@@ -4,6 +4,7 @@ import { triggerClimaxEffect } from '../effects/climax.js';
 import { ui } from '../expansion/i18n.js';
 import { _panel, buildPanel, removePanel } from '../ui/panel.js';
 import { T, triggerVoiceEffect } from '../util/util.js';
+import { wake } from '../hypno/hypno.js';
 
 // ════════════════════════════════════════
 //  HSC module: commands.js
@@ -20,6 +21,9 @@ import { T, triggerVoiceEffect } from '../util/util.js';
             if (!log) throw new Error('no log');
             const el = document.createElement('div');
             el.className = 'ChatMessage ChatMessageLocalMessage';
+            // HSC 自己產生的訊息：標記後 handleChatNode 會略過，避免「輸出被當輸入再解析」
+            //（HSC_Access 的 Name 等遠端可控文字若含 [Voice]，會被當成自身催眠觸發 → 授權繞過）。
+            el.dataset.hscOwned = '1';
             Object.assign(el.style, {
                 background:   'rgba(53,0,155,0.18)',
                 borderLeft:   '3px solid rgb(162,71,255)',
@@ -87,6 +91,12 @@ import { T, triggerVoiceEffect } from '../util/util.js';
             } catch (e) {
                 printChat('⚠️ ' + T('開啟設定頁失敗','Failed to open settings') + ': ' + e.message);
             }
+            return true;
+        }
+
+        // 自助解除：強控中不應只能靠「他人說清醒詞」或計時器；本人隨時可用 /hsc wake 立即清醒。
+        if (sub === 'wake') {
+            wake();
             return true;
         }
 

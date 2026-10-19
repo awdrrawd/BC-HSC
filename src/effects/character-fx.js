@@ -280,7 +280,10 @@ function addArousal(kind) {
         const overlay = getOverlay();
         const loop = () => {
             if (!active()) return;
-            if (Date.now() > (_otherPantUntil[memberNum] || 0)) { _otherPantActive[memberNum] = false; return; }
+            if (Date.now() > (_otherPantUntil[memberNum] || 0)) {
+                delete _otherPantActive[memberNum]; delete _otherPantUntil[memberNum]; delete _otherPantInten[memberNum];
+                return;
+            }
             try {
                 refreshCanvasCache();
                 const dp = _charDrawPos[memberNum];

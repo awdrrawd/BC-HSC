@@ -46,5 +46,7 @@ if (alreadyInitialized) {
         l10nTest: (key) => l10nTest(key),
     };
 
-    initialize();
+    initialize().catch((error) => {
+        console.error('🐈‍⬛ [HSC] ❌ 初始化失敗:', error);
+    });
 }

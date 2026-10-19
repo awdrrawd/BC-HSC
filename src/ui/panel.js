@@ -303,14 +303,16 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
         try { return Array.isArray(Player?.WhiteList) ? Player.WhiteList.map(Number) : []; } catch { return []; }
     }
     // 把白名單（數字 + $owner/$lover/$friend/$white 代號）展開成 MemberNumber 集合
-    function resolveWhitelistNumbers() {
+    //  publicOnly=true：用於「公開可讀」的 OnlineSharedSettings 快照。$friend / $white 是玩家的私人名單，
+    //  不應展開公布（對方要知道自己能否編輯，改走 HSC_PermQuery/PermReply 即時詢問，只回給詢問者本人）。
+    function resolveWhitelistNumbers({ publicOnly = false } = {}) {
         const set = new Set();
         for (const e of (CONFIG.whitelist || [])) {
             if (typeof e === 'number') set.add(e);
             else if (e === '$owner')  getOwnerNumbers().forEach(n => set.add(n));
             else if (e === '$lover')  getLoverNumbers().forEach(n => set.add(n));
-            else if (e === '$friend') getFriendNumbers().forEach(n => set.add(n));
-            else if (e === '$white')  getWhiteNumbers().forEach(n => set.add(n));
+            else if (e === '$friend' && !publicOnly) getFriendNumbers().forEach(n => set.add(n));
+            else if (e === '$white'  && !publicOnly) getWhiteNumbers().forEach(n => set.add(n));
         }
         return set;
     }
@@ -334,6 +336,9 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
                       : node.querySelector?.('.ChatMessage') || node;
         if (msgEl._hscHandled) return;        // 同一訊息只處理一次
         msgEl._hscHandled = true;
+
+        // HSC 自己用 printChat 產生的本地訊息不是觸發來源（其內容可能夾帶遠端可控文字）
+        if (msgEl.dataset?.hscOwned === '1' || msgEl.closest?.('[data-hsc-owned="1"]')) return;
 
         const text = msgEl.textContent || '';
 

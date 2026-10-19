@@ -92,7 +92,8 @@ import { hscServerSend } from './net.js';
         //  正常兩者 ts 相同（同一次存檔同時寫入）。若帳號被清空/落後（ts 較小或為 0）而備份較新 →
         //  代表帳號資料遺失，改用備份並補回帳號。
         const esRaw = Player?.ExtensionSettings?.[ES_KEY];
-        const bkRaw = localStorage.getItem(_backupKey());
+        let bkRaw = null;
+        try { bkRaw = localStorage.getItem(_backupKey()); } catch { /* 儲存被禁用：只用帳號資料 */ }
         const esSaved = _decodeSaved(esRaw);
         const bkSaved = _decodeSaved(bkRaw);
         const esTs = (esSaved && +esSaved.ts) || 0;
@@ -174,7 +175,7 @@ import { hscServerSend } from './net.js';
                 hypno: prevHypno || { v: 0, f: false, c: '#f500b4', s: 1, r: 0, inf: false, rb: 1 },
                 edit: anyEditable,                       // profile 按鈕是否亮起
                 editModes: { catalyst: em.catalyst || 'off', status: em.status || 'off', trigger: em.trigger || 'off', wake: em.wake || 'off', response: em.response || 'off', allowed: em.allowed || 'off' },
-                wl: needWl ? Array.from(resolveWhitelistNumbers()) : [],
+                wl: needWl ? Array.from(resolveWhitelistNumbers({ publicOnly: true })) : [],
             };
             if (typeof ServerAccountUpdate?.QueueData === 'function') {
                 ServerAccountUpdate.QueueData({ OnlineSharedSettings: Player.OnlineSharedSettings }, true);

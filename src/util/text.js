@@ -35,3 +35,32 @@ export function wrapDanmakuText(text, fullWidth = 12) {
     };
     return String(text).split('\n').flatMap(wrapSeg).join('\n');
 }
+
+// ── 來自他人（隱藏訊息 / 遠端編輯）的資料一律先經過這些函式 ──
+
+/** 顯示用名稱：移除控制字元、雙向文字控制、括號（避免偽造 [Voice] 等標記），並限制長度。 */
+export function safeDisplayName(raw, maxLen = 40) {
+    const s = String(raw ?? '')
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '')
+        .replace(/[[\]【】]/g, '')
+        .trim()
+        .slice(0, maxLen);
+    return s || '?';
+}
+
+/** 字串清單：只收字串、去空白、單筆/總數設上限（遠端可控資料不可無限大）。 */
+export function cleanStringList(arr, maxItems = 200, maxLen = 500) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+        .filter(v => typeof v === 'string')
+        .map(v => v.trim().slice(0, maxLen))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
+/** 數值夾限：非有限數值回傳 fallback。 */
+export function clampNumber(v, min, max, fallback = min) {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+}

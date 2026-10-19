@@ -104,6 +104,16 @@ import { CONFIG } from '../core/config.js';
     //  才是角色最終畫上去的位置（面部識別障礙就是靠它、位置永遠正確）。
     const _charAnchor = {};   // { member: {x, y, zoom, t} }
 
+    // 兩張座標表以 MemberNumber 為鍵，原本只增不減：長時間待在人多的房間會緩慢累積。
+    //  這裡移除超過 maxAgeMs 未被繪製的項目（正在畫面上的角色每幀都會刷新 t，不會被誤刪）。
+    function pruneStaleCharPositions(maxAgeMs = 60000, now = Date.now()) {
+        for (const map of [_charDrawPos, _charAnchor]) {
+            for (const k of Object.keys(map)) {
+                if (now - (map[k]?.t || 0) > maxAgeMs) delete map[k];
+            }
+        }
+    }
+
     // ★ 專用定位函數：取角色 asset 座標 (ax, ay) 的「BC 畫布座標」。
     //   優先用 DrawCharacter 記錄（含活動 X 位移），退回 overlay 座標。
     //   offX/offY 為 BC 畫布座標的額外偏移，供各效果做最終位置校正（喘氣/符咒高度…）。
@@ -205,6 +215,7 @@ import { CONFIG } from '../core/config.js';
     }
 
 export {
+    pruneStaleCharPositions,
     BASE_EFFECT_DURATION,
     BASE_PINK_DURATION,
     BASE_WAVE_DURATION,
