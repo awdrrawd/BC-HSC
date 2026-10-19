@@ -17,7 +17,7 @@
 - 發布後：檢查 JS、主要圖示、翻譯及共用引擎可讀取；EN/TW 翻譯比對此次提交，避免舊版本。重試仍失敗則該次工作顯示失敗，不自動回滾。
 - lint 警告數必須為 0（`--max-warnings 0`）；語法／未定義等錯誤、警告與測試失敗都會阻止部署。
 - `dist/` 不進版控：`main.js`、`app.js` 一律由 CI 在部署時建置，本機 build 的結果不需要也不應該提交，避免與倉庫建置產生差異衝突。
-- 每週一 BC compatibility：對照 Bondage Club 原始碼，確認 19 個 hook 目標與 `eslint.config.js` 的 BC 全域符號仍存在。需在 Actions Variables 設定 `BC_SOURCE_REPO`（必填）與 `BC_SOURCE_REF`（選填）；未設定時略過。本機可用 `BC_SOURCE_DIR=<BC 根目錄> npm run check:bc`。
+- 每週一 BC compatibility：對照 Bondage Club 原始碼，確認 19 個 hook 目標與 `eslint.config.js` 的 BC 全域符號仍存在。發現差異時只開／更新一則 `bc-compat` issue 通知（內容沒變不重複打擾，差異消失自動關閉），工作流程本身不會失敗，也不影響部署。需在 Actions Variables 設定 `BC_SOURCE_REPO`（必填）與 `BC_SOURCE_REF`（選填）；未設定時略過。本機可用 `BC_SOURCE_DIR=<BC 根目錄> npm run check:bc`。
 
 ## 範圍與後續
 

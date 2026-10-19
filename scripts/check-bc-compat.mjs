@@ -1,8 +1,9 @@
 // 對照 Bondage Club 原始碼，檢查 HSC 依賴的 BC 符號是否仍存在。
-//   用法：BC_SOURCE_DIR=<BC repo 根目錄> node scripts/check-bc-compat.mjs
+//   用法：BC_SOURCE_DIR=<BC repo 根目錄> node scripts/check-bc-compat.mjs [--json 報告檔]
+//   --json：另外輸出機器可讀報告（供 CI 的通知腳本使用）
 // - hookFunction 掛鉤的函式缺失 → 失敗（掛鉤會直接失效）。
 // - eslint.config.js 的 bcGlobals 缺失 → 警告（讀取到 undefined 才會出問題，需人工確認）。
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const bcDir = process.env.BC_SOURCE_DIR;
@@ -49,6 +50,13 @@ const absent = bcGlobals.filter(g => !EXTERNAL.has(g) && !hasGlobal(g));
 const missingGlobals = absent.filter(g => !LEGACY.has(g));
 const legacyGone = absent.filter(g => LEGACY.has(g));
 
+const jsonIdx = process.argv.indexOf('--json');
+if (jsonIdx > 0 && process.argv[jsonIdx + 1]) {
+    writeFileSync(process.argv[jsonIdx + 1], JSON.stringify({
+        version, hookCount: hooks.size, globalCount: bcGlobals.length,
+        missingHooks, missingGlobals, legacyGone,
+    }, null, 2));
+}
 console.log(`BC ${version}：檢查 ${hooks.size} 個 hook、${bcGlobals.length} 個全域符號`);
 if (legacyGone.length) console.log(`ℹ️ 舊版相容符號在此 BC 版本已不存在（HSC 以 typeof 防護略過）：${legacyGone.join(', ')}`);
 if (missingGlobals.length) console.warn(`⚠️ 找不到的全域符號（請確認是否改名／移除）：${missingGlobals.join(', ')}`);
