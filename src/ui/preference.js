@@ -99,7 +99,7 @@ import { HSC_Z } from '../util/zlayers.js';
                     typeof CommonSetScreen === 'function') {
                     CommonSetScreen((typeof CurrentModule !== 'undefined' ? CurrentModule : 'Character'), 'InformationSheet');
                 }
-            } catch (e) {}
+            } catch {}
         },
 
         // ── 生命週期 ──
@@ -107,7 +107,7 @@ import { HSC_Z } from '../util/zlayers.js';
             this.scroll = 0;
             this._bindCanvasEvents();
             // 開設定頁時重新公告：讓 $owner/$lover/$friend/$white 依目前關係即時更新對外白名單
-            try { publishSharedSettings(); } catch (e) {}
+            try { publishSharedSettings(); } catch {}
         },
         unload() { this._cleanup(); },
         exit() { this.hoverDesc = ''; this._cleanup(); },
@@ -325,7 +325,7 @@ import { HSC_Z } from '../util/zlayers.js';
             el.style.height = (320 * sy) + 'px';
             // 效果演示畫玩家頭像：非同步截一次臉（載入後重繪）
             if (!this._demoFace) {
-                try { captureFaceImage(img => { this._demoFace = img.src; this._demoCur = ''; }, Player && Player.Canvas); } catch (e) {}
+                try { captureFaceImage(img => { this._demoFace = img.src; this._demoCur = ''; }, Player && Player.Canvas); } catch {}
             }
             if (this._demoCur !== kind) { this._demoCur = kind; el.innerHTML = this._demoHTML(kind); }
         },
@@ -350,7 +350,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 CharacterLoadCanvas(clone);
                 const cap = () => captureFaceImage(img => { this._exprDemoFace = img.src; this._demoCur = ''; }, clone.Canvas);
                 cap(); setTimeout(cap, 180); setTimeout(cap, 450);
-            } catch (e) {}
+            } catch {}
         },
         _demoHTML(kind) {
             const W = (inner) => `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative">${inner}</div>`;
@@ -466,8 +466,8 @@ import { HSC_Z } from '../util/zlayers.js';
             }
             if (!remote && MouseIn(100, 205, 300, 50)) {
                 CONFIG.enabled = !CONFIG.enabled; saveSettings();
-                if (!CONFIG.enabled) { try { disableHypno(); } catch (e) {} }   // 總開關關 → 歸零狀態並清除所有顯示中效果
-                try { publishSharedSettings(); } catch (e) {}   // 公告 enabled 狀態 → 他人 profile 按鈕顯示「對方停用 HSC」
+                if (!CONFIG.enabled) { try { disableHypno(); } catch {} }   // 總開關關 → 歸零狀態並清除所有顯示中效果
+                try { publishSharedSettings(); } catch {}   // 公告 enabled 狀態 → 他人 profile 按鈕顯示「對方停用 HSC」
                 return;
             }
             const TABP = Math.min(80, Math.floor(660 / Math.max(1, tabs.length)));
@@ -522,7 +522,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 CharacterLoadCanvas(clone);
                 const cap = () => captureFaceImage(img => { this._exprFaceImg = img; }, clone.Canvas);
                 cap(); setTimeout(cap, 160); setTimeout(cap, 420);
-            } catch (e) {}
+            } catch {}
         },
         // 不再改動真實 Player → 無需還原（保留空殼相容舊呼叫）
         _clearExprPreview() { this._exprPrevKey = ''; this._exprFaceImg = null; },
@@ -583,8 +583,8 @@ import { HSC_Z } from '../util/zlayers.js';
                     width: `${w * sx}px`, height: '10px', opacity: '0', border: 'none', padding: '0', zIndex: String(HSC_Z.dialog),
                 });
                 document.body.appendChild(inp);
-                inp.oninput = inp.onchange = () => { try { onPick(inp.value); } catch (e) {} };
-                const done = () => setTimeout(() => { try { inp.remove(); } catch (e) {} }, 200);
+                inp.oninput = inp.onchange = () => { try { onPick(inp.value); } catch {} };
+                const done = () => setTimeout(() => { try { inp.remove(); } catch {} }, 200);
                 inp.addEventListener('blur', done);
                 inp.click();
             } });
@@ -702,7 +702,7 @@ import { HSC_Z } from '../util/zlayers.js';
             // ── 三大系統開關 ──
             toggleRow('voiceEnabledLabel', 'voiceEnabledD', CONFIG.voiceEnabled, () => { CONFIG.voiceEnabled = !CONFIG.voiceEnabled; saveSettings(); });
             toggleRow('dailyEnabledLabel', 'dailyEnabledD', CONFIG.depthEnabled, () => { CONFIG.depthEnabled = !CONFIG.depthEnabled; saveSettings(); applyDepthLoop(); });
-            toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); if (!CONFIG.hypnoEnabled) { try { disableHypno(); } catch (e) {} } });   // 停用催眠狀態 → 歸零並公告清除（否則他人頭上仍殘留進度球/符咒）
+            toggleRow('stateEnabledLabel', 'stateEnabledD', CONFIG.hypnoEnabled, () => { CONFIG.hypnoEnabled = !CONFIG.hypnoEnabled; saveSettings(); if (!CONFIG.hypnoEnabled) { try { disableHypno(); } catch {} } });   // 停用催眠狀態 → 歸零並公告清除（否則他人頭上仍殘留進度球/符咒）
             toggleRow('hypnoClimaxLabel', 'hypnoClimaxD', CONFIG.hypnoClimax, () => { CONFIG.hypnoClimax = !CONFIG.hypnoClimax; saveSettings(); });
 
             // ── 看見他人效果 ──
@@ -891,7 +891,7 @@ import { HSC_Z } from '../util/zlayers.js';
             // 頭上貼符咒（獨立開關，不需開動畫）＋ 同一行放：◀ 樣式N ▶ ＋ 染色（符咒與動畫共用）
             this.title(cy, ui('fx_headTalisman'), ui('fx_headTalismanD'));
             this.toggle(CX, cy - ROW_HEIGHT / 2, BW, ROW_HEIGHT, CONFIG.headTalisman ? ui('on') : ui('off'), CONFIG.headTalisman, ui('fx_headTalismanD'),
-                () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); try { updateHeadTalisman(); } catch (e) {} });
+                () => { CONFIG.headTalisman = !CONFIG.headTalisman; saveSettings(); try { updateHeadTalisman(); } catch {} });
             {
                 const st = Math.min(12, Math.max(1, CONFIG.hypnoAnimStyle || 1));
                 const dk = 'hypnoStyle' + st + '|' + (CONFIG.hypnoAnimColor || '');   // 顏色也納入 → 改色即時重繪預覽
@@ -1023,7 +1023,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 this.btn(CONTENT_X, flow.block(PREF_LAYOUT.rowHeight, PREF_LAYOUT.sectionGap), 320, PREF_LAYOUT.rowHeight, ui('remoteEditSave'), '#21872F', '',
                     () => {
                         try { document.activeElement && document.activeElement.blur(); } catch {}
-                        try { r.onSave && r.onSave(r.cats); } catch (e) {}
+                        try { r.onSave && r.onSave(r.cats); } catch {}
                         this.closeRemote();
                     });
             }
@@ -1102,7 +1102,7 @@ import { HSC_Z } from '../util/zlayers.js';
             DrawRect(bx, by, bs, bs, 'rgba(20,5,30,0.6)');
             DrawEmptyRect(bx, by, bs, bs, '#8E44A1');
             if (this._exprFaceImg) {
-                try { MainCanvas.drawImage(this._exprFaceImg, bx, by, bs, bs); } catch (e) {}
+                try { MainCanvas.drawImage(this._exprFaceImg, bx, by, bs, bs); } catch {}
             } else {
                 DrawText(ui('previewLoading'), bx + bs / 2, by + bs / 2, '#555', '');
             }
@@ -1244,7 +1244,7 @@ import { HSC_Z } from '../util/zlayers.js';
             this.sep(675, 'Pincree');
             this.sep(710, 'pixabay');
             this.btn(740, 760, 320, 56, ui('about_report'), '#465980', '',
-                () => { try { window.open('https://github.com/awdrrawd/liko-Plugin-Repository/issues', '_blank'); } catch (e) {} });
+                () => { try { window.open('https://github.com/awdrrawd/liko-Plugin-Repository/issues', '_blank'); } catch {} });
             this._track(840);
         },
     };

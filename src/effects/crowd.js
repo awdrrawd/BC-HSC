@@ -18,7 +18,7 @@ function _inDialog() {
     try {
         if (typeof CurrentCharacter !== 'undefined' && CurrentCharacter != null) return true;
         if (typeof CurrentScreen !== 'undefined' && CurrentScreen !== 'ChatRoom') return true;
-    } catch (e) {}
+    } catch {}
     return false;
 }
 function _crowdVisLoop() {
@@ -69,6 +69,6 @@ function _updateCrowd(show) {
     } else if (_crowdEl) {
         const el = _crowdEl; _crowdEl = null;
         el.style.opacity = '0';
-        setTimeout(() => { try { el.remove(); } catch (e) {} }, 1000);
+        setTimeout(() => { try { el.remove(); } catch {} }, 1000);
     }
 }

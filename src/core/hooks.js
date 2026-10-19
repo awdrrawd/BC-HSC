@@ -37,7 +37,7 @@ import { effectScale } from '../util/util.js';
                 // 催眠進度球：自己讀執行期值、他人讀 OnlineSharedSettings（畫在 LSCG 狀態上方）
                 //  跟隨 BC 的隱藏圖示狀態：ChatRoomHideIconState >= 2 時一併隱藏（與原生 icon 一致）
                 if (typeof ChatRoomHideIconState === 'undefined' || ChatRoomHideIconState < 2) {
-                    try { drawHypnoStatusForChar(character, charX, charY, zoom); } catch (e) {}
+                    try { drawHypnoStatusForChar(character, charX, charY, zoom); } catch {}
                 }
                 // 用 MemberNumber 比對，比 IsPlayer() 更可靠
                 const isMe = character?.MemberNumber != null &&
@@ -137,7 +137,7 @@ import { effectScale } from '../util/util.js';
                 modApi.hookFunction(fn, 0, orgasmHandler);
                 orgasmHooked = true;
                 break;
-            } catch (e) { /* 保底：極少數情況仍失敗就試下一個 */ }
+            } catch { /* 保底：極少數情況仍失敗就試下一個 */ }
         }
         if (!orgasmHooked) {
             _hookOrgasmPoll();
@@ -188,7 +188,7 @@ import { effectScale } from '../util/util.js';
                         _charAnchor[C.MemberNumber] = { x: X, y: Y, zoom: Zoom, t: now };
                         if (now - _lastPrune > 30000) { _lastPrune = now; pruneStaleCharPositions(60000, now); }
                     }
-                } catch (e) {}
+                } catch {}
                 return r;
             });
         } catch (e) {

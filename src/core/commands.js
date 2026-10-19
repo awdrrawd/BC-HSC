@@ -48,7 +48,7 @@ import { wake } from '../hypno/hypno.js';
                 }, timeoutMs);
             }
             return;
-        } catch(e) {}
+        } catch {}
         try {
             if (typeof ChatRoomMessage === 'function') {
                 ChatRoomMessage({
@@ -60,7 +60,7 @@ import { wake } from '../hypno/hypno.js';
                 });
                 return;
             }
-        } catch(e2) {}
+        } catch {}
     }
 
     function handleHSCCommand(input) {
@@ -158,7 +158,7 @@ import { wake } from '../hypno/hypno.js';
                     ElementValue('InputChat', '');
                     return;
                 }
-            } catch (e) {}
+            } catch {}
             return _origChatRoomSendChat.apply(this, arguments);
         };
     }

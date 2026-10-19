@@ -2,10 +2,12 @@
 // @name         HSC - Hypnotic Slave Club
 // @name:zh      沉浸式聲音催眠效果
 // @namespace    https://likulisu.dev/
-// @version      1.0
+// @version      1.1
 // @description  收到 [Voice] 訊息時觸發深度催眠視覺效果，支援 /hsc 指令
 // @author       莉柯莉絲(Likolisu)
 // @supportURL   https://github.com/awdrrawd/BC-HSC
+// @updateURL    https://raw.githubusercontent.com/awdrrawd/BC-HSC/main/loader.user.js
+// @downloadURL  https://raw.githubusercontent.com/awdrrawd/BC-HSC/main/loader.user.js
 // @include      /^https:\/\/(www\.)?(bondage(projects\.elementfx|-(europe|asia))\.com|bondageeurope\.com)\/R*/
 // @icon         https://raw.githubusercontent.com/awdrrawd/liko-tool-Image-storage/refs/heads/main/Images/LOGO_2.png
 // @grant        none

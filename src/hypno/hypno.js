@@ -24,7 +24,7 @@ function _publishHypno(immediate = false) {
         const remSec = (_forced && _wakeAt > 0) ? Math.max(0, Math.round((_wakeAt - Date.now()) / 1000)) : 0;
         const baseSec = Math.max(1, (CONFIG.autoWakeMin || 30) * 60);         // 水位基底（給他人算填滿比例）
         publishHypnoState(_hypno, _forced, CONFIG.hypnoAnimColor, CONFIG.hypnoAnimStyle, immediate, remSec, inf, baseSec);
-    } catch (e) {}
+    } catch {}
 }
 
 let _hypno = 0;              // 0~100（未強控時的累積催眠值）
@@ -53,7 +53,7 @@ function _startForcedExpression() {
         if (CONFIG.expression && EXPRESSION_SETS && EXPRESSION_SETS.length && !_forcedExprToken) {
             _forcedExprToken = pushExprEffect(EXPRESSION_SETS[Math.floor(Math.random() * EXPRESSION_SETS.length)]);
         }
-    } catch (e) {}
+    } catch {}
 }
 
 function _enterForced() {
@@ -64,7 +64,7 @@ function _enterForced() {
     // 符咒動畫：只在陷入催眠（破百）時播一次儀式（會先清場）；播完才顯示人群/頭上符咒。
     //  未開催眠動畫 → 直接顯示人群。
     if (CONFIG.hypnoAnimEnabled) {
-        try { playHypnoAnim(() => { updateCrowd(true); updateHeadTalisman(); }); } catch (e) { updateCrowd(true); updateHeadTalisman(); }
+        try { playHypnoAnim(() => { updateCrowd(true); updateHeadTalisman(); }); } catch { updateCrowd(true); updateHeadTalisman(); }
     } else {
         updateCrowd(true);
         updateHeadTalisman();   // 頭上符咒獨立於動畫 → 未開動畫也要顯示
@@ -74,7 +74,7 @@ function _enterForced() {
     // 強控中每 10 分鐘一次狀態 Action
     if (_idleTimer) clearInterval(_idleTimer);
     _idleTimer = setInterval(() => { if (_forced) sendLocalizedAction('hs_forcedIdle'); }, 600000);
-    try { hypnoOrgasm(CONFIG.hypnoClimax); } catch (e) {}   // 催眠高潮：開→正常高潮、關→邊緣（陷入強控時觸發一次）
+    try { hypnoOrgasm(CONFIG.hypnoClimax); } catch {}   // 催眠高潮：開→正常高潮、關→邊緣（陷入強控時觸發一次）
     _publishHypno(true);   // 強控開始 → 立即公告
 }
 function _exitForced() {
@@ -84,7 +84,7 @@ function _exitForced() {
     _wakeAt = 0;
     _hypno = 0;                 // ★ 清醒 → 催眠值歸 0（時間制新規）
     if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
-    if (_forcedExprToken) { try { popExprEffect(_forcedExprToken); } catch (e) {} _forcedExprToken = null; }
+    if (_forcedExprToken) { try { popExprEffect(_forcedExprToken); } catch {} _forcedExprToken = null; }
     updateCrowd(false);         // 收起人群
     updateHeadTalisman();       // 收起頭上符咒
     if (was) sendLocalizedAction('hs_exitForced');   // 醒來時
@@ -145,14 +145,14 @@ export function disableHypno() {
     _forcedExprToken = null;
     clearExprEffects();
     // 清除顯示中的狀態：人群、儀式動畫、頭上符咒
-    try { updateCrowd(false); } catch (e) {}
-    try { stopHypnoAnim(); } catch (e) {}
-    try { updateHeadTalisman(); } catch (e) {}
+    try { updateCrowd(false); } catch {}
+    try { stopHypnoAnim(); } catch {}
+    try { updateHeadTalisman(); } catch {}
     // 清空 overlay 上所有暫態特效（喘氣、彈幕、螺旋、煙霧等）＋還原畫布濾鏡/位移
-    try { const ov = document.getElementById('hsc-overlay'); if (ov) ov.innerHTML = ''; } catch (e) {}
-    try { const cv = document.getElementById('MainCanvas') || document.querySelector('canvas'); if (cv) { cv.style.filter = ''; cv.style.transform = ''; } } catch (e) {}
+    try { const ov = document.getElementById('hsc-overlay'); if (ov) ov.innerHTML = ''; } catch {}
+    try { const cv = document.getElementById('MainCanvas') || document.querySelector('canvas'); if (cv) { cv.style.filter = ''; cv.style.transform = ''; } } catch {}
     // OnlineSharedSettings：催眠進度 0、狀態 false（立即送出，讓他人不再看到你被催眠）
-    try { publishHypnoState(0, false, CONFIG.hypnoAnimColor, CONFIG.hypnoAnimStyle, true, 0, false, 1); } catch (e) {}
+    try { publishHypnoState(0, false, CONFIG.hypnoAnimColor, CONFIG.hypnoAnimStyle, true, 0, false, 1); } catch {}
 }
 
 // 清醒詞：立即清醒（催眠值歸 0，由 _exitForced 處理）

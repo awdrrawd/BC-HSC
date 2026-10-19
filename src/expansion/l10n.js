@@ -24,7 +24,7 @@ export function hookL10n() {
 //  key 對應 HSC-l10n.js 內的字串；{0} 由觸發者名稱代入。
 export function sendLocalizedAction(key) {
     try { window.Liko?.__Sys_L10N__?.send('HSC', key, _senderName()); }
-    catch (e) {}
+    catch {}
 }
 
 // 測試指令：送一條 l10n_test（各端會依自己語言即時顯示）。console 用 window.Liko.HSC.l10nTest()

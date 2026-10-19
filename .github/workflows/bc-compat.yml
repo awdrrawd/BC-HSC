@@ -1,0 +1,40 @@
+name: BC compatibility
+
+# 每週對照 Bondage Club 原始碼，確認 HSC hook 的函式與依賴的全域符號仍存在。
+# 需要在 Settings → Secrets and variables → Actions → Variables 設定：
+#   BC_SOURCE_REPO  例：owner/Bondage-College-Mirror   （必填，未設定則略過）
+#   BC_SOURCE_REF   例：bondageclub                    （選填，預設用該 repo 的預設分支）
+on:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bc-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Skip when BC source is not configured
+        if: vars.BC_SOURCE_REPO == ''
+        run: echo "::notice::未設定 BC_SOURCE_REPO，略過 BC 相容性檢查"
+      - uses: actions/checkout@v4
+        if: vars.BC_SOURCE_REPO != ''
+      - uses: actions/checkout@v4
+        if: vars.BC_SOURCE_REPO != ''
+        with:
+          repository: ${{ vars.BC_SOURCE_REPO }}
+          ref: ${{ vars.BC_SOURCE_REF }}
+          path: bc-src
+          sparse-checkout: |
+            Scripts
+            Screens
+      - uses: actions/setup-node@v4
+        if: vars.BC_SOURCE_REPO != ''
+        with:
+          node-version: 24.x
+      - name: Check hooked functions and globals against BC
+        if: vars.BC_SOURCE_REPO != ''
+        env:
+          BC_SOURCE_DIR: bc-src
+        run: node scripts/check-bc-compat.mjs

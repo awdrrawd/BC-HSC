@@ -21,7 +21,7 @@ function _flush() {
     const wait = Math.max(0, MIN_GAP - (now - _lastSentAt));
     if (wait > 0) { _sendTimer = setTimeout(_flush, wait); return; }
     const job = _sendQ.shift();
-    try { if (typeof ServerSend === 'function') ServerSend('ChatRoomChat', job.payload); } catch (e) { /* 送出失敗忽略 */ }
+    try { if (typeof ServerSend === 'function') ServerSend('ChatRoomChat', job.payload); } catch { /* 送出失敗忽略 */ }
     _lastSentAt = Date.now();
     if (_sendQ.length && !_sendTimer) _sendTimer = setTimeout(_flush, MIN_GAP);
 }

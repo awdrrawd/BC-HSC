@@ -91,7 +91,7 @@ import { hscServerSend } from '../core/net.js';
             const g = item?.Asset?.Group
                    || (typeof AssetGroupGet === 'function' ? AssetGroupGet(Player?.AssetFamily || 'Female3DCG', group) : null);
             if (g && Array.isArray(g.AllowExpression)) arr = [...g.AllowExpression];
-        } catch (e) {}
+        } catch {}
         if (!arr.includes(null)) arr = [null, ...arr];
         _exprOptCache[group] = arr;
         return arr;
@@ -118,7 +118,7 @@ import { hscServerSend } from '../core/net.js';
             const img = new Image();
             img.onload = () => cb(img);
             img.src = cv.toDataURL('image/webp', 0.9);
-        } catch (e) {}
+        } catch {}
     }
 
     // ════════════════════════════════════════
@@ -169,7 +169,7 @@ function hypnoOrgasm(climax) {
         if (Player.ArousalSettings.Active === 'Inactive') return;
         if (climax) {
             if (typeof ActivitySetArousal === 'function') ActivitySetArousal(Player, 100);
-            try { window.ActivityOrgasmRuined = false; } catch (e) {}
+            try { window.ActivityOrgasmRuined = false; } catch {}
             if (typeof ActivityOrgasmStart === 'function') ActivityOrgasmStart(Player);
             else if (typeof ActivityOrgasmPrepare === 'function') ActivityOrgasmPrepare(Player);   // 舊版後備
         } else {
@@ -227,7 +227,7 @@ function addArousal(kind) {
                 // BC 接收端移除前導 * 並略過自動名稱；已有標記的模板不重複添加。
                 ServerSend('ChatRoomChat', { Type: 'Emote', Content: msg.startsWith('*') ? msg : '*' + msg });
             }
-        } catch (e) { /* 靜默 */ }
+        } catch { /* 靜默 */ }
     }
 
     // ════════════════════════════════════════
@@ -248,7 +248,7 @@ function addArousal(kind) {
             el.classList.add('hsc-chat-emerge');
             // 動畫結束後移除 class，避免殘留影響後續樣式
             setTimeout(() => { try { el.classList.remove('hsc-chat-emerge'); } catch {} }, 2600);
-        } catch (e) {}
+        } catch {}
     }
 
     // ════════════════════════════════════════
@@ -297,7 +297,7 @@ function addArousal(kind) {
                         || (() => { const p = otherCharMouthScreenPos(C, dp); return { x: p.x, y: p.y + BODY_PANT_DY + DEPTH_PANT_EXTRA + 5 }; })();
                     if (m) _emitBreathPuff(overlay, { x: m.x, y: m.y, ss });
                 }
-            } catch (e) {}
+            } catch {}
             setTimeout(loop, breathIntervalMs(_otherPantInten[memberNum] || 1));
         };
         loop();
@@ -362,7 +362,7 @@ function addArousal(kind) {
                 const cropX = src.width / 2 - side / 2;
                 ctx.clearRect(0, 0, SZ, SZ);
                 ctx.drawImage(src, cropX, 740, side, side, 0, 0, SZ, SZ);
-                try { el.src = cv.toDataURL('image/webp', 0.9); } catch (e) { return false; }
+                try { el.src = cv.toDataURL('image/webp', 0.9); } catch { return false; }
                 return true;
             };
             capture();
@@ -385,7 +385,7 @@ function addArousal(kind) {
                 if (el === _centerHeadEl) _centerHeadEl = null;
                 el.remove();
             }, dur - 800);
-        } catch (e) { /* 跨域或無 Canvas 時靜默 */ }
+        } catch { /* 跨域或無 Canvas 時靜默 */ }
     }
 
 

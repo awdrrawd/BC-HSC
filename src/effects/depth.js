@@ -58,7 +58,7 @@ import { HSC_Z } from '../util/zlayers.js';
             if (E.pant)        triggerSteamParticles(true, true);   // 單一喘氣（人物身上）
             addArousal('depth');   // 日常干擾興奮值
             // 催眠值：開催眠動畫 → 先播特效、第 5 秒才漲（破百時清場播符咒）；否則即時漲
-            if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { if (active()) addHypno('depth'); } catch (e) {} }, 5000); else addHypno('depth');
+            if (CONFIG.hypnoAnimEnabled) setTimeout(() => { try { if (active()) addHypno('depth'); } catch {} }, 5000); else addHypno('depth');
         } catch (e) {
             console.warn('🐈‍⬛ [HSC] 深度效果錯誤:', e.message);
         }
@@ -108,7 +108,7 @@ import { HSC_Z } from '../util/zlayers.js';
                 const pool = ChatRoomCharacter.filter(c => c && c.Canvas && c.Canvas.width);
                 if (pool.length) srcChar = pool[Math.floor(Math.random() * pool.length)];
             }
-        } catch (e) {}
+        } catch {}
         const src = srcChar && srcChar.Canvas;
         if (!src || !src.width) return;
         const all = getCatalystTexts().concat(getChatHistoryLines()).filter(Boolean);
@@ -120,7 +120,7 @@ import { HSC_Z } from '../util/zlayers.js';
         //  預先壓暗只在「剛好用到快取」時生效 → 造成「有時黑有時不黑」。渲染後再壓暗就一律是黑影。
         const fc = document.createElement('canvas'); fc.width = src.width; fc.height = src.height;
         const x = fc.getContext('2d');
-        try { x.drawImage(src, 0, 0); } catch (e) { return; }
+        try { x.drawImage(src, 0, 0); } catch { return; }
 
         // 建立「人影角色」克隆（共用被抽中角色的外觀，但用壓暗後的畫布）
         //  → 用 BC 自己的 DrawCharacter 繪製（身高/姿勢/縮放完全正確，不變形）。
@@ -223,7 +223,7 @@ import { HSC_Z } from '../util/zlayers.js';
                             ctx.globalAlpha = _ghost.alpha;
                             ctx.drawImage(_ghostTemp, 0, 0);
                             ctx.globalAlpha = prevA;
-                        } catch (e) {}
+                        } catch {}
                     }
                 }
                 return next(args);

@@ -39,7 +39,7 @@ function _otherWakeSec(member, r) {
 // HSC-Hypnosis.png 為 200×75 的 1×2 精靈：左格＝外框（透明底），右格＝填滿的心形遮罩（用來裁水位形狀）。
 let _heartImg = null, _heartReady = false;
 // crossOrigin 乾淨載入（CDN 優先 → Pages 回退）；水位裁形用離屏 canvas，汙染會讓 toDataURL 丟例外。
-try { _heartImg = loadHscImage('HSC-Hypnosis.png', () => { _heartReady = true; }); } catch (e) {}
+try { _heartImg = loadHscImage('HSC-Hypnosis.png', () => { _heartReady = true; }); } catch {}
 // 取精靈單格來源矩形：cell 0 = 外框、cell 1 = 遮罩
 function _cell(i) {
     const cw = (_heartImg.naturalWidth || 200) / 2, chh = _heartImg.naturalHeight || 75;
@@ -57,7 +57,7 @@ function _getOff(w, h) {
 // 符咒精靈圖（與催眠動畫共用同一張 2×6 格）
 const T_COLS = 6, T_ROWS = 2, T_AR = 0.5;   // 符咒單格 寬/高 = 0.5（偏長）
 let _talisImg = null, _talisReady = false;
-try { _talisImg = loadHscImage('HSC-Status-Code1.png', () => { _talisReady = true; }); } catch (e) {}
+try { _talisImg = loadHscImage('HSC-Status-Code1.png', () => { _talisReady = true; }); } catch {}
 
 // 依 顏色×樣式 快取一張染色後的符咒（source-in 平塗，與催眠動畫同做法）
 const _talisCache = new Map();
@@ -274,5 +274,5 @@ export function drawHypnoStatusForChar(C, charX, charY, zoom) {
 
         // 頭上符咒（強控中；自己與他人用同一支繪製 → 尺寸/位置一致）。獨立於進度球，互不影響。
         if (showTalis) _drawTalisOnHead(C, color, style);
-    } catch (e) { /* 靜默，避免中斷 BC 繪製 */ }
+    } catch { /* 靜默，避免中斷 BC 繪製 */ }
 }

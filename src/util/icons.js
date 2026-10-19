@@ -72,7 +72,7 @@ export function loadHscImage(name, onReady) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     let stage = 0;   // 0=CDN 中 / 1=已回退 Pages / 2=放棄
-    img.addEventListener('load', () => { try { onReady && onReady(img); } catch (e) {} });
+    img.addEventListener('load', () => { try { onReady && onReady(img); } catch {} });
     img.addEventListener('error', () => {
         if (stage === 0) { stage = 1; img.src = assetUrl(name); }   // CDN 失敗 → Pages（仍保留 crossOrigin）
         else { stage = 2; }                                          // 都失敗 → 放棄，維持乾淨
@@ -94,7 +94,7 @@ export const HSC_ICON_B = imageUrl('HSC-iconB.png');
         if (typeof DrawCacheImage === 'undefined' || !DrawCacheImage || typeof DrawCacheImage.set !== 'function') return;
         DrawCacheImage.set(HSC_ICON_W, loadHscImage('HSC-iconW.png'));
         DrawCacheImage.set(HSC_ICON_B, loadHscImage('HSC-iconB.png'));
-    } catch (e) { /* 取不到 BC 快取 → 交回 BC 原生載入（多半仍為 crossOrigin） */ }
+    } catch { /* 取不到 BC 快取 → 交回 BC 原生載入（多半仍為 crossOrigin） */ }
 })();
 
 // ── 判定「當前 UI 主題色」是否過深 ──

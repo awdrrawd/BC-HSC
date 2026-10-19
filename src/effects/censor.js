@@ -132,7 +132,7 @@ function _maskProfileToken(Text, X, Y, Width) {
             if (on) tokens.push(on);
             const onum = (typeof C.OwnerNumber === 'function') ? C.OwnerNumber() : (C.Ownership && C.Ownership.MemberNumber);
             if (onum != null && onum !== -1) tokens.push(String(onum));
-        } catch (e) {}
+        } catch {}
         try {
             const loves = (typeof C.GetLovership === 'function') ? C.GetLovership() : (Array.isArray(C.Lovership) ? C.Lovership : []);
             (loves || []).forEach(l => {
@@ -140,7 +140,7 @@ function _maskProfileToken(Text, X, Y, Width) {
                 if (l.Name) tokens.push(l.Name);
                 if (l.MemberNumber != null) tokens.push(String(l.MemberNumber));
             });
-        } catch (e) {}
+        } catch {}
     }
     // 去重＋濾空。一行可能同時含「名字＋編號」（例："Dating with Cherry (12345)"）→ 需把全部符合的 token 都遮，
     //  不能只遮第一個（舊版 break 只遮到一個，導致名字或編號其一漏遮）。
@@ -148,7 +148,7 @@ function _maskProfileToken(Text, X, Y, Width) {
     // DrawTextFit（有傳 Width）會縮字級/裁字 → 取實際繪製的文字與字級；DrawText 不縮放 → 原文 36px。
     let drawText = Text, fontSize = 36;
     if (Width != null && typeof DrawingGetTextSize === 'function') {
-        try { const res = DrawingGetTextSize(Text, Width); if (Array.isArray(res)) { drawText = res[0]; fontSize = Number(res[1]) || 36; } } catch (e) {}
+        try { const res = DrawingGetTextSize(Text, Width); if (Array.isArray(res)) { drawText = res[0]; fontSize = Number(res[1]) || 36; } } catch {}
     }
     const prev = MainCanvas.font, prevFill = MainCanvas.fillStyle;
     MainCanvas.font = (typeof CommonGetFont === 'function') ? CommonGetFont(fontSize) : fontSize + 'px Arial';
@@ -185,18 +185,18 @@ export function hookCensor() {
                     if (CONFIG.faceCensor && (inChat || inProfile)) _drawFaceCensor(C, X, Y, Zoom, ctx);
                     if ((CONFIG.nameCensor || 'off') !== 'off' && inChat) _drawNameCensor(C, X, Y, Zoom, ctx);
                 }
-            } catch (e) {}
+            } catch {}
             return r;
         });
         // profile 名字/暱稱/ID 黑塊
         modApi.hookFunction('DrawText', 0, (args, next) => {
             const r = next(args);
-            try { _maskProfileToken(args[0], args[1], args[2]); } catch (e) {}   // 無 Width：不縮放，整段 36px
+            try { _maskProfileToken(args[0], args[1], args[2]); } catch {}   // 無 Width：不縮放，整段 36px
             return r;
         });
         modApi.hookFunction('DrawTextFit', 0, (args, next) => {
             const r = next(args);
-            try { _maskProfileToken(args[0], args[1], args[2], args[3]); } catch (e) {}   // args[3]=Width：可能縮字級/裁字
+            try { _maskProfileToken(args[0], args[1], args[2], args[3]); } catch {}   // args[3]=Width：可能縮字級/裁字
             return r;
         });
     } catch (e) {

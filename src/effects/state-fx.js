@@ -138,7 +138,7 @@ function spawnWhisperDanmaku(text) {
         }
         // 全部顯示完 → 停留 2 秒後淡出
         setTimeout(() => { el.style.transition = 'opacity .6s ease'; el.style.opacity = '0'; }, 2000);
-        setTimeout(() => { try { el.remove(); } catch (e) {} _freeWhisperSlot(slot); }, 2000 + 700);
+        setTimeout(() => { try { el.remove(); } catch {} _freeWhisperSlot(slot); }, 2000 + 700);
     };
     step();
 }
@@ -150,7 +150,7 @@ function _coverWithSmoke(msgEl) {
     try {
         const pos = getComputedStyle(msgEl).position;
         if (pos === 'static' || !pos) msgEl.style.position = 'relative';
-    } catch (e) {}
+    } catch {}
     const smoke = document.createElement('div');
     Object.assign(smoke.style, {
         position: 'absolute', inset: '0', cursor: 'pointer', zIndex: '6',
@@ -167,7 +167,7 @@ function _coverWithSmoke(msgEl) {
         e.stopPropagation();
         smoke.style.pointerEvents = 'none';
         smoke.style.opacity = '0';
-        setTimeout(() => { try { smoke.remove(); } catch (er) {} }, 1300);
+        setTimeout(() => { try { smoke.remove(); } catch {} }, 1300);
     });
     msgEl.appendChild(smoke);
 }
@@ -215,7 +215,7 @@ function _addLocalLine(text) {
         el.textContent = text;
         log.appendChild(el);
         log.scrollTop = log.scrollHeight;
-    } catch (e) {}
+    } catch {}
 }
 
 // 回傳 true → 呼叫端應攔截該訊息（不顯示原本的進出訊息）

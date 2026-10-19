@@ -80,9 +80,9 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
 
     // 其他插件是否正在全螢幕子頁（BCX / LSCG / MPA）→ 我們就不畫按鈕、也不接管，讓路給它們
     function _otherModSubscreenOpen() {
-        try { if (window.bcx && typeof window.bcx.inBcxSubscreen === 'function' && window.bcx.inBcxSubscreen()) return true; } catch (e) {}
-        try { if (window.LSCG_REMOTE_WINDOW_OPEN) return true; } catch (e) {}
-        try { if (window.MPA && window.MPA.menuLoaded) return true; } catch (e) {}
+        try { if (window.bcx && typeof window.bcx.inBcxSubscreen === 'function' && window.bcx.inBcxSubscreen()) return true; } catch {}
+        try { if (window.LSCG_REMOTE_WINDOW_OPEN) return true; } catch {}
+        try { if (window.MPA && window.MPA.menuLoaded) return true; } catch {}
         return false;
     }
 
@@ -95,13 +95,13 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
     function _registerHscScreen() {
         try {
             window[HSC_SCREEN + 'Background'] = 'Sheet';   // 沿用 InformationSheet 的羊皮紙背景
-            window[HSC_SCREEN + 'Run']    = () => { try { EXT.run(); } catch (e) {} };
-            window[HSC_SCREEN + 'Click']  = () => { try { EXT.click(); } catch (e) {} };
+            window[HSC_SCREEN + 'Run']    = () => { try { EXT.run(); } catch {} };
+            window[HSC_SCREEN + 'Click']  = () => { try { EXT.click(); } catch {} };
             window[HSC_SCREEN + 'Load']   = () => {};
             window[HSC_SCREEN + 'Unload'] = () => {};
-            window[HSC_SCREEN + 'Exit']   = () => { try { EXT.closeRemote(); } catch (e) {} };
+            window[HSC_SCREEN + 'Exit']   = () => { try { EXT.closeRemote(); } catch {} };
             window[HSC_SCREEN + 'Resize'] = () => {};
-        } catch (e) {}
+        } catch {}
     }
 
     function hookProfileButton() {
@@ -120,7 +120,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                 // remote 設定頁開啟 → 就地接管整個畫面（不繪製 profile 本體、也不跑其它 hook）
                 if (EXT.ctx === 'remote' && EXT.remote) {
                     const prevAlign = MainCanvas.textAlign;
-                    try { EXT.run(); } catch (e) {}
+                    try { EXT.run(); } catch {}
                     MainCanvas.textAlign = prevAlign;
                     return;   // 不呼叫 next → profile 與其它插件都不繪製
                 }
@@ -155,7 +155,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
             });
             modApi.hookFunction('InformationSheetClick', 5, (args, next) => {
                 // remote 設定頁開啟 → 點擊交給 EXT（分頁/離開/存檔）
-                if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.click(); } catch (e) {} return; }
+                if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.click(); } catch {} return; }
                 if (_otherModSubscreenOpen()) return next(args);   // 讓路給別的插件
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
@@ -171,7 +171,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
             });
             // 離開 profile（Esc / BC 離開流程）→ 若 remote 設定頁開著，先關掉它、留在 profile
             modApi.hookFunction('InformationSheetExit', 5, (args, next) => {
-                if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.closeRemote(); } catch (e) {} return; }
+                if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.closeRemote(); } catch {} return; }
                 themeResolvedFor = null;
                 return next(args);
             });
@@ -187,7 +187,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
             modApi.hookFunction('ChatRoomMessage', 1, (args, next) => {
                 const data = args[0];
                 // 信息干擾（強控中）：把人員進/出訊息改寫成模糊幻覺敘述，攔截原訊息
-                try { if (interfereEnterLeave(data)) return; } catch (e) {}
+                try { if (interfereEnterLeave(data)) return; } catch {}
                 // 對方通知「其權限相關設定（editModes/白名單）變了」→ 清掉對他的快取，下次看其 profile 重查一次
                 if (data && data.Type === 'Hidden' && data.Content === 'HSC_Changed') {
                     _invalidatePerm(Number(data.Sender));
@@ -212,7 +212,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                                 allowed:  ca ? (CONFIG.allowedPhrases || []) : [],
                             }], { priority: true, dedupeKey: 'permr:' + sender, dedupeMs: 500 });
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示
                 }
                 // 有人打開了我的文本編輯器 → 顯示訪問通知
@@ -225,7 +225,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                             const who = safeDisplayName(sc?.Nickname || sc?.Name || d.Name || data.Sender);
                             printChat(ui('accessedYourText', { who }), 8000);
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示
                 }
                 // 對方回覆我的權限查詢 → 快取，供按鈕與編輯面板即時使用
@@ -252,10 +252,10 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                                 const stillThere = (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'InformationSheet')
                                     && (typeof InformationSheetSelection !== 'undefined' && InformationSheetSelection
                                         && Number(InformationSheetSelection.MemberNumber) === Number(data.Sender));
-                                if (stillThere) { try { _doOpenRemoteSettings(C); } catch (e) {} }
+                                if (stillThere) { try { _doOpenRemoteSettings(C); } catch {} }
                             }
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示
                 }
                 // 他人催眠廣播 → 若開啟「看到他人喘氣」，在其角色顯示喘氣
@@ -266,7 +266,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                             const d = (data.Dictionary || []).find(x => x && x.Tag === 'HSC_Hypnotized');
                             startOtherPant(sender, clampNumber(d && d.Duration, 500, 30000, 7000), clampNumber(d && d.Intensity, 0.1, 3, 1));
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示此隱藏訊息
                 }
                 if (data && data.Type === 'Hidden' && data.Content === 'HSC_SetTexts') {
@@ -295,7 +295,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                                 //  同步流程內做（會讓 BCX 偵測到 HSC hook 內又開了 root context 而警告）。
                                 //  延一輪到乾淨的呼叫堆疊再做（比照 net.js 的送出佇列）。
                                 setTimeout(() => {
-                                    try { saveSettings(true); publishSharedSettings(); printChat(ui('editedYourText', { who }), 8000); } catch (e) {}
+                                    try { saveSettings(true); publishSharedSettings(); printChat(ui('editedYourText', { who }), 8000); } catch {}
                                 }, 0);
                             }
                             // 回報結果給編輯者（成功 / 被拒），讓對方知道是否真的儲存
@@ -303,7 +303,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                                 [{ Tag: 'HSC_SetTextsAck', Target: Number(data.Sender), Ok: changed, Tried: tried }],
                                 { priority: true });
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示此隱藏訊息
                 }
                 // 收到對方對「我的編輯提交」的回報 → 顯示是否套用
@@ -316,7 +316,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                                 : data.Sender;
                             printChat(d.Ok ? ui('remoteEditOk', { name: who }) : ui('remoteEditDenied', { name: who }), 8000);
                         }
-                    } catch (e) {}
+                    } catch {}
                     return;  // 不顯示此隱藏訊息
                 }
                 return next(args);
@@ -326,7 +326,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
             //  會讓該角色 re-sync → 清掉我方對他的權限快取，避免顯示過期的可編輯狀態；
             //  下次看其 profile 時 _ensurePerm 會重查一次。只對「已快取者」動作，成本極低。
             const _invalidateOnSync = (args, next) => {
-                try { const m = args?.[0]?.Character?.MemberNumber; if (m != null && _permCache[Number(m)]) _invalidatePerm(Number(m)); } catch (e) {}
+                try { const m = args?.[0]?.Character?.MemberNumber; if (m != null && _permCache[Number(m)]) _invalidatePerm(Number(m)); } catch {}
                 return next(args);
             };
             modApi.hookFunction('ChatRoomSyncSingle', 1, _invalidateOnSync);
@@ -354,15 +354,15 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
         // 沒有密本 → 主動索取（略過 _ensurePerm 的節流），等回覆後再開
         _pendingRemoteOpen = { num, C };
         _permQueryTs[num] = Date.now();
-        try { hscServerSend('HSC_PermQuery', [{ Tag: 'HSC_PermQuery', Target: num }], { priority: true }); } catch (e) {}
+        try { hscServerSend('HSC_PermQuery', [{ Tag: 'HSC_PermQuery', Target: num }], { priority: true }); } catch {}
         const name = (typeof CharacterNickname === 'function' ? CharacterNickname(C) : '') || C.Name || num;
-        try { printChat(ui('remoteEditLoading', { name }), 4000); } catch (e) {}
+        try { printChat(ui('remoteEditLoading', { name }), 4000); } catch {}
         if (_pendingRemoteTimer) clearTimeout(_pendingRemoteTimer);
         _pendingRemoteTimer = setTimeout(() => {
             _pendingRemoteTimer = null;
             if (_pendingRemoteOpen && _pendingRemoteOpen.num === num) {
                 _pendingRemoteOpen = null;
-                try { printChat(ui('remoteEditLoadFail', { name }), 8000); } catch (e) {}   // 對方沒回（沒裝 HSC/離線）→ 提示重試，不開空白
+                try { printChat(ui('remoteEditLoadFail', { name }), 8000); } catch {}   // 對方沒回（沒裝 HSC/離線）→ 提示重試，不開空白
             }
         }, 6000);
     }
@@ -378,7 +378,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                 hscServerSend('HSC_Access', [{ Tag: 'HSC_Access', Target: Number(num), Name: String(myName) }],
                     { dedupeKey: 'access:' + num, dedupeMs: 15000 });
             }
-        } catch (e) {}
+        } catch {}
         const info  = (C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY]) || {};
         const modes = _viewerEditModes(info);
         const name  = (typeof CharacterNickname === 'function' ? CharacterNickname(C) : '') || C.Name || C.MemberNumber;
@@ -402,12 +402,12 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
         //  先用 CommonSetScreen 真正切到 HSC_SCREEN（此時 EXT.ctx 還是 'self'，
         //  所以會正常觸發原本的 InformationSheetExit，不會被我們自己的 remote 分支攔截），
         //  等畫面確定切過去了，才呼叫 EXT.openRemote() 進入 remote 狀態開始繪製。
-        try { if (typeof InformationSheetUnload === 'function') InformationSheetUnload(); } catch (e) {}  // 清掉 profile 的 DOM 元素（真正切換前才做，涵蓋延後開啟）
+        try { if (typeof InformationSheetUnload === 'function') InformationSheetUnload(); } catch {}  // 清掉 profile 的 DOM 元素（真正切換前才做，涵蓋延後開啟）
         try {
             if (typeof CommonSetScreen === 'function') {
                 CommonSetScreen((typeof CurrentModule !== 'undefined' ? CurrentModule : 'Character'), HSC_SCREEN);
             }
-        } catch (e) {}
+        } catch {}
         EXT.openRemote({
             C, name, cats,
             onSave: (savedCats) => {
@@ -444,7 +444,7 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
         const no  = _mkBtn(ui('cancel'), '#4a2030', '#ffaabb', () => { panel.remove(); _confirmBox = null; });
         no.style.cssText += ';' + big;
         const yes = _mkBtn(ui('confirm'), '#872626', '#aaffaa', () => {
-            panel.remove(); _confirmBox = null; try { onYes && onYes(); } catch (e) {}
+            panel.remove(); _confirmBox = null; try { onYes && onYes(); } catch {}
         });
         yes.style.cssText += ';' + big;
         row.append(no, yes);

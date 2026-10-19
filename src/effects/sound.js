@@ -127,7 +127,7 @@ import { T } from '../util/util.js';
             if (!active()) return;
             if (!buf) return;
             try {
-                if (stopPrev && _previewSrc) { try { _previewSrc.stop(); } catch (e) {} _previewSrc = null; }
+                if (stopPrev && _previewSrc) { try { _previewSrc.stop(); } catch {} _previewSrc = null; }
                 const ctx = _getAudioCtx();
                 const src = ctx.createBufferSource(); src.buffer = buf;
                 const g = ctx.createGain(); g.gain.value = Math.min(Math.max(vol, 0), 1);
@@ -135,7 +135,7 @@ import { T } from '../util/util.js';
                 sources.add(src);
                 if (stopPrev) _previewSrc = src;
                 src.onended = () => { sources.delete(src); src.disconnect(); g.disconnect(); if (_previewSrc === src) _previewSrc = null; };
-            } catch (e) {}
+            } catch {}
         });
     }
     // 播放某分類的隨機一個（hypno/climax/depth/voice）；無設定回傳 false
@@ -172,7 +172,7 @@ import { T } from '../util/util.js';
     // 刪除一個本機音效（從 DB 移除、清掉所有引用的格子、刷新音效庫）
     function deleteLocalSound(id) {
         const ref = 'idb:' + id;
-        try { HSCDB.delete('sounds', id); } catch (e) {}
+        try { HSCDB.delete('sounds', id); } catch {}
         for (const cat in CONFIG.sounds) {
             CONFIG.sounds[cat] = (CONFIG.sounds[cat] || []).map(e => (e === ref ? '' : e));
         }
