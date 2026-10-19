@@ -83,9 +83,9 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
     function clearTransientEffects() {
         transientEffects.stop();
         forcedEffects.stop();
-        try { updateCrowd(false); } catch (e) {}
-        try { stopHypnoAnim(); } catch (e) {}
-        try { updateHeadTalisman(); } catch (e) {}   // 非 ChatRoom → want=false → 收起
+        try { updateCrowd(false); } catch {}
+        try { stopHypnoAnim(); } catch {}
+        try { updateHeadTalisman(); } catch {}   // 非 ChatRoom → want=false → 收起
         const overlay = document.getElementById('hsc-overlay');
         if (overlay) overlay.innerHTML = '';
         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
@@ -106,9 +106,9 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
                     clearBCXCache();
                     setTimeout(setupDOMObserver, 500);
                     // 進房間時關係已同步 → 重新公告白名單($friend/$white 等才會即時)
-                    setTimeout(() => { try { publishSharedSettings(); } catch (e) {} }, 800);
+                    setTimeout(() => { try { publishSharedSettings(); } catch {} }, 800);
                     // 若離開時仍在強控 → 回到房間重新顯示人群／頭上符咒（若啟用）
-                    setTimeout(() => { try { if (isForced()) { updateCrowd(true); updateHeadTalisman(); } } catch (e) {} }, 900);
+                    setTimeout(() => { try { if (isForced()) { updateCrowd(true); updateHeadTalisman(); } } catch {} }, 900);
                 }
                 return result;
             });
@@ -171,7 +171,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         await waitForExtensionSettings();
         // ★ 先把伺服器公告的上次催眠狀態存起來（要在 publishSharedSettings 覆寫前先讀）
         let _savedHypno = null;
-        try { _savedHypno = Player?.OnlineSharedSettings?.[ES_KEY]?.hypno || null; } catch (e) {}
+        try { _savedHypno = Player?.OnlineSharedSettings?.[ES_KEY]?.hypno || null; } catch {}
         // 還原設定 + 開啟本地 DB + 對外公告
         loadSettings();
         await HSCDB.open();
@@ -186,19 +186,19 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
                 // 催眠系統已停用（總開關或催眠狀態關）卻殘留公告 → 不還原，改公告清除，
                 //  否則他人頭上會一直殘留進度球/符咒（停用者自己看不到，難以察覺）。
                 if (CONFIG.enabled && CONFIG.hypnoEnabled) restoreHypnoState(hs.v, hs.f, hs.r, hs.inf);
-                else { try { disableHypno(); } catch (e) {} }
+                else { try { disableHypno(); } catch {} }
             }
-        } catch (e) {}
+        } catch {}
         // 資料保險：頁面關閉/重整前，強制送出 BC 帳號更新佇列。
         //  BC 的 ServerAccountUpdate 對 OnlineSharedSettings 等是 debounce ~2 秒且「沒有 unload flush」，
         //  關頁/重連若落在這 2 秒內，剛改的資料就永遠不會送出 → 看起來像被清空。這裡補上 flush。
         try {
             if (typeof window !== 'undefined' && !window._hscUnloadFlush) {
-                window._hscUnloadFlush = () => { try { if (typeof ServerAccountUpdate?.SyncToServer === 'function') ServerAccountUpdate.SyncToServer(); } catch (e) {} };
+                window._hscUnloadFlush = () => { try { if (typeof ServerAccountUpdate?.SyncToServer === 'function') ServerAccountUpdate.SyncToServer(); } catch {} };
                 window.addEventListener('pagehide', window._hscUnloadFlush);
                 window.addEventListener('beforeunload', window._hscUnloadFlush);
             }
-        } catch (e) {}
+        } catch {}
 
         if (modApi) {
             try {
@@ -209,8 +209,8 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
                         if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
                         if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
-                        if (_screenGuardUnhook) { try { _screenGuardUnhook(); } catch (e) {} _screenGuardUnhook = null; }
-                        try { stopHypnoAnim(); updateHeadTalisman(); } catch (e) {}
+                        if (_screenGuardUnhook) { try { _screenGuardUnhook(); } catch {} _screenGuardUnhook = null; }
+                        try { stopHypnoAnim(); updateHeadTalisman(); } catch {}
                         if (_depthTimer)       { clearInterval(_depthTimer); setDepthTimer(null); }
                         removePanel();
                         const overlay = document.getElementById('hsc-overlay');
@@ -220,7 +220,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
                         const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
                         if (canvas) { canvas.style.filter = ''; canvas.style.transform = ''; }
                 });
-            } catch (e) {
+            } catch {
                 // 舊版 bcModSdk 不支援 onUnload，忽略即可
             }
         }
@@ -251,7 +251,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
                     }
                     return next(args);
                 });
-            } catch (e) { _screenGuardUnhook = null; }
+            } catch { _screenGuardUnhook = null; }
         }
         // Compatibility fallback for versions where CommonSetScreen cannot be hooked.
         if (!_screenGuardUnhook && !_screenGuard) {

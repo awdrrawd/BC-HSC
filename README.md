@@ -19,7 +19,7 @@
 ```bash
 npm install
 npm run dev      # vite build --watch + vite preview (port 5174)
-npm run build    # 產生 dist/
+npm run build    # 產生 dist/（建置產物，不進版控，由 CI 部署時重新建置）
 npm run lint     # ESLint（no-undef 會抓出漏掉的跨模組 import）
 ```
 

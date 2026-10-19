@@ -43,7 +43,7 @@ export const ANIM = {
 
 // crossOrigin 乾淨載入（CDN 優先 → Pages 回退）；不然畫到離屏 canvas 後 toDataURL 會因汙染丟例外。
 let _img = null, _imgReady = false;
-try { _img = loadHscImage('HSC-Status-Code1.png', () => { _imgReady = true; }); } catch (e) {}
+try { _img = loadHscImage('HSC-Status-Code1.png', () => { _imgReady = true; }); } catch {}
 
 function _cell() {
     const i = Math.min(11, Math.max(0, (CONFIG.hypnoAnimStyle || 1) - 1));
@@ -97,7 +97,7 @@ function _snapshotCharacter() {
             cv.getContext('2d').drawImage(src, 0, 0);
         }
         return { url: cv.toDataURL(), w: cv.width, h: cv.height };
-    } catch (e) { return null; }
+    } catch { return null; }
 }
 
 const _lerp = (a, b, t) => a + (b - a) * t;
@@ -110,7 +110,7 @@ export function stopHypnoAnim() {
     _running = false;
     if (_rafMain) { cancelAnimationFrame(_rafMain); _rafMain = null; }
     if (_shakeTimer) { clearTimeout(_shakeTimer); _shakeTimer = null; }
-    if (_wrap) { const w = _wrap; _wrap = null; try { w.remove(); } catch (e) {} }
+    if (_wrap) { const w = _wrap; _wrap = null; try { w.remove(); } catch {} }
 }
 
 // 建一顆符咒 canvas（含光暈層＋精靈層），回傳 el
@@ -151,7 +151,7 @@ export function playHypnoAnim(done) {
     //  放掉 _headEl 才能在儀式播完後由 updateHeadTalisman() 重新建立，不會卡住）。
     if (_headRAF) { cancelAnimationFrame(_headRAF); _headRAF = null; }
     _headEl = null;
-    try { getOverlay().innerHTML = ''; } catch (e) {}
+    try { getOverlay().innerHTML = ''; } catch {}
     refreshCanvasCache();
     const canvas = document.getElementById('MainCanvas') || document.querySelector('canvas');
     if (!canvas) { if (done) done(); return; }
@@ -260,7 +260,7 @@ export function playHypnoAnim(done) {
             }
             place(cx + (Math.random() - 0.5) * A.shakeAmt * 2, yHead + (Math.random() - 0.5) * A.shakeAmt * 2, wOf(hHead), talisOp);
         }
-        else { stopHypnoAnim(); if (done) { try { done(); } catch (e) {} } return; }
+        else { stopHypnoAnim(); if (done) { try { done(); } catch {} } return; }
         _rafMain = requestAnimationFrame(step);
     };
     function place(px, py, wpx, opacity) { _place(talis, px, py, wpx, opacity); }
@@ -299,6 +299,6 @@ export function updateHeadTalisman() {
         _headRAF = requestAnimationFrame(loop);
     } else if (_headEl) {
         if (_headRAF) { cancelAnimationFrame(_headRAF); _headRAF = null; }
-        const e = _headEl; _headEl = null; try { e.remove(); } catch (er) {}
+        const e = _headEl; _headEl = null; try { e.remove(); } catch {}
     }
 }

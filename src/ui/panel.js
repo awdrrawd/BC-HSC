@@ -68,7 +68,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
             try {
                 if (typeof PreferenceSubscreenExtensionsOpen === 'function')
                     PreferenceSubscreenExtensionsOpen(PREF_ID);
-            } catch (e) {}
+            } catch {}
         });
         gearBtn.title = T('開啟設定頁','Open settings');
 
@@ -399,7 +399,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
                     if (!(node instanceof HTMLElement)) continue;
                     maybeFadeChatNode(node);   // 訊息浮現視窗內 → 新訊息字體慢慢浮現
                     handleChatNode(node);
-                    try { handleStateChatFx(node); } catch (e) {}   // 強控中：彈幕 / 訊息妨礙
+                    try { handleStateChatFx(node); } catch {}   // 強控中：彈幕 / 訊息妨礙
                 }
             }
         });

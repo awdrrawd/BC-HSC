@@ -1,8 +1,7 @@
 name: HSC checks
+# main 的檢查由 deploy.yml 以 workflow_call 呼叫，這裡不再重複監聽 push main。
 on:
   pull_request:
-  push:
-    branches: [main]
   workflow_call:
   workflow_dispatch:
 permissions:

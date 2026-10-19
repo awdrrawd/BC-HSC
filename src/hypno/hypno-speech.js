@@ -25,12 +25,12 @@ function sendChat(text) {
         } else if (typeof ServerSend === 'function') {
             ServerSend('ChatRoomChat', { Type: 'Chat', Content: String(text) });
         }
-    } catch (e) {}
+    } catch {}
 }
 
 // 自慰：優先跑 BC 的 MasturbateHand 活動（會自動發訊息）；無法執行則發 Action 描述
 function doMasturbate() {
-    try { if (typeof DrawFlashScreen === 'function') DrawFlashScreen('#F347B4', 1500, 500); } catch (e) {}
+    try { if (typeof DrawFlashScreen === 'function') DrawFlashScreen('#F347B4', 1500, 500); } catch {}
     try {
         const family = (typeof Player !== 'undefined' && Player.AssetFamily) || 'Female3DCG';
         const act = (typeof AssetGetActivity === 'function') ? AssetGetActivity(family, 'MasturbateHand') : null;
@@ -43,7 +43,7 @@ function doMasturbate() {
                 if (group) { ActivityRun(Player, Player, group, { Activity: act, Group: gName }, true); return; }
             }
         }
-    } catch (e) {}
+    } catch {}
     sendLocalizedAction('hs_lewdFallback');   // 無法執行活動 → 文字描述
 }
 
@@ -59,14 +59,14 @@ export function maybeInterceptHypnoSpeech() {
     // 只攔「一般說話」：略過指令(/)、OOC(( )、表情(*)、指令(.)
     if (/^[/(*.]/.test(t)) return false;
     // 悄悄話（有指定對象）不攔
-    try { if (typeof ChatRoomTargetMemberNumber === 'number' && ChatRoomTargetMemberNumber >= 0) return false; } catch (e) {}
+    try { if (typeof ChatRoomTargetMemberNumber === 'number' && ChatRoomTargetMemberNumber >= 0) return false; } catch {}
 
     const low = t.toLowerCase();
     // 允許說的話：整句剛好符合 → 不陷入思考，照常說出（清醒詞自己說無效，故不特別處理）
     const allowed = (CONFIG.allowedPhrases || []).map(s => String(s).trim().toLowerCase()).filter(Boolean);
     if (allowed.includes(low)) return false;
 
-    try { ElementValue('InputChat', ''); } catch (e) {}   // 清空輸入，阻止原本送出
+    try { ElementValue('InputChat', ''); } catch {}   // 清空輸入，阻止原本送出
     _busy = true;
     const active = transientEffects.checkpoint();
     const forcedActive = forcedEffects.checkpoint();
@@ -88,7 +88,7 @@ export function maybeInterceptHypnoSpeech() {
                 sendLocalizedAction('hs_lewd');
                 doMasturbate();
             }
-        } catch (e) {}
+        } catch {}
         finally { _busy = false; }
     }, 2000);
     return true;

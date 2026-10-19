@@ -45,7 +45,7 @@ import { hscServerSend } from './net.js';
     let _settingsLoaded = false;
     // 解析一份壓縮字串為 saved 物件（失敗回 null）
     function _decodeSaved(raw) {
-        try { if (!raw) return null; const json = LZString.decompressFromBase64(raw); return json ? JSON.parse(json) : null; } catch (e) { return null; }
+        try { if (!raw) return null; const json = LZString.decompressFromBase64(raw); return json ? JSON.parse(json) : null; } catch { return null; }
     }
     function _applySaved(saved) {
         setConfig(normalizeSettings(makeDefaultConfig(), saved));
@@ -68,10 +68,10 @@ import { hscServerSend } from './net.js';
                 const s = JSON.parse(raw);
                 CONFIG.sounds = mergeDefaults(makeDefaultConfig().sounds, s);
             }
-        } catch (e) {}
+        } catch {}
     }
     function saveSounds() {
-        try { localStorage.setItem(SND_LS_KEY, JSON.stringify(CONFIG.sounds)); } catch (e) {}
+        try { localStorage.setItem(SND_LS_KEY, JSON.stringify(CONFIG.sounds)); } catch {}
     }
 
     // 等待 ExtensionSettings 由伺服器載入（最多 ~15 秒）
@@ -110,14 +110,14 @@ import { hscServerSend } from './net.js';
         setExpressionSets(CONFIG.expressionSets);
         // 讓帳號與備份都同步為「較新的那份」
         if (loaded && rawUsed) {
-            try { localStorage.setItem(_backupKey(), rawUsed); } catch (e) {}   // 刷新備份
+            try { localStorage.setItem(_backupKey(), rawUsed); } catch {}   // 刷新備份
             if (restoreToAccount) {
                 try {
                     if (!Player.ExtensionSettings) Player.ExtensionSettings = {};
                     Player.ExtensionSettings[ES_KEY] = rawUsed;
                     if (typeof ServerPlayerExtensionSettingsSync === 'function') ServerPlayerExtensionSettingsSync(ES_KEY);
                     console.log(`🐈‍⬛ [HSC] ⚠️ 帳號資料落後/遺失（帳號 ts=${esTs} < 備份 ts=${bkTs}），已從本機備份還原並補回帳號`);
-                } catch (e) {}
+                } catch {}
             }
         }
     }
@@ -141,7 +141,7 @@ import { hscServerSend } from './net.js';
                 if (typeof ServerPlayerExtensionSettingsSync === 'function') {
                     ServerPlayerExtensionSettingsSync(ES_KEY);
                 }
-                try { localStorage.setItem(_backupKey(), compressed); } catch (e) {}   // 同步本機備份
+                try { localStorage.setItem(_backupKey(), compressed); } catch {}   // 同步本機備份
                 saveSounds();   // 音效另存 localStorage（跨帳號共用）
                 setExpressionSets(CONFIG.expressionSets);
             } catch (e) {
@@ -197,7 +197,7 @@ import { hscServerSend } from './net.js';
             try {
                 const inRoom = (typeof ServerPlayerIsInChatRoom === 'function') ? ServerPlayerIsInChatRoom() : true;
                 if (inRoom) hscServerSend('HSC_Changed', [{ Tag: 'HSC_Changed' }], { dedupeKey: 'changed', dedupeMs: 500 });
-            } catch (e) {}
+            } catch {}
         }, 200);
     }
 
@@ -222,7 +222,7 @@ import { hscServerSend } from './net.js';
             _hypnoPubKey = key;
             _hypnoPubForced = payload.f;
             _hypnoPubAt = Date.now();
-        } catch (e) {}
+        } catch {}
     }
     function publishHypnoState(v, forced, color, style, immediate = false, remSec = 0, inf = false, baseSec = 0) {
         try {
@@ -242,7 +242,7 @@ import { hscServerSend } from './net.js';
                 // 節流中：排一次尾端公告，確保最終狀態一定送出
                 _hypnoPubTimer = setTimeout(() => { _hypnoPubTimer = null; _pushHypno(payload, key); }, 6000 - gap);
             }
-        } catch (e) {}
+        } catch {}
     }
 
     // ── IndexedDB（本機上傳音效 / 大量文本）──

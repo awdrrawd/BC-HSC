@@ -58,7 +58,7 @@ export function triggerClimaxEffect(scale = 1) {
     // canvas 可能不是全螢幕，按實際位置繪製
     try {
         mctx.drawImage(canvas, rect.left, rect.top, rect.width, rect.height);
-    } catch(e) { return; }
+    } catch { return; }
 
     // 產生 Voronoi 風格的隨機種子點
     const FRAG_COUNT = 48 + Math.round(scale * 10); // 48~60 個碎片（更密集）

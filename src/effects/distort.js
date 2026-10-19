@@ -17,7 +17,7 @@ export function triggerScreenDistort() {
 
     // 截圖
     let dataURL;
-    try { dataURL = canvas.toDataURL(); } catch(e) { return; } // 跨域保護時跳過
+    try { dataURL = canvas.toDataURL(); } catch { return; } // 跨域保護時跳過
 
     const rect    = canvas.getBoundingClientRect();
     const snap = document.createElement('img');
