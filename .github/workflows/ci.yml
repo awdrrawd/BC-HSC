@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# 同一個 PR 有新提交時取消舊檢查；main 的檢查不中斷（由 deploy.yml 呼叫）。
+concurrency:
+  group: hsc-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   checks:
     name: HSC checks
@@ -13,9 +17,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24.x
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      # 正式依賴有 high 以上漏洞就失敗；開發工具的漏洞交給 Dependabot，不阻擋發布。
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run check

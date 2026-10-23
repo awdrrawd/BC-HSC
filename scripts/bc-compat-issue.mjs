@@ -14,15 +14,20 @@ const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8' });
 const hooks = [...r.missingHooks].sort();
 // 已列在 hook 清單的符號不重複列出
 const globals = r.missingGlobals.filter(g => !hooks.includes(g)).sort();
-const problems = hooks.length + globals.length;
-const sig = createHash('sha1').update(JSON.stringify([r.version, hooks, globals])).digest('hex').slice(0, 12);
+// 函式內容與基準不同、基準尚未收錄、基準有但已不再 hook（舊報告沒有這些欄位）
+const changed = (r.changedHooks ?? []).map(c => `${c.name}（${c.file}）${c.was} → ${c.now}`).sort();
+const added = [...(r.addedHooks ?? [])].sort();
+const stale = [...(r.staleHooks ?? [])].sort();
+const problems = hooks.length + globals.length + changed.length + added.length + stale.length;
+const sig = createHash('sha1').update(JSON.stringify([r.version, hooks, globals, changed, added, stale])).digest('hex').slice(0, 12);
 
 const list = a => a.map(x => `- \`${x}\``).join('\n');
 const body = `<!-- bc-compat-sig:${sig} -->
 每週 BC 相容性檢查（鏡像版本 **${r.version}**，檢查 ${r.hookCount} 個 hook、${r.globalCount} 個全域符號）發現下列差異。
-${hooks.length ? `\n### 找不到被 hook 的函式（該功能可能失效）\n${list(hooks)}\n` : ''}${globals.length ? `\n### 找不到的全域符號（請確認是否改名／移除）\n${list(globals)}\n` : ''}
+${hooks.length ? `\n### 找不到被 hook 的函式（該功能可能失效）\n${list(hooks)}\n` : ''}${changed.length ? `\n### BC 函式內容自基準後有變動（請檢視 hook 行為）\n${list(changed)}\n` : ''}${added.length ? `\n### 已 hook 但基準尚未收錄\n${list(added)}\n` : ''}${stale.length ? `\n### 基準有、HSC 已不再 hook\n${list(stale)}\n` : ''}${globals.length ? `\n### 找不到的全域符號（請確認是否改名／移除）\n${list(globals)}\n` : ''}
 > 這只是提醒，不影響部署與腳本運作。
 > 鏡像可能是 BETA 或領先線上版本，且 BC 在 BETA 期間常有變動；是否真的影響線上，請在實際連線的遊戲版本中確認。
+> 確認 hook 在新版 BC 仍正確後，在本機執行 \`node scripts/check-bc-compat.mjs --bc-dir <BC 原始碼> --update\` 更新基準並提交。
 > 此 issue 會在內容改變時更新，差異消失後自動關閉。`;
 
 try { gh('label', 'create', 'bc-compat', '--color', 'FBCA04', '--description', 'BC 版本相容性提醒'); } catch {}
