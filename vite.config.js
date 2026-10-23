@@ -14,7 +14,7 @@ export default defineConfig({
   preview: { cors: true },
   build: {
     target: 'es2020',
-    rollupOptions: {
+    rolldownOptions: {
       input: 'src/main.js',
       output: {
         entryFileNames: 'assets/[name].js',
