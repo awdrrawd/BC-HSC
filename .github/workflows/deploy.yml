@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Use Node.js 24.x
         uses: actions/setup-node@v4
@@ -30,7 +32,7 @@ jobs:
 
       - name: Build
         run: |
-          npm ci
+          npm ci --ignore-scripts
           npm run build
 
       - name: Setup Pages
@@ -52,6 +54,8 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24.x

@@ -1,0 +1,88 @@
+{
+  "gameVersion": "R133",
+  "functions": {
+    "ChatRoomCharacterViewDrawOverlay": {
+      "hash": "3C5AE882",
+      "file": "Screens/Online/ChatRoom/ChatRoomCharacterView.js"
+    },
+    "ChatRoomLeave": {
+      "hash": "0AFCF067",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "ChatRoomMessage": {
+      "hash": "2BB4C2FD",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "ChatRoomRun": {
+      "hash": "6F25585E",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "ChatRoomSendChat": {
+      "hash": "B35AD170",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "ChatRoomSyncCharacter": {
+      "hash": "956D9D59",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "ChatRoomSyncSingle": {
+      "hash": "E5456B3F",
+      "file": "Screens/Online/ChatRoom/ChatRoom.js"
+    },
+    "CommonSetScreen": {
+      "hash": "20207D2B",
+      "file": "Scripts/Common.js"
+    },
+    "DrawCharacter": {
+      "hash": "2CD2CA5F",
+      "file": "Scripts/Drawing.js"
+    },
+    "DrawText": {
+      "hash": "C1BF0F50",
+      "file": "Scripts/Drawing.js"
+    },
+    "DrawTextFit": {
+      "hash": "F9A1B11E",
+      "file": "Scripts/Drawing.js"
+    },
+    "InformationSheetClick": {
+      "hash": "A220F4FA",
+      "file": "Screens/Character/InformationSheet/InformationSheet.js"
+    },
+    "InformationSheetExit": {
+      "hash": "1BD2A9CB",
+      "file": "Screens/Character/InformationSheet/InformationSheet.js"
+    },
+    "InformationSheetRun": {
+      "hash": "F33DBCA5",
+      "file": "Screens/Character/InformationSheet/InformationSheet.js"
+    },
+    "LoginResponse": {
+      "hash": "58671CE3",
+      "file": "Screens/Character/Login/Login.js"
+    },
+    "Player.GetBlurLevel": {
+      "hash": "87C641BC",
+      "file": "Scripts/Character.js",
+      "via": "member"
+    },
+    "Player.GetTints": {
+      "hash": "4574A48B",
+      "file": "Scripts/Character.js",
+      "via": "member"
+    },
+    "Player.HasTints": {
+      "hash": "A0AE629D",
+      "file": "Scripts/Character.js",
+      "via": "member"
+    },
+    "TextLoad": {
+      "hash": "0F62E26F",
+      "file": "Scripts/Text.js"
+    },
+    "ActivityOrgasmStart": {
+      "hash": "D33B4C28",
+      "file": "Scripts/Activity.js"
+    }
+  }
+}

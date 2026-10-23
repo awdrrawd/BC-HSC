@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    groups:
+      npm-compatible:
+        patterns: ['*']
+        update-types: [minor, patch]
+    # major 升級維持各自獨立、可個別審查的 PR。
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Taipei
+    groups:
+      actions:
+        patterns: ['*']
+    open-pull-requests-limit: 2

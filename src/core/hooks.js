@@ -120,6 +120,7 @@ import { effectScale } from '../util/util.js';
         };
 
         // 嘗試多個 BC 版本中可能存在的高潮函數名，靜默嘗試，失敗就用輪詢
+        // bc-compat: any-of ActivityOrgasm ActivityOrgasmStart ActivityOrgasmPrepare
         const orgasmFnCandidates = [
             'ActivityOrgasm',
             'ActivityOrgasmStart',

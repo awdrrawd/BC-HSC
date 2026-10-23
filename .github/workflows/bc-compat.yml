@@ -1,6 +1,6 @@
 name: BC compatibility
 
-# 每週對照 Bondage Club 原始碼，確認 HSC hook 的函式與依賴的全域符號仍存在。
+# 每週對照 Bondage Club 原始碼，確認 HSC hook 的函式仍存在且內容與基準（scripts/bc-compat-baseline.json）相同，並確認依賴的全域符號仍存在。
 # 發現差異時只開／更新一則 issue 通知，不會讓工作流程失敗（BC 鏡像常有 BETA 或領先線上版本的情況）。
 # 需要在 Settings → Secrets and variables → Actions → Variables 設定：
 #   BC_SOURCE_REPO  例：owner/Bondage-College-Mirror   （必填，未設定則略過）
@@ -22,9 +22,12 @@ jobs:
         run: echo "::notice::未設定 BC_SOURCE_REPO，略過 BC 相容性檢查"
       - uses: actions/checkout@v4
         if: vars.BC_SOURCE_REPO != ''
+        with:
+          persist-credentials: false
       - uses: actions/checkout@v4
         if: vars.BC_SOURCE_REPO != ''
         with:
+          persist-credentials: false
           repository: ${{ vars.BC_SOURCE_REPO }}
           ref: ${{ vars.BC_SOURCE_REF }}
           path: bc-src
@@ -35,6 +38,10 @@ jobs:
         if: vars.BC_SOURCE_REPO != ''
         with:
           node-version: 24.x
+          cache: npm
+      # 檢查腳本用 acorn 解析 BC 原始碼，需要先安裝依賴（不執行安裝腳本）。
+      - run: npm ci --ignore-scripts
+        if: vars.BC_SOURCE_REPO != ''
       - name: Compare against BC and notify
         if: vars.BC_SOURCE_REPO != ''
         env:
@@ -47,4 +54,6 @@ jobs:
           set -e
           # 1 = 有差異（交給 issue 通知）；2 以上 = 檢查腳本本身壞了，才讓工作流程失敗
           if [ "$code" -ge 2 ]; then exit "$code"; fi
+          # 腳本沒能產生報告（例如依賴載入失敗）時結束碼也會是 1，不能當成「有差異」。
+          if [ ! -f bc-report.json ]; then echo "::error::檢查腳本沒有產生報告"; exit 2; fi
           node scripts/bc-compat-issue.mjs bc-report.json
