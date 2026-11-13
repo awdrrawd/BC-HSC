@@ -14,7 +14,7 @@ const between = (src, from, to) => src.slice(src.indexOf(from), to ? src.indexOf
     const triggered = [];
     const ctx = vm.createContext({
         CONFIG: { wakeWords: [], triggerWords: [] }, Player: { MemberNumber: 1 },
-        triggerVoiceEffect: t => triggered.push(t), extractChatText: () => '', wake() {}, isTriggerAllowed: () => true,
+        triggerVoiceEffect: t => triggered.push(t), extractChatText: () => '', wake() {},
     });
     vm.runInContext(between(run, 'function parseVoiceText', 'export {') + between(panel, 'function getNodeSender', 'function setupDOMObserver') + ';globalThis.h = handleChatNode;', ctx);
     const node = (text, owned) => ({

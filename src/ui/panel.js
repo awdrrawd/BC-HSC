@@ -1,4 +1,3 @@
-// ── auto-wired cross-module imports ──
 import { maybeFadeChatNode } from '../effects/character-fx.js';
 import { registerCommandOnce } from '../core/commands.js';
 import { CONFIG, MOD_VER, PREF_ID } from '../core/config.js';
@@ -10,11 +9,6 @@ import { preloadSounds } from '../effects/sound.js';
 import { handleStateChatFx } from '../effects/state-fx.js';
 import { saveSettings } from '../core/storage.js';
 import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/util.js';
-
-// ════════════════════════════════════════
-//  HSC module: panel.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  HSC 控制面板
@@ -263,11 +257,12 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
         if (_panel) { _panel.remove(); _panel = null; }
     }
     let _domObserver = null;
-    function setDomObserver(v) { _domObserver = v; }   // 供 core-init 卸載時清除
-
-    // 觸發對象已取消：任何人說出觸發詞/[Voice] 都會觸發
-    function isTriggerAllowed(_senderNum) {
-        return true;
+    let _domRetry = null;
+    function stopDOMObserver() {
+        clearTimeout(_domRetry);
+        _domRetry = null;
+        _domObserver?.disconnect();
+        _domObserver = null;
     }
 
     // ── 白名單代號展開（$owner=主人 Player.Ownership；$lover=愛人 Player.Lovership + AFC）──
@@ -328,7 +323,7 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
         } catch { return null; }
     }
 
-    // 處理新進聊天節點：① [Voice] 本地催眠訊息 ② 白名單成員說出觸發詞
+    // 處理新進聊天節點：① [Voice] 本地催眠訊息 ② 聊天或悄悄話說出觸發詞
     function handleChatNode(node) {
         // 解析出真正的訊息元素（subtree 觀察會同時回報容器與內層 → 去重）
         const msgEl = node.classList?.contains('ChatMessage')
@@ -355,12 +350,13 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
         // 只取「訊息內容」（不含發送者名稱/編號/時間）：觸發詞與清醒詞都比對這個。
         //  否則 DOM 是「名稱: 內容」，msgEl.textContent 會把名稱也含進去 →
         //  若觸發詞設成自己名字，自己一說話（XXX: …）就會被名字誤觸發（應只看冒號之後）。
-        const spoken = isChatLike ? (extractChatText(msgEl) || '') : '';
+        if (!isChatLike) return;
+        const spoken = extractChatText(msgEl) || '';
         const spokenLc = spoken.toLowerCase();   // 觸發詞/清醒詞一律不分大小寫比對
 
         // 清醒詞：房內「他人」在一般聊天/悄悄話說出清醒詞 → 你立即清醒（自己說無效）
         const wws = (CONFIG.wakeWords || []).map(w => String(w).trim().toLowerCase()).filter(Boolean);
-        if (wws.length && isChatLike) {
+        if (wws.length) {
             const sender = getNodeSender(msgEl);
             const isSelf = sender != null && Player && sender === Player.MemberNumber;
             if (!isSelf) {
@@ -368,17 +364,16 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
             }
         }
 
-        // ② 自訂觸發詞：一般聊天/悄悄話「訊息內容」含觸發詞，且發送者通過白名單
+        // ② 自訂觸發詞：一般聊天/悄悄話「訊息內容」含觸發詞
         const words = (CONFIG.triggerWords || []).map(w => String(w).trim().toLowerCase()).filter(Boolean);
         if (words.length === 0) return;
-        if (!isChatLike) return;  // 認一般聊天與悄悄話
         if (!spokenLc || !words.some(w => spokenLc.includes(w))) return;
-        if (!isTriggerAllowed(getNodeSender(msgEl))) return;
 
         triggerVoiceEffect(spoken || words[0]);
     }
 
     function setupDOMObserver() {
+        stopDOMObserver();
         const chatContainer =
               document.getElementById('TextAreaChatLog') ||
               document.querySelector('.ChatLog')         ||
@@ -386,11 +381,9 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
               document.querySelector('[class*="ChatLog"]');
 
         if (!chatContainer) {
-            setTimeout(setupDOMObserver, 2000);
+            _domRetry = setTimeout(setupDOMObserver, 2000);
             return;
         }
-
-        if (_domObserver) { _domObserver.disconnect(); _domObserver = null; }
 
         _domObserver = new MutationObserver((mutations) => {
             if (!CONFIG.enabled) return;
@@ -416,14 +409,13 @@ import { T, TOGGLE_LABELS, extractChatText, triggerVoiceEffect } from '../util/u
 
 export {
     _panel,
-    _domObserver, setDomObserver,
+    stopDOMObserver,
     getPanelToggles,
     buildPanel,
     _refreshToggles,
     _styleToggleBtn,
     _mkBtn,
     removePanel,
-    isTriggerAllowed,
     getOwnerNumbers,
     getLoverNumbers,
     getFriendNumbers,

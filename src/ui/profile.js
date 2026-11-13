@@ -1,4 +1,3 @@
-// ── auto-wired cross-module imports ──
 import { startOtherPant } from '../effects/character-fx.js';
 import { printChat } from '../core/commands.js';
 import { CONFIG, ES_KEY, HSC_SCREEN, PREF_ID, modApi } from '../core/config.js';
@@ -11,11 +10,6 @@ import { publishSharedSettings, saveSettings } from '../core/storage.js';
 import { hscServerSend } from '../core/net.js';
 import { HSC_Z } from '../util/zlayers.js';
 import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
-
-// ════════════════════════════════════════
-//  HSC module: profile.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  Profile 按鈕：對方未裝 HSC → 不顯示；裝了但不允許編輯 → 灰色；允許 → 可點開編輯其文本，編輯透過隱藏訊息送到對方，對方驗證 allowOthersEdit 後套用

@@ -1,17 +1,11 @@
 import { mergeDefaults, normalizeSettings, serializeSettings } from './settings-data.js';
 import { disableHypno } from '../hypno/hypno.js';
-// ── auto-wired cross-module imports ──
 import { printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, makeDefaultConfig, setConfig, setExpressionSets } from './config.js';
 import { applyDepthLoop } from '../effects/depth.js';
 import { ui } from '../expansion/i18n.js';
 import { resolveWhitelistNumbers } from '../ui/panel.js';
 import { hscServerSend } from './net.js';
-
-// ════════════════════════════════════════
-//  HSC module: storage.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  儲存層

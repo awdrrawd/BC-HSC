@@ -1,15 +1,9 @@
-// ── auto-wired cross-module imports ──
 import { CONFIG, MOD_VER, PREF_ID } from './config.js';
 import { triggerClimaxEffect } from '../effects/climax.js';
 import { ui } from '../expansion/i18n.js';
 import { _panel, buildPanel, removePanel } from '../ui/panel.js';
 import { T, triggerVoiceEffect } from '../util/util.js';
 import { wake } from '../hypno/hypno.js';
-
-// ════════════════════════════════════════
-//  HSC module: commands.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  /hsc 指令系統

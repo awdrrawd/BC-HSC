@@ -1,4 +1,3 @@
-// ── auto-wired cross-module imports ──
 import { hscBlurLevel, hscTintColor } from '../effects/atmosphere.js';
 import { CONFIG, modApi } from './config.js';
 import { triggerPinkFlash } from '../effects/pink-flash.js';
@@ -6,11 +5,6 @@ import { triggerClimaxEffect } from '../effects/climax.js';
 import { _charAnchor, _charDrawPos, playerDrawPos, pruneStaleCharPositions } from '../util/geometry.js';
 import { drawHypnoStatusForChar } from '../hypno/hypno-orb.js';
 import { effectScale } from '../util/util.js';
-
-// ════════════════════════════════════════
-//  HSC module: hooks.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  Hook ChatRoomCharacterViewDrawOverlay

@@ -1,5 +1,4 @@
 import { transientEffects } from './lifecycle.js';
-// ── auto-wired cross-module imports ──
 import { activateHypnoAtmosphere } from './atmosphere.js';
 import { addArousal, popExprEffect, pushExprEffect, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS, modApi } from '../core/config.js';
@@ -12,11 +11,6 @@ import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
 import { getCatalystTexts, getChatHistoryLines, getOverlay, pickRandom, randInt, resolveMe } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
-
-// ════════════════════════════════════════
-//  HSC module: depth.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  背景催眠深度循環（與 VOICE 觸發分離）

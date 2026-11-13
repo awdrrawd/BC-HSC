@@ -1,6 +1,5 @@
 import { transientEffects, forcedEffects } from '../effects/lifecycle.js';
 import { clearExprEffects } from '../effects/character-fx.js';
-// ── auto-wired cross-module imports ──
 import { hookChatInput, printChat } from './commands.js';
 import { CONFIG, ES_KEY, MOD_VER, modApi, setModApi, getModApi } from './config.js';
 import { _depthTimer, applyDepthLoop, hookGhostDraw, setDepthTimer } from '../effects/depth.js';
@@ -13,16 +12,11 @@ import { hookL10n } from '../expansion/l10n.js';
 import { updateCrowd } from '../effects/crowd.js';
 import { isForced } from '../hypno/hypno.js';
 import { stopHypnoAnim, updateHeadTalisman } from '../hypno/hypno-anim.js';
-import { _domObserver, removePanel, setDomObserver, setupDOMObserver } from '../ui/panel.js';
+import { removePanel, stopDOMObserver, setupDOMObserver } from '../ui/panel.js';
 import { hookProfileButton, hookRemoteEdit, registerPreferenceScreen } from '../ui/profile.js';
 import { HSCDB, loadSettings, publishSharedSettings, waitForExtensionSettings } from './storage.js';
 import { injectStyles } from '../ui/styles.js';
 import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
-
-// ════════════════════════════════════════
-//  HSC module: core-init.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  等待工具
@@ -74,7 +68,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         });
     }
 
-    let _fallbackInterval = null;
+    let _loadCheck = null;
     let _screenGuard = null;
     let _screenGuardUnhook = null;
 
@@ -93,42 +87,30 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
     }
 
     function waitForChatRoom() {
-        if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') {
+        let started = false;
+        const enter = () => {
+            if (started) return;
+            started = true;
+            clearBCXCache();
             setupDOMObserver();
-            return;
-        }
-        if (modApi) {
-            let started = false;
-            modApi.hookFunction('ChatRoomRun', 0, (args, next) => {
-                const result = next(args);
-                if (!started) {
-                    started = true;
-                    clearBCXCache();
-                    setTimeout(setupDOMObserver, 500);
-                    // 進房間時關係已同步 → 重新公告白名單($friend/$white 等才會即時)
-                    setTimeout(() => { try { publishSharedSettings(); } catch {} }, 800);
-                    // 若離開時仍在強控 → 回到房間重新顯示人群／頭上符咒（若啟用）
-                    setTimeout(() => { try { if (isForced()) { updateCrowd(true); updateHeadTalisman(); } } catch {} }, 900);
-                }
-                return result;
-            });
-            modApi.hookFunction('ChatRoomLeave', 0, (args, next) => {
-                const result = next(args);
-                if (_domObserver) { _domObserver.disconnect(); setDomObserver(null); }
-                removePanel();
-                clearBCXCache();
-                started = false; // 允許下次進房間重建
-                return result;
-            });
-        } else {
-            _fallbackInterval = setInterval(() => {
-                if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') {
-                    clearInterval(_fallbackInterval);
-                    _fallbackInterval = null;
-                    setTimeout(setupDOMObserver, 500);
-                }
-            }, 1000);
-        }
+            try { publishSharedSettings(); } catch {}
+            try { if (isForced()) { updateCrowd(true); updateHeadTalisman(); } } catch {}
+        };
+        // 即使載入時已在聊天室，仍須註冊後續離房與重進的生命週期。
+        modApi.hookFunction('ChatRoomRun', 0, (args, next) => {
+            const result = next(args);
+            enter();
+            return result;
+        });
+        modApi.hookFunction('ChatRoomLeave', 0, (args, next) => {
+            const result = next(args);
+            stopDOMObserver();
+            removePanel();
+            clearBCXCache();
+            started = false;
+            return result;
+        });
+        if (typeof CurrentScreen !== 'undefined' && CurrentScreen === 'ChatRoom') enter();
     }
 
     // ════════════════════════════════════════
@@ -166,7 +148,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
 
         // 先載入 i18n（讓預設文本等依語言產生）
         await ensureI18n();
-        // ★ 等帳號真正登入後，才讀取／還原設定（否則會讀到登入前的空資料 → 存檔覆蓋真資料 → 掉設定）。不設逾時。
+        // 載入字庫期間可能登出，讀取帳號設定前再次確認。
         await waitForLogin();
         await waitForExtensionSettings();
         // ★ 先把伺服器公告的上次催眠狀態存起來（要在 publishSharedSettings 覆寫前先讀）
@@ -204,10 +186,11 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
             try {
                 modApi.onUnload(() => {
                         disposeHypno();
+                        updateCrowd(false);
+                        if (_loadCheck) { clearInterval(_loadCheck); _loadCheck = null; }
                         stopOrgasmPoll();
                         clearExprEffects();
-                        if (_domObserver)      { _domObserver.disconnect(); setDomObserver(null); }
-                        if (_fallbackInterval) { clearInterval(_fallbackInterval); _fallbackInterval = null; }
+                        stopDOMObserver();
                         if (_screenGuard)      { clearInterval(_screenGuard); _screenGuard = null; }
                         if (_screenGuardUnhook) { try { _screenGuardUnhook(); } catch {} _screenGuardUnhook = null; }
                         try { stopHypnoAnim(); updateHeadTalisman(); } catch {}
@@ -239,9 +222,7 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         waitForChatRoom();
         // 邊緣觸發：只在「離開 ChatRoom 的那一刻」清一次暫態特效，
         //  絕不在房內輪詢清除（避免誤清正在播放的特效）。
-        // Current BC: CommonSetScreen(NewModule, NewScreen, options?). Hook the
-        // actual NewScreen argument; the PR's last-argument approach mistakes
-        // the optional settings object for a screen name.
+        // CommonSetScreen(NewModule, NewScreen, options?)：第二個參數才是畫面名稱。
         if (!_screenGuardUnhook && typeof CommonSetScreen === 'function') {
             try {
                 _screenGuardUnhook = modApi.hookFunction('CommonSetScreen', 5, (args, next) => {
@@ -265,12 +246,10 @@ import { clearBCXCache, startLoginTriggerGuard } from '../util/util.js';
         console.log(`🐈‍⬛ [HSC] ✅ 初始化完成 v${MOD_VER}`);
 
         // 進入房間後顯示載入提示（一次性）
-        let _loadedNotified = false;
-        const _loadCheck = setInterval(() => {
+        _loadCheck = setInterval(() => {
             if (typeof CurrentScreen === 'undefined' || CurrentScreen !== 'ChatRoom') return;
             clearInterval(_loadCheck);
-            if (_loadedNotified) return;
-            _loadedNotified = true;
+            _loadCheck = null;
             setTimeout(() => {
                 printChat(ui('loaded', { v: MOD_VER }));
             }, 1000);

@@ -1,10 +1,4 @@
-// ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
-
-// ════════════════════════════════════════
-//  HSC module: geometry.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  時間設定
