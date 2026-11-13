@@ -1,13 +1,7 @@
 import { transientEffects } from '../effects/lifecycle.js';
-// ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { runEffect } from '../effects/run.js';
 import { HSC_Z } from './zlayers.js';
-
-// ════════════════════════════════════════
-//  HSC module: util.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  取得目前興奮度（0~100）
@@ -115,7 +109,15 @@ import { HSC_Z } from './zlayers.js';
     // 隨機取 n 個元素（不重複）
     function pickRandom(arr, n) {
         if (!Array.isArray(arr) || arr.length === 0) return [];
-        return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+        const pool = [...arr];
+        const count = Math.min(pool.length, Math.max(0, Math.trunc(n)));
+        // 只洗出需要的前 n 項；不以隨機比較函式排序整份清單。
+        for (let i = 0; i < count; i++) {
+            const j = randInt(i, pool.length - 1);
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        pool.length = count;
+        return pool;
     }
 
     // ════════════════════════════════════════

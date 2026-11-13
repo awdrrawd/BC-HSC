@@ -1,16 +1,10 @@
 import { transientEffects } from './lifecycle.js';
-// ── auto-wired cross-module imports ──
 import { printChat } from '../core/commands.js';
 import { CONFIG } from '../core/config.js';
 import { soundUrl, fetchAsset } from '../util/icons.js';
 import { EXT } from '../ui/preference.js';
 import { HSCDB, saveSettings } from '../core/storage.js';
 import { T } from '../util/util.js';
-
-// ════════════════════════════════════════
-//  HSC module: sound.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  聲音系統

@@ -1,7 +1,7 @@
 // ════════════════════════════════════════
 //  HSC module: state-fx.js  （強控中的訊息類效果）
 //  三個效果，全部僅在「催眠狀態啟用 + 強控中（isForced）」時作用：
-//   1) 彈幕文字   — 他人的聊天訊息化為漂浮彈幕（隨機字級 14~20）；
+//   1) 彈幕文字   — 他人的聊天訊息化為漂浮彈幕（隨機字級 22~26）；
 //                   悄悄話選項另外把他人悄悄話以紫色彈幕顯示在自己耳邊。
 //   2) 訊息妨礙   — 除了本地訊息與人員進出訊息外，每則訊息蓋上一層煙霧，
 //                   點一下才慢慢散去（手動清除）。
@@ -10,13 +10,11 @@
 
 import { CONFIG } from '../core/config.js';
 import { isForced } from '../hypno/hypno.js';
-import { getOverlay } from '../util/util.js';
-import { extractChatText } from '../util/util.js';
+import { getOverlay, extractChatText, randInt } from '../util/util.js';
 import { bcToScreen, getPlayerHeadScreenPos, refreshCanvasCache } from '../util/geometry.js';
 import { HSC_Z } from '../util/zlayers.js';
 import { ui } from '../expansion/i18n.js';
 
-const _randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const _FONT = '"Noto Sans TC", "Microsoft JhengHei", sans-serif';
 // 黑邊（四向實心描邊）+ 對應顏色光暈 —— 不論字色都保證可讀
 const _outline = (glow) => `-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 7px ${glow}`;
@@ -47,8 +45,8 @@ function spawnChatDanmaku(text) {
     text = text.length > 40 ? text.slice(0, 40) + '…' : text;
     const overlay = getOverlay();
     refreshCanvasCache();
-    const pos = bcToScreen(_randInt(40, 460), _randInt(120, 820));
-    const fs = _randInt(22, 26);
+    const pos = bcToScreen(randInt(40, 460), randInt(120, 820));
+    const fs = randInt(22, 26);
     const el = document.createElement('div');
     Object.assign(el.style, {
         position: 'fixed', left: `${pos.x}px`, top: `${pos.y}px`,
@@ -68,7 +66,6 @@ function spawnChatDanmaku(text) {
     });
     overlay.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '0.95'; el.style.transform = 'translateY(0)'; });
-    // 顯示時間 +1 秒（原 3500 → 4500，移除 5200）
     setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(-12px)'; }, 4500);
     setTimeout(() => el.remove(), 5200);
 }
@@ -94,7 +91,7 @@ function spawnWhisperDanmaku(text) {
     refreshCanvasCache();
     const head = getPlayerHeadScreenPos(true);   // 永遠貼在角色身上（催眠狀態沒有中央頭像功能）
     const slot = _nextWhisperSlot();
-    const fs = _randInt(22, 26);
+    const fs = randInt(22, 26);
     const el = document.createElement('div');
     Object.assign(el.style, {
         position: 'fixed',
@@ -124,7 +121,7 @@ function spawnWhisperDanmaku(text) {
         el.appendChild(s);
         return s;
     });
-    // 再放慢 0.3 秒：總浮現時間上限 ~2800ms
+    // 依段數調整浮現間隔。
     const per = Math.max(95, Math.min(210, Math.round(2800 / spans.length)));
     let k = 0;
     const step = () => {

@@ -18,8 +18,8 @@ A Bondage Club UserScript that plays immersive hypnosis visuals and sounds on `[
 ## ✨ 功能 · Features
 
 ### 🔊 語音催眠 · Voice Hypnosis
-收到 `[Voice]` 訊息或自訂觸發詞時觸發（對象可限定為白名單或所有人）。  
-Triggered by `[Voice]` messages or custom trigger words (anyone or a whitelist).
+收到 `[Voice]` 訊息，或任何人在聊天／悄悄話說出自訂觸發詞時觸發；白名單用於遠端編輯權限。
+Triggered by `[Voice]` messages or custom trigger words from anyone in chat or whispers; the whitelist controls remote editing permissions.
 
 - **視覺**：粉紅暈染、催眠螺旋、同心圓電波、畫面扭曲、邊緣暗角、彈幕文字、氣喘粒子、訊息浮現、**高潮特效**（快照碎裂＋紅白閃＋震動；可設定「高潮時才觸發」或「每次都觸發」）。
 - **角色**：表情切換（最多 10 組，4 組內建，可自訂編輯）、狀態 emote。

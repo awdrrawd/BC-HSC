@@ -1,5 +1,4 @@
 import { createPreferenceLayout, PREF_LAYOUT } from './preference-layout.js';
-// ── auto-wired cross-module imports ──
 import { _expandExpr, captureFaceImage, cycleExpression, saveExpression } from '../effects/character-fx.js';
 import { CONFIG, DEFAULT_EXPRESSIONS, HSC_SCREEN, MOD_VER, makeDefaultConfig, setExpressionSets } from '../core/config.js';
 import { applyDepthLoop } from '../effects/depth.js';
@@ -12,11 +11,6 @@ import { hscConfirm } from './profile.js';
 import { SOUND_DEFAULTS, SOUND_PRESETS, _sndNameCache, deleteLocalSound, playSoundEntry, uploadSoundFile } from '../effects/sound.js';
 import { HSCDB, applySettings, exportSettings, importSettings, publishSharedSettings, saveSettings } from '../core/storage.js';
 import { HSC_Z } from '../util/zlayers.js';
-
-// ════════════════════════════════════════
-//  HSC module: preference.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  設定頁（PreferenceRegisterExtensionSetting）

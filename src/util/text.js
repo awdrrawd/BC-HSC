@@ -25,7 +25,7 @@ export function wrapDanmakuText(text, fullWidth = 12) {
     const wrapSeg = (seg) => {
         const lines = [];
         let cur = '', curW = 0;
-        for (const ch of [...seg]) {
+        for (const ch of seg) {
             const w = charWidth(ch);
             if (curW + w > halfLimit) { lines.push(cur); cur = ch; curW = w; }
             else                      { cur += ch; curW += w; }

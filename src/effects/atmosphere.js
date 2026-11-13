@@ -1,5 +1,4 @@
 import { transientEffects } from './lifecycle.js';
-// ── auto-wired cross-module imports ──
 import { isForced } from '../hypno/hypno.js';
 
 // ════════════════════════════════════════

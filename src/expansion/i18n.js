@@ -1,11 +1,5 @@
-// ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { assetUrl, cdnUrl } from '../util/icons.js';
-
-// ════════════════════════════════════════
-//  HSC module: i18n.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  i18n（多語）：動態載入共用引擎 + HSC 字庫，ui(key,vars) 取字串

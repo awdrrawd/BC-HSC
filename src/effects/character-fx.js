@@ -1,17 +1,11 @@
 import { transientEffects } from './lifecycle.js';
 import { createExpressionState } from './expression-state.js';
-// ── auto-wired cross-module imports ──
 import { CONFIG } from '../core/config.js';
 import { _emitBreathPuff, breathIntervalMs } from './breath.js';
 import { BODY_PANT_DY, DEPTH_PANT_EXTRA, HEAD_OFFSET, _cachedRect, _cachedScaleX, _charDrawPos, getBodyAnchorScreen, getCenterHeadshotGeom, otherCharMouthScreenPos, refreshCanvasCache } from '../util/geometry.js';
 import { getOverlay } from '../util/util.js';
 import { HSC_Z } from '../util/zlayers.js';
 import { hscServerSend } from '../core/net.js';
-
-// ════════════════════════════════════════
-//  HSC module: character-fx.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  8. 表情
@@ -125,7 +119,7 @@ import { hscServerSend } from '../core/net.js';
     //  9. 興奮度
     // ════════════════════════════════════════
     // 興奮條震動：用 BC 原生 VibratorLevel（DrawArousalMeter 每幀讀取 → 免 CharacterRefresh）。
-    //  BC 的更新迴圈會把 VibratorLevel 歸零，所以在震動期間每 ~400ms 重設一次維持；
+    //  BC 的更新迴圈會把 VibratorLevel 歸零，所以在震動期間每 ~50ms 重設一次維持；
     //  結束時歸零，交還給 BC 依實際玩具重算。
     let _vibeUntil = 0, _vibeTimer = null;
     transientEffects.onStop(() => {
@@ -136,6 +130,8 @@ import { hscServerSend } from '../core/net.js';
         _vibeTimer = null;
         _vibeUntil = 0;
         _chatFadeUntil = 0;
+        _centerHeadEl?.remove();
+        _centerHeadEl = null;
         for (const key of Object.keys(_otherPantUntil)) {
             delete _otherPantUntil[key]; delete _otherPantActive[key]; delete _otherPantInten[key];
         }
@@ -322,7 +318,7 @@ function addArousal(kind) {
             const pos = { x: geom.cx, y: geom.cy };
             const dispSZ = geom.size;
 
-            const el = document.createElement('img');
+            const el = cv;
             Object.assign(el.style, {
                 position:      'fixed',
                 left:          `${pos.x - dispSZ / 2}px`,
@@ -362,7 +358,6 @@ function addArousal(kind) {
                 const cropX = src.width / 2 - side / 2;
                 ctx.clearRect(0, 0, SZ, SZ);
                 ctx.drawImage(src, cropX, 740, side, side, 0, 0, SZ, SZ);
-                try { el.src = cv.toDataURL('image/webp', 0.9); } catch { return false; }
                 return true;
             };
             capture();
@@ -411,5 +406,4 @@ export {
     _otherPantUntil,
     _otherPantActive,
     _otherPantInten,
-    _centerHeadEl,
 };

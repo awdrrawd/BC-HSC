@@ -1,5 +1,4 @@
 import { transientEffects } from './lifecycle.js';
-// ── auto-wired cross-module imports ──
 import { addArousal, broadcastHypnotized, popExprEffect, pushExprEffect, sendStatusEmote, showCenterHeadshot, startChatFade } from './character-fx.js';
 import { CONFIG, EXPRESSION_SETS } from '../core/config.js';
 import { triggerHypnoSpiral } from './spiral.js';
@@ -14,11 +13,6 @@ import { BASE_EFFECT_DURATION, refreshCanvasCache } from '../util/geometry.js';
 import { addHypno } from '../hypno/hypno.js';
 import { playSoundCategory, triggerBreathSound } from './sound.js';
 import { effectScale, getArousalLevel, wait } from '../util/util.js';
-
-// ════════════════════════════════════════
-//  HSC module: run.js
-//  (auto-split from Liko - HSC.main.user.js; imports added below)
-// ════════════════════════════════════════
 
     // ════════════════════════════════════════
     //  主效果流程
