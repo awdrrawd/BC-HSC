@@ -1,0 +1,6 @@
+{
+  "source": "https://raw.githubusercontent.com/awdrrawd/liko-Plugin-Repository/main/Plugins/expand/BC_i18n.js",
+  "target": "src/expansion/BC_i18n.js",
+  "version": "2.3.0",
+  "sha256": "dd9e681c5be4c6ec398c1f0c971863962e09fa1f809b9af13d92be3d5b2412b0"
+}

@@ -16,7 +16,9 @@
     "lint": "eslint . --max-warnings 0",
     "test": "node scripts/test-lifecycle.mjs && node scripts/test-settings.mjs && node scripts/test-expressions.mjs && node scripts/test-preference-layout.mjs && node scripts/test-security.mjs && node scripts/test-bc-compat.mjs && node scripts/check-translations.mjs",
     "check": "npm run lint && npm test && npm run build",
-    "check:bc": "node scripts/check-bc-compat.mjs"
+    "check:bc": "node scripts/check-bc-compat.mjs",
+    "sync:i18n": "node scripts/sync-i18n.mjs",
+    "check:i18n": "node scripts/sync-i18n.mjs --check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -26,8 +28,8 @@
     "globals": "^17.14.0",
     "vite": "^8.3.6"
   },
-    "_overrides_note": "minimatch 漏洞 GHSA-g3hv-75wg-m249：等 eslint / @eslint/config-array 改用 minimatch ^11 後，移除下方 overrides",
-    "overrides": {
+  "_overrides_note": "minimatch 漏洞 GHSA-g3hv-75wg-m249：等 eslint / @eslint/config-array 改用 minimatch ^11 後，移除下方 overrides",
+  "overrides": {
     "minimatch": "^11.0.8"
   }
 }

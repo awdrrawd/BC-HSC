@@ -1,3 +1,4 @@
+import '../expansion/BC_i18n.js';
 import { transientEffects, forcedEffects } from '../effects/lifecycle.js';
 import { clearExprEffects } from '../effects/character-fx.js';
 import { hookChatInput, printChat } from './commands.js';

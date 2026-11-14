@@ -29,7 +29,7 @@ const bcGlobals = [
 ];
 
 export default [
-  { ignores: ['dist/**', 'public/**', 'node_modules/**', 'legacy/**', 'loader.user.js', 'loader.local.user.js', 'scripts/**'] },
+  { ignores: ['src/expansion/BC_i18n.js', 'dist/**', 'public/**', 'node_modules/**', 'legacy/**', 'loader.user.js', 'loader.local.user.js', 'scripts/**'] },
   js.configs.recommended,
   {
     files: ['src/**/*.js'],
