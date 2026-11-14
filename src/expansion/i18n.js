@@ -1,14 +1,12 @@
 import { CONFIG } from '../core/config.js';
-import { assetUrl, cdnUrl } from '../util/icons.js';
+import { assetUrl } from '../util/icons.js';
 
     // ════════════════════════════════════════
-    //  i18n（多語）：動態載入共用引擎 + HSC 字庫，ui(key,vars) 取字串
+    //  i18n（多語）：內建共用引擎 + 按需載入 HSC 字庫，ui(key,vars) 取字串
     //  引擎未就緒時，ui() 回傳 fallbacks[key]（中文原文），不丟例外
     // ════════════════════════════════════════
     const I18N_NS = 'HSC';
-    // 共用引擎腳本：源碼在 src/expansion/BC_i18n.js，build 前由 copy-assets 複製到 public/expansion/。
-    //  Pages 優先、加時間戳破快取；Pages 失敗才回退 CDN（cdnUrl 會對映到 repo 的 src/expansion/）。
-    const T_ENGINE = 'expansion/BC_i18n.js';
+    // 共用引擎隨插件打包；只有字庫按語言下載。
 
     // 字庫改為「一國一檔」：Translation/<LANG>.js，每支同時註冊 UI(i18n) 與聊天(L10N) 兩套。
     //  交給引擎 loadLangs：只抓「目前語言 + EN 後備」（CN 再加 TW），比舊的單一 165KB 合併檔省很多流量。
@@ -20,27 +18,14 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
         return m;
     }
 
-    // 載入共用引擎腳本：Pages 優先、加時間戳破快取；Pages 失敗才回退 CDN（可能較舊但能用）。
-    function _i18nLoadScript(logical) {
-        const bust = u => u + (u.includes('?') ? '&' : '?') + 't=' + Date.now();
-        return fetch(bust(assetUrl(logical)))
-            .then(res => res.ok ? res.text() : Promise.reject(new Error(String(res.status))))
-            .catch(() => fetch(bust(cdnUrl(logical)))
-                .then(res => { if (!res.ok) throw new Error(`[HSC] 無法載入 ${logical} (${res.status})`); return res.text(); }))
-            .then(code => { new Function(code)(); });
-    }
     async function ensureI18n() {
         try {
-            // 能力偵測：新引擎 BC_i18n 暴露 __Sys_i18n__.ensure；舊 v1 只有 version 會被誤判，故用 ensure
-            if (typeof window.Liko?.__Sys_i18n__?.ensure !== 'function' || !window.Liko?.__Sys_Flags__) await _i18nLoadScript(T_ENGINE);
             const eng = window.Liko?.__Sys_i18n__;
             if (eng?.ensure) {
                 const urlMap = _stringsUrlMap();
                 const lang = hscLang();   // 用 HSC 自己算好的語言，讓引擎只抓需要的那幾支
-                // 語言檔同時註冊 UI 與 L10N；一次 ensure 兩套都進來。對 L10N 再 ensure 一次
-                //  （同 URL，引擎依 _loadedUrls 去重不會重抓）確保 msg realm 已就緒。
+                // 每支語言檔同時註冊 UI 與 L10N，只需載入一次。
                 await eng.ensure(I18N_NS, urlMap, lang);
-                await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, urlMap, lang);
             }
         } catch (e) { console.warn('🐈‍⬛ [HSC] i18n 載入失敗，改用中文原文:', e.message); }
     }
@@ -53,7 +38,6 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
             const lang = (sel && sel !== 'auto') ? sel : hscLang();
             const urlMap = _stringsUrlMap();
             await eng.ensure(I18N_NS, urlMap, lang);
-            await window.Liko?.__Sys_L10N__?.ensure(I18N_NS, urlMap, lang);
         } catch (e) { console.warn('🐈‍⬛ [HSC] 切換語言載入失敗:', e.message); }
     }
     // 可選語言（auto = 依遊戲語系）
@@ -237,7 +221,6 @@ import { assetUrl, cdnUrl } from '../util/icons.js';
 
 export {
     I18N_NS,
-    _i18nLoadScript,
     ensureI18n,
     ensureLang,
     HSC_LANGS,
