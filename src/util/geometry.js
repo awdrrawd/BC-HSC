@@ -203,9 +203,12 @@ import { CONFIG } from '../core/config.js';
     // ════════════════════════════════════════
     const CENTER_HEAD_BASE = 300;   // 頭像離屏畫布邊長（裁切用）
     function getCenterHeadshotGeom() {
-        const c = bcToScreen(500, 500);   // 左側人物區中心（不隨分頁/人數飄移）
-        const size = Math.max(340, CENTER_HEAD_BASE * (_cachedScaleX || 0.35) * 1.7);
-        return { cx: c.x, cy: c.y, size };
+        const rect = document.getElementById('MainCanvas')?.getBoundingClientRect();
+        if (!rect?.width || !rect.height) return null;
+        const scaleX = rect.width / BC_CANVAS_W;
+        const scaleY = rect.height / BC_CANVAS_H;
+        const size = Math.max(340, CENTER_HEAD_BASE * scaleX * 1.7);
+        return { cx: rect.left + 500 * scaleX, cy: rect.top + 500 * scaleY, size };
     }
 
 export {

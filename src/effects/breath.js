@@ -30,6 +30,7 @@ export function getBreathMouths(ignoreHeadshot) {
         //  與頭像本體共用同一份幾何 → 各畫面縮放下都對齊頭像、且氣團隨頭像放大。
         //  （修正舊版：ss 用人物 zoom 導致過小、嘴部用固定 +70px 在不同縮放下錯位。）
         const g = getCenterHeadshotGeom();
+        if (!g) return [];
         const mouthY = g.cy + g.size * 0.18;         // 嘴部約在圓心下方 18% 直徑處
         const ss = Math.max(1.0, g.size / 240);      // 氣團尺寸依頭像直徑縮放（明顯大於舊版）
         return [{ x: g.cx, y: mouthY, ss }];
