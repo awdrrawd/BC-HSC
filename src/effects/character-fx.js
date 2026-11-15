@@ -309,25 +309,24 @@ function addArousal(kind) {
         try {
             if (_centerHeadEl) { _centerHeadEl.remove(); _centerHeadEl = null; }
 
+            const geom = getCenterHeadshotGeom();
+            if (!geom) return;
+            const { cx, cy, size: dispSZ } = geom;
             const SZ  = 300;
             const cv  = document.createElement('canvas'); cv.width = cv.height = SZ;
             const ctx = cv.getContext('2d');
-            // 圓心 + 直徑改用共用工具 getCenterHeadshotGeom（與喘氣共用同一份幾何，
-            //  不同畫面縮放下頭像與吐氣一致；圓心固定在左側人物區中心 (500,500)，不隨分頁/人數飄移）
-            const geom = getCenterHeadshotGeom();
-            const pos = { x: geom.cx, y: geom.cy };
-            const dispSZ = geom.size;
 
             const el = cv;
             Object.assign(el.style, {
                 position:      'fixed',
-                left:          `${pos.x - dispSZ / 2}px`,
-                top:           `${pos.y - dispSZ / 2}px`,
+                left:          `${cx - dispSZ / 2}px`,
+                top:           `${cy - dispSZ / 2}px`,
                 width:         `${dispSZ}px`,
                 height:        `${dispSZ}px`,
                 borderRadius:  '50%',
                 objectFit:     'cover',
                 pointerEvents: 'none',
+                margin:        '0',
                 transformOrigin: 'center',
                 zIndex:        HSC_Z.base, // 頭像層：煙霧 > 螺旋 > 頭像 > 其它特效(auto)
                 boxShadow:     '0 0 40px rgba(255,80,160,0.5)',
