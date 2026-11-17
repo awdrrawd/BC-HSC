@@ -26,6 +26,7 @@ const bcGlobals = [
   'CurrentCharacter', 'ChatRoomMapViewIsActive', 'ChatRoomHideIconState', 'CommonPhotoMode',
   'CommonSetScreen', 'TextLoad', 'DrawCacheImage',
   'ServerIsLoggedIn', 'ActivityOrgasmStart', 'ActivityOrgasmPrepare',
+  'ChatRoomGenerateChatRoomChatMessage', 'ChatRoomOwnerPresenceRule', 'SpeechTransformProcess', 'SpeechTransformSenderEffects',
 ];
 
 export default [
