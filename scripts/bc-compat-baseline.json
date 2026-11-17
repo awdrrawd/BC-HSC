@@ -1,20 +1,20 @@
 {
-  "gameVersion": "R133",
+  "gameVersion": "R134",
   "functions": {
     "ChatRoomCharacterViewDrawOverlay": {
       "hash": "3C5AE882",
       "file": "Screens/Online/ChatRoom/ChatRoomCharacterView.js"
     },
     "ChatRoomLeave": {
-      "hash": "0AFCF067",
+      "hash": "D43FC635",
       "file": "Screens/Online/ChatRoom/ChatRoom.js"
     },
     "ChatRoomMessage": {
-      "hash": "2BB4C2FD",
+      "hash": "657E9417",
       "file": "Screens/Online/ChatRoom/ChatRoom.js"
     },
     "ChatRoomRun": {
-      "hash": "6F25585E",
+      "hash": "3D4B25E7",
       "file": "Screens/Online/ChatRoom/ChatRoom.js"
     },
     "ChatRoomSendChat": {
@@ -26,15 +26,15 @@
       "file": "Screens/Online/ChatRoom/ChatRoom.js"
     },
     "ChatRoomSyncSingle": {
-      "hash": "E5456B3F",
+      "hash": "139C0D33",
       "file": "Screens/Online/ChatRoom/ChatRoom.js"
     },
     "CommonSetScreen": {
-      "hash": "20207D2B",
+      "hash": "57F6E56B",
       "file": "Scripts/Common.js"
     },
     "DrawCharacter": {
-      "hash": "2CD2CA5F",
+      "hash": "9272BAF3",
       "file": "Scripts/Drawing.js"
     },
     "DrawText": {
@@ -46,19 +46,19 @@
       "file": "Scripts/Drawing.js"
     },
     "InformationSheetClick": {
-      "hash": "A220F4FA",
+      "hash": "80547B77",
       "file": "Screens/Character/InformationSheet/InformationSheet.js"
     },
     "InformationSheetExit": {
-      "hash": "1BD2A9CB",
+      "hash": "279981A2",
       "file": "Screens/Character/InformationSheet/InformationSheet.js"
     },
     "InformationSheetRun": {
-      "hash": "F33DBCA5",
+      "hash": "82ADDEDB",
       "file": "Screens/Character/InformationSheet/InformationSheet.js"
     },
     "LoginResponse": {
-      "hash": "58671CE3",
+      "hash": "C57C963E",
       "file": "Screens/Character/Login/Login.js"
     },
     "Player.GetBlurLevel": {
@@ -81,7 +81,7 @@
       "file": "Scripts/Text.js"
     },
     "ActivityOrgasmStart": {
-      "hash": "D33B4C28",
+      "hash": "BABCBEA0",
       "file": "Scripts/Activity.js"
     }
   }

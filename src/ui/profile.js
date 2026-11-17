@@ -101,6 +101,8 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
     function hookProfileButton() {
         if (!modApi) return;
         let themeResolvedFor = null;
+        let menuButton = null;
+        let menuState = null;
         try {
             _registerHscScreen();
             // 假畫面沒有對應的 Screens/<Module>/HSC_ProfileEdit/Text_HSC_ProfileEdit.csv，
@@ -119,7 +121,14 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                     return;   // 不呼叫 next → profile 與其它插件都不繪製
                 }
                 const r = next(args);
-                if (_otherModSubscreenOpen()) return r;   // 別的插件全螢幕子頁 → 不畫我們的按鈕
+                const domSheet = typeof window.InformationSheetMenuButton === 'function';
+                const menu = domSheet && document.getElementById('information-sheet-screen-menu');
+                const otherScreen = _otherModSubscreenOpen();
+                if (menuButton && (menuButton.parentNode !== menu || otherScreen)) {
+                    menuButton.remove();
+                    menuButton = null;
+                }
+                if (otherScreen || (domSheet && !menu)) return r;   // 別的插件全螢幕子頁 → 不畫我們的按鈕
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
                 if (info && CONFIG.showProfileButton) {
@@ -142,15 +151,33 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
                     const darkBg = themeResolvedFor === themeKey
                         ? hscThemeIsDark()
                         : (themeResolvedFor = themeKey, refreshThemeIsDark());
+                    if (menu) {
+                        const icon = darkBg ? HSC_ICON_B : HSC_ICON_W;
+                        const disabled = hscOff || !canEdit;
+                        if (!menuButton || menuState.C !== C || menuState.tip !== tip ||
+                            menuState.icon !== icon || menuState.disabled !== disabled) {
+                            menuButton?.remove();
+                            menuButton = window.InformationSheetMenuButton('hsc-profile-edit', () => {
+                                if (_sheetChar() === C && !_otherModSubscreenOpen()) openRemoteSettings(C);
+                            }, icon, tip);
+                            menuButton.disabled = disabled;
+                            menu.append(menuButton);
+                            menuState = { C, tip, icon, disabled };
+                        }
+                        return r;
+                    }
                     DrawButton(1715, 75, 90, 90, '', "White", '', tip, hscOff || !canEdit);
                     DrawImageResize(darkBg ? HSC_ICON_B : HSC_ICON_W, 1717, 77, 86, 86);
+                } else if (menuButton) {
+                    menuButton.remove();
+                    menuButton = null;
                 }
                 return r;
             });
             modApi.hookFunction('InformationSheetClick', 5, (args, next) => {
                 // remote 設定頁開啟 → 點擊交給 EXT（分頁/離開/存檔）
                 if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.click(); } catch {} return; }
-                if (_otherModSubscreenOpen()) return next(args);   // 讓路給別的插件
+                if (typeof window.InformationSheetMenuButton === 'function' || _otherModSubscreenOpen()) return next(args);   // 讓路給別的插件
                 const C = _sheetChar();
                 const info = C && _isOther(C) && C.OnlineSharedSettings && C.OnlineSharedSettings[ES_KEY];
                 if (info && CONFIG.showProfileButton && MouseIn(1715, 75, 90, 90)) {
@@ -166,6 +193,8 @@ import { safeDisplayName, cleanStringList, clampNumber } from '../util/text.js';
             // 離開 profile（Esc / BC 離開流程）→ 若 remote 設定頁開著，先關掉它、留在 profile
             modApi.hookFunction('InformationSheetExit', 5, (args, next) => {
                 if (EXT.ctx === 'remote' && EXT.remote) { try { EXT.closeRemote(); } catch {} return; }
+                menuButton?.remove();
+                menuButton = menuState = null;
                 themeResolvedFor = null;
                 return next(args);
             });
