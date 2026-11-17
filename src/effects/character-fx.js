@@ -191,6 +191,38 @@ function addArousal(kind) {
 }
 
     // ════════════════════════════════════════
+    //  以 BC 原生流程送出「一般說話」：會依目前堵嘴等級／嬰兒語／口吃做胡言亂語處理
+    //  （直接 ServerSend Type:'Chat' 會繞過堵嘴，所以一律走這裡）
+    //  優先序：ChatRoomGenerateChatRoomChatMessage（含 NoSpeechGarble 的 Original 夾帶、OOC 自動補括號）
+    //        → SpeechTransformProcess 手動處理 → 都沒有就不送（寧可不說也不能無視堵嘴）
+    // ════════════════════════════════════════
+    function sendGarbledChat(text) {
+        const msg = String(text ?? '').trim();
+        if (!msg || typeof ServerSend !== 'function') return false;
+        try {
+            // 主人的「禁止說話」規則同樣適用於自動說話
+            if (typeof ChatRoomOwnerPresenceRule === 'function' && ChatRoomOwnerPresenceRule('BlockTalk', null)) return false;
+        } catch {}
+        let data = null;
+        try {
+            if (typeof ChatRoomGenerateChatRoomChatMessage === 'function') {
+                // replyId 傳 null：不要誤把玩家正在回覆的訊息綁到自動說話上
+                data = ChatRoomGenerateChatRoomChatMessage('Chat', msg, null);
+            } else if (typeof SpeechTransformProcess === 'function') {
+                const effects = (typeof SpeechTransformSenderEffects !== 'undefined')
+                    ? SpeechTransformSenderEffects : ['babyTalk', 'gagGarble', 'stutter'];
+                const out = SpeechTransformProcess(Player, msg, effects);
+                data = { Type: 'Chat', Content: out.text };
+                if (Player?.RestrictionSettings?.NoSpeechGarble && out.text !== msg) {
+                    data.Dictionary = [{ Effects: out.effects, Original: msg }];
+                }
+            }
+        } catch (e) { console.warn('🐈‍⬛ [HSC] 堵嘴說話處理失敗:', e.message); }
+        if (!data) return false;   // 取不到 BC 的說話處理 → 不送，避免無視堵嘴
+        try { ServerSend('ChatRoomChat', data); return true; } catch { return false; }
+    }
+
+    // ════════════════════════════════════════
     //  觸發時發送狀態 emote（讓他人知道你的狀態）
     //  使用 BC 無自動名稱的 Emote 格式，完整句子由模板與 $me 控制。
     // ════════════════════════════════════════
@@ -217,8 +249,8 @@ function addArousal(kind) {
                     Dictionary: [{ Tag: 'MISSING TEXT IN "Interface.csv": CUSTOM_SYSTEM_ACTION', Text: msg }],
                 });
             } else if (mode === 'chat') {
-                // 一般說話（會像自己開口，可用於呻吟等）
-                ServerSend('ChatRoomChat', { Type: 'Chat', Content: msg });
+                // 一般說話（會像自己開口，可用於呻吟等）；經 BC 的說話處理，堵嘴時會變成胡言亂語
+                sendGarbledChat(msg);
             } else {
                 // BC 接收端移除前導 * 並略過自動名稱；已有標記的模板不重複添加。
                 ServerSend('ChatRoomChat', { Type: 'Emote', Content: msg.startsWith('*') ? msg : '*' + msg });
