@@ -1,5 +1,6 @@
 {
   "gameVersion": "R134",
+  "commit": "b3afd52e44f69c4a6bcd826993679ecfb5336556",
   "functions": {
     "ChatRoomCharacterViewDrawOverlay": {
       "hash": "3C5AE882",
@@ -58,7 +59,7 @@
       "file": "Screens/Character/InformationSheet/InformationSheet.js"
     },
     "LoginResponse": {
-      "hash": "C57C963E",
+      "hash": "5777701D",
       "file": "Screens/Character/Login/Login.js"
     },
     "Player.GetBlurLevel": {
