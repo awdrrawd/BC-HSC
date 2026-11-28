@@ -19,7 +19,7 @@
 | `deploy.yml` | push `main`、手動 | 先呼叫 `ci.yml`（檢查並上傳建置好的 `dist/`）；成功後部署同一份產物到 Pages，不再重新建置；發布後執行 `scripts/check-deployment.mjs` |
 | `bc-compat.yml` | 每週一、手動 | 對照 BC 原始碼檢查被 hook 的函式，見下方 |
 | `sync-i18n.yml` | 手動 | 同步共用 i18n 引擎，完整檢查後推到新分支（步驟在 Bondage-College-Mirror 的共用 workflow） |
-| `dependabot.yml` | 每週六台北時間 08:06 | npm 與 GitHub Actions；npm 的 minor／patch 合併成一個 PR，major 各自獨立 |
+| `dependabot.yml` | 每週六台北時間 08:06 | npm 與 GitHub Actions；npm 的 minor／patch 合併成一個 PR，major 各自獨立；新版本發布滿 7 天才提出（安全性更新不受影響） |
 
 - **發布後檢查**：`check-deployment.mjs` 重試取得 `assets/main.js`、`assets/app.js`、`Translation/EN.js`、`Translation/TW.js`、`HSC-iconW.png`、`expansion/BC_i18n.js`，確認不是 HTML 錯誤頁；EN／TW 翻譯另與本次提交內容逐位元比對，避免舊版殘留。重試仍失敗則該次工作失敗，**不自動回滾**。
 - `dist/` 與 `public/` 不進版控：`main.js`、`app.js` 一律由 CI 部署時建置。
