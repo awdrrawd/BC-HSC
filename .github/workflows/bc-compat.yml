@@ -39,7 +39,7 @@ jobs:
           echo "BC revision: $(git -C "$RUNNER_TEMP/bc" rev-parse --short HEAD)"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24.x
+          node-version: '24'
           cache: npm
       # 檢查腳本用 acorn 解析 BC 原始碼，需要先安裝依賴（不執行安裝腳本）。
       - run: npm ci --ignore-scripts
