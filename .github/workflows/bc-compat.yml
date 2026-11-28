@@ -2,13 +2,19 @@ name: BC compatibility
 
 # 每週對照 Bondage Club 原始碼，確認 HSC hook 的函式仍存在且內容與基準（scripts/bc-compat-baseline.json）相同，並確認依賴的全域符號仍存在。
 # 發現差異時只開／更新一則 issue 通知，不會讓工作流程失敗（BC 鏡像常有 BETA 或領先線上版本的情況）。
-# 需要在 Settings → Secrets and variables → Actions → Variables 設定：
-#   BC_SOURCE_REPO  例：owner/Bondage-College-Mirror   （必填，未設定則略過）
-#   BC_SOURCE_REF   例：bondageclub                    （選填，預設用該 repo 的預設分支）
+# 來源預設為程式碼鏡像 awdrrawd/Bondage-College-Mirror 的 bondageclub 分支，不需設定。
+# 要改用其他來源時，在 Settings → Secrets and variables → Actions → Variables 設定（與其他插件相同的變數名稱）：
+#   BC_REPO_URL  BC 原始碼的 git 網址
+#   BC_REF       分支或 tag（選填，留空用該來源的預設分支）
+# 舊的 BC_SOURCE_REPO（owner/repo）／BC_SOURCE_REF 仍相容。
 on:
   schedule:
     - cron: '17 3 * * 1'
   workflow_dispatch:
+    inputs:
+      ref:
+        description: BC 的分支或標籤（留空 = BC_REF 變數，否則用鏡像的 bondageclub 分支）
+        required: false
 permissions:
   contents: read
   issues: write
@@ -16,37 +22,32 @@ jobs:
   bc-compat:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      BC_REPO_URL: ${{ vars.BC_REPO_URL || (vars.BC_SOURCE_REPO && format('https://github.com/{0}.git', vars.BC_SOURCE_REPO)) || 'https://github.com/awdrrawd/Bondage-College-Mirror.git' }}
+      # 使用預設鏡像時指定 bondageclub 分支（鏡像的預設分支 main 只有說明文件）；自訂來源則沿用其預設分支。
+      BC_REF: ${{ inputs.ref || vars.BC_REF || vars.BC_SOURCE_REF || ((!vars.BC_REPO_URL && !vars.BC_SOURCE_REPO) && 'bondageclub' || '') }}
     steps:
-      - name: Skip when BC source is not configured
-        if: vars.BC_SOURCE_REPO == ''
-        run: echo "::notice::未設定 BC_SOURCE_REPO，略過 BC 相容性檢查"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: vars.BC_SOURCE_REPO != ''
         with:
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: vars.BC_SOURCE_REPO != ''
-        with:
-          persist-credentials: false
-          repository: ${{ vars.BC_SOURCE_REPO }}
-          ref: ${{ vars.BC_SOURCE_REF }}
-          path: bc-src
-          sparse-checkout: |
-            Scripts
-            Screens
+      - name: Fetch Bondage Club sources
+        run: |
+          branch=()
+          if [ -n "$BC_REF" ]; then branch=(--branch "$BC_REF"); fi
+          git clone --depth 1 "${branch[@]}" --filter=blob:none --sparse "$BC_REPO_URL" "$RUNNER_TEMP/bc"
+          git -C "$RUNNER_TEMP/bc" sparse-checkout set Scripts Screens
+          echo "BC revision: $(git -C "$RUNNER_TEMP/bc" rev-parse --short HEAD)"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: vars.BC_SOURCE_REPO != ''
         with:
           node-version: 24.x
           cache: npm
       # 檢查腳本用 acorn 解析 BC 原始碼，需要先安裝依賴（不執行安裝腳本）。
       - run: npm ci --ignore-scripts
-        if: vars.BC_SOURCE_REPO != ''
       - name: Compare against BC and notify
-        if: vars.BC_SOURCE_REPO != ''
         env:
-          BC_SOURCE_DIR: bc-src
+          BC_SOURCE_DIR: ${{ runner.temp }}/bc
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set +e
           node scripts/check-bc-compat.mjs --json bc-report.json

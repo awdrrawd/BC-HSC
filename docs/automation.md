@@ -15,15 +15,16 @@
 
 | 工作流程 | 觸發 | 內容 |
 |---|---|---|
-| `ci.yml`（HSC checks） | PR、手動，並由 `deploy.yml` 以 `workflow_call` 呼叫 | Node 24、`npm ci --ignore-scripts`、`npm audit --omit=dev --audit-level=high`、`npm run check`；同一個 PR 有新提交時取消舊檢查，main 的檢查不中斷 |
-| `deploy.yml` | push `main`、手動 | 先呼叫 `ci.yml`；成功後建置、上傳 `dist/`、部署 Pages；發布後執行 `scripts/check-deployment.mjs` |
+| `ci.yml`（HSC checks） | PR、手動，並由 `deploy.yml` 以 `workflow_call` 呼叫 | Node 24、`npm ci --ignore-scripts`、`npm audit --omit=dev --audit-level=high`、`npm run check:i18n`、`npm run check`；由 `deploy.yml` 呼叫時直接上傳建置好的 `dist/`；同一個 PR 有新提交時取消舊檢查，main 的檢查不中斷 |
+| `deploy.yml` | push `main`、手動 | 先呼叫 `ci.yml`（檢查並上傳建置好的 `dist/`）；成功後部署同一份產物到 Pages，不再重新建置；發布後執行 `scripts/check-deployment.mjs` |
 | `bc-compat.yml` | 每週一、手動 | 對照 BC 原始碼檢查被 hook 的函式，見下方 |
-| `dependabot.yml` | 每週一台北時間 09:00 | npm 與 GitHub Actions；npm 的 minor／patch 合併成一個 PR，major 各自獨立 |
+| `sync-i18n.yml` | 手動 | 同步共用 i18n 引擎，完整檢查後推到新分支（步驟在 Bondage-College-Mirror 的共用 workflow） |
+| `dependabot.yml` | 每週六台北時間 08:06 | npm 與 GitHub Actions；npm 的 minor／patch 合併成一個 PR，major 各自獨立 |
 
 - **發布後檢查**：`check-deployment.mjs` 重試取得 `assets/main.js`、`assets/app.js`、`Translation/EN.js`、`Translation/TW.js`、`HSC-iconW.png`、`expansion/BC_i18n.js`，確認不是 HTML 錯誤頁；EN／TW 翻譯另與本次提交內容逐位元比對，避免舊版殘留。重試仍失敗則該次工作失敗，**不自動回滾**。
 - `dist/` 與 `public/` 不進版控：`main.js`、`app.js` 一律由 CI 部署時建置。
 - 所有 checkout 設定 `persist-credentials: false`；安裝一律 `npm ci --ignore-scripts`（建置不需要依賴的安裝腳本）。開發工具（vite、concurrently 等）的漏洞不阻擋發布，由 Dependabot 處理。
-- `deploy.yml` 的權限維持頂層 `pages: write`、`id-token: write`。
+- `deploy.yml` 頂層只給 `contents: read`；`pages: write`、`id-token: write` 只給部署 job，檢查 job 拿不到發布權限。
 
 ## 需要在 GitHub 設定
 
@@ -32,7 +33,7 @@
 3. 第一次 HSC checks 成功後，Settings → Rules → Rulesets 為 `main` 建立規則：要求 PR、要求狀態檢查 **HSC checks**（來源 GitHub Actions）。方案不支援 Rulesets 時用分支保護。
 4. `github-pages` environment 的部署分支允許 `main`；若有 required reviewers，每次部署仍需批准。
 5. Settings → Security 啟用 Dependabot alerts／security updates，才會收到已知漏洞通知。
-6. BC 相容追蹤需在 Actions Variables 設定 `BC_SOURCE_REPO`（必填）與 `BC_SOURCE_REF`（選填）；未設定時略過。
+6. BC 相容追蹤預設對照[程式碼鏡像](https://github.com/awdrrawd/Bondage-College-Mirror/tree/bondageclub)的 `bondageclub` 分支，不需設定；要改用其他來源時，在 Actions Variables 設定 `BC_REPO_URL`（git 網址）與 `BC_REF`（選填）。舊的 `BC_SOURCE_REPO`／`BC_SOURCE_REF` 仍相容。
 
 ## BC 相容追蹤
 

@@ -3,6 +3,11 @@ name: HSC checks
 on:
   pull_request:
   workflow_call:
+    inputs:
+      upload-pages:
+        description: 上傳建置好的 dist/ 作為 Pages 產物（由 deploy.yml 使用）
+        type: boolean
+        default: false
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,6 +29,12 @@ jobs:
           node-version: 24.x
           cache: npm
       - run: npm ci --ignore-scripts
+      - run: npm run check:i18n
       # 正式依賴有 high 以上漏洞就失敗；開發工具的漏洞交給 Dependabot，不阻擋發布。
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run check
+      # deploy.yml 呼叫時直接上傳這次 lint → test → build 產生的 dist/，部署的就是通過檢查的同一份產物，不用再建置一次。
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: inputs.upload-pages
+        with:
+          path: dist/
